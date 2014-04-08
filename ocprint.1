@@ -1,0 +1,68 @@
+.TH OCPRINT 1
+.SH NAME
+ocprint \- Dump the DAS, DDS, and/or DATADDS for a given OPeNDAP source
+.SH SYNOPSIS
+.HP
+ocprint
+.nh
+\%[-A]
+\%[-C \fIconstraint-string\fP]
+\%[-D \fIdebug-argument\fP]
+\%[-g]
+\%[-h]
+\%[-L]
+\%[-p \fIall|das|dds|data|datadds\fP]
+\%[-U \fIuser-parameters\fP]
+\%[-v]
+\%[[-f] \fIOPeNDAP-URL\fP]
+.hy
+.ft
+.SH DESCRIPTION
+\fBocprint\fP
+takes an OPeNDAP source (via a URL) and prints various kinds of information from that source.
+Independent of the options, 
+\fBocprint\fP
+will always attempt to obtain a DAS and DDS.
+Failures will be reported but ignored.
+The DATADDS will only be accessed if explicitly requested using the \fI-p datadds\fP option.
+.LP
+.SH OPTIONS
+.IP "\fB-A\fP"
+Print attributes along with the DDS if \fI-g\fP is specified.
+.IP "\fB-C \fRconstraint\fP"
+Specify the constraint to be used when the DATADDS is read.
+.IP "\fB-D \fRdebug-arg\fP"
+Set a variety of debug options; this flag may be repeated multiple times.
+See \fIocprint.c\fP for a detailed description.
+.IP "\fB-g\fP"
+Force \fI-p\fP flag to generate the DAS and/or DDS
+from the internal parse tree instead of just
+dumping the text sent by the server.
+.IP "\fB-h\fP"
+Output usage information, including command line options.
+.IP "\fB-L\fP"
+Turn on logging output.
+.IP "\fB-p \fRall|das|dds|data|datadds\fP"
+Cause the DAS, the DDS, or the DATADDS to be printed.
+The argument \fIdata\fP is a synonym for \fIdatadds\fP.
+The  \fIall\fP case causes all three to be printed.
+This option may be used multiple times.
+.IP "\fB-U \fRuser-parameters\fP"
+Prefix the given parameters to the front of the OPeNDAP URL
+before accessing it. The general form is param=value.
+.IP "\fB-v\fP"
+Output verbose information about processing.
+.IP "\fB-f \fROPeNDAP-URL\fP"
+Specify the url source from which to read. The -f is optional.
+.SH EXAMPLES
+.LP
+Extract everything from a specific URL (note: URL is fake).
+.RS
+.HP
+ocprint -p all http://test.opendap.org/test1
+.RE
+
+.SH BUGS
+.LP
+Probably many; but currently none known.
+

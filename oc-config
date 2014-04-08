@@ -1,0 +1,79 @@
+#! /bin/sh
+#
+# Borrowed the idea for this script (and some code) from libcurl.
+#
+prefix="/tmp/install"
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+package_version="2.0"
+cc="gcc"
+libs="-L${libdir} -loc -L/usr/local/lib -lcurl -lz  -L/usr/local/lib -lcurl -lz" 
+cflags="-I${includedir}/oc -I/usr/local/include"
+
+usage()
+{
+    cat <<EOF
+Usage: oc-config [OPTION]
+
+Available values for OPTION include:
+
+  --help      display this help message and exit
+  --cc        C compiler
+  --cflags    pre-processor and compiler flags
+  --libs      library linking information for liboc
+  --prefix    OPeNDAP install prefix
+  --version   Library version
+EOF
+
+    exit $1
+}
+
+if test $# -eq 0; then
+    usage 1
+fi
+
+while test $# -gt 0; do
+    case "$1" in
+    # this deals with options in the style
+    # --option=value and extracts the value part
+    # [not currently used]
+    -*=*) value=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+    *) value= ;;
+    esac
+
+    case "$1" in
+    --help)
+	usage 0
+	;;
+
+    --cc)
+	echo "$cc"
+	;;
+
+    --cflags)
+       	echo "$cflags"
+	;;
+
+    --libs)
+       	echo "$libs"
+       	;;
+
+    --prefix)
+       	echo "${prefix}"
+       	;;
+
+    --version)
+	echo "liboc $package_version"
+	;;
+
+    *)
+        echo "unknown option: $1"
+	usage
+	exit 1
+	;;
+    esac
+    shift
+done
+
+exit 0

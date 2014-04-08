@@ -1,0 +1,179 @@
+<!-- Experimental, Not Yet Implemented -->
+<!- Copyright 2012, UCAR/Unidata and OPeNDAP, Inc. -->
+<!- See the COPYRIGHT file for more information. -->
+<html>
+<style>
+.break { page-break-before: always; }
+</style>
+<body>
+<center>
+<h2>OC Path</h2>
+<h3>Draft: 05/04/2012<br>
+Last Revised: 05/04/2012<br>
+OC Path Version 0.9</h3>
+</center>
+
+<h2 class="break"><u>Table of Contents</u></h2>
+<ol>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Overview">API Overview</a>
+<li><a href="#Change Log">Change Log</a>
+<li><a href="#Copyright">Copyright</a>
+<li><a href="#Examples">Appendix A. Extended Examples</a>
+</ol>
+
+<h2 class="break"><a name="Introduction"><u>Introduction</u></a></h2>
+OC path adds a layer of software over oc that attempts
+to simplify access to the data associated with a DataDDS.
+Of course simplication often implies loss of generality,
+to it will still be necessary, sometimes, to use the full oc API.
+<p>
+OC path is patterned after
+<a href="http://www.w3.org/TR/xpath20/">XPath</a>
+in that one specifies a "path" to a data element of interest.
+The oc path processor uses that path to obtain OCdata reference
+to that data element.
+<p>
+The primary advantage of oc path is that it hides much of the
+explicit tree walking inherent in the standard OC API.
+
+<h2><a name="Operators"><u>OC Path Operators</u></a></h2>
+Associated with each kind of OCobject, there is set of defined
+path operators for controlling the path to a data element.
+The current set of operators are as follows. Note that a syntax
+is used here, but a corresponding API exists (see below).
+<table border=1 cellpadding=5>
+<tr valign="top"><th>OCobject Type<th>Operator<th>Semantics
+<tr valign="top"><td>Dataset<td>o.f<td>Field f of Dataset object o is selected
+<tr valign="top"><td>Structure<td>o.f<td>Field f of Structure object o is selected
+<tr valign="top"><td>Sequence<td>o.f<td>Field f of Sequence object o is selected
+<tr valign="top"><td>Grid<td>o.f<td>Map or Array f of Grid object o is selected
+<tr valign="top"><td><td>o[i1][i2]...[in]<td>The i'th instance of Object o. If o is a dimensioned object, then i1 thru in pick a particular instance from the array of instances of o.
+<tr valign="top"><td><td>o[r]<td>The r'th record of Sequence object o.
+</table
+<p>
+Suppose we have this DDS.
+<pre>
+Dataset {
+  Structure {
+    int32 f1[10];
+  } S1[2];
+  float32 v1;
+} D; 
+</pre>
+Some possible oc path references might be as follows.
+<p>
+<table>
+<tr valign="top"><th>Path<th><th>Object Referenced
+<tr><td colspan=3><hr>
+<tr valign="top"><td>D.v1<td>&mdash;<td>The scalar variable v1.
+<tr valign="top"><td colspan=3><hr>
+<tr valign="top"><td>D.S1[0].f1[5]<td>&mdash;<td>Element 5 of field f1
+in element 2 of S1 within dataset D.
+</table>
+
+<h3><a name="Ranges"><u>Specifying Dimensional Ranges</u></a></h3>
+We extend the dimension notation above to include typical ranges
+used in DAP4. So a dimensional reference of the form "[n1:n2:n3]"
+refers to elements n1 thru n3 stepping by n2.
+
+<h3><a name="API"><u>OC Path API</u></a></h3>
+The programmatic API encodes the equivalent of the syntactic forms
+used above. The programmatic interface ultimately must be used
+to access data referenced by an oc path.
+<p>
+The key object is the following mostly non-opaque structure.
+It is a linked list of OCpath objects representing a sequence
+of path traversal steps.
+<pre>
+struct OCpath {
+    OCobject object; /* The object to from which this path starts */
+    int i;           /* Specify the field if the object is a
+                        Dataset|Structure|Sequence */
+    struct OCrange { /* The set of dimensions/record indices to apply */
+      int start;
+      int stop;
+      int stride;
+    } OCrange[OC_MAX_DIMS];
+    OCdata* ocdata;
+};
+</pre>
+
+The following sections define the specific path API procedures.
+
+<h4><a name="oc_path_create"><u>oc_path_create</u></a></h4>
+The oc_path_create procedure creates an instance
+as input and returns an <i>OCpath</i> object.
+<p>
+<table cellspacing=4>
+<tr><td><b>Usage</b><td><td>
+<tr><td>
+<code>OCerror oc_path_compile(OClink link, char* pathstring, OCpath** pathp)
+</table>
+<table>
+<tr><td colspan=2><b>Parameters</b>
+<tr><td><i>link</i><td> - The link through which the server is accessed.
+<tr><td><i>pathstring</i><td> - The string encoding of a path reference.
+<tr><td><i>pathp</i><td> - A pointer to a location into which the resulting
+compile path string is to be returned.
+</table>
+<table>
+<tr><td colspan=2><b>Return Value</b>
+<tr><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr><td colspan=2><b>Errors</b>
+<tr><td width=20><td>OC_NOERR<td>  - the link was successfully created.
+<tr><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h3><a name="Compiler"><u>Compiling OC Paths</u></a></h3>
+A procedure is provided that will "compile" a string representation
+of a path into the programmatic equivalent.
+
+<h4><a name="oc_path_compile"><u>oc_path_compile</u></a></h4>
+The oc_path_compile procedures takes a string
+as input and returns an <i>OCpath</i> object.
+<p>
+<table cellspacing=4>
+<tr><td><b>Usage</b><td><td>
+<tr><td>
+<code>OCerror oc_path_compile(OClink link, char* pathstring, OCpath** pathp)
+</table>
+<table>
+<tr><td colspan=2><b>Parameters</b>
+<tr><td><i>link</i><td> - The link through which the server is accessed.
+<tr><td><i>pathstring</i><td> - The string encoding of a path reference.
+<tr><td><i>pathp</i><td> - A pointer to a location into which the resulting
+compile path string is to be returned.
+</table>
+<table>
+<tr><td colspan=2><b>Return Value</b>
+<tr><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr><td colspan=2><b>Errors</b>
+<tr><td width=20><td>OC_NOERR<td>  - the link was successfully created.
+<tr><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h3><a name="Exclusions"><u>Excluded Capabilities</u></a></h3>
+<ul>
+<li>OC path is not intended to be a constraint language, so some notion
+of selection is specifically excluded. Client code must do selection
+programmatically.
+</ul>
+
+<h2><a name="Change Log"><u>Change Log</u></a></h2>
+<table>
+<tr><td>06/04/2012<td>-<td>First draft.
+</table>
+
+<h2><a name="Copyright"><u>Copyright</u></a></h2>
+Copyright 2012, UCAR/Unidata and OPeNDAP, Inc.
+
+<h2 class="break"><a name="Examples"><u>Appendix A. Extended Examples</u></a></h2>
+This section shows some extended examples that use the oc path.
+
+</body
+</html>

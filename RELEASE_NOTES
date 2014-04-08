@@ -1,0 +1,48 @@
+OC News and Development History
+
+_________________________________________________________
+2.0 - 6 July 2012
+
+* Complete rebuild of the interface to make it more clear.
+* Removed the dependency on libxdr by including a private
+  implementation of the xdr code.
+* Improved the handling of authorization so that client-side
+  keys are supported.
+* Reduced the amount of generated documentation.
+* Numerous bug fixes.
+_________________________________________________________
+1.0 -20 August 2009
+
+* Added doxygen generated documentation
+* Removed non-autotest testing
+* Removed the executable property on the .c and .h files
+* Fixed various bugs
+* Added OSX_Resources for Mac OSX builds
+* Fixed a client paramter bug
+* Support parameter merging
+* Added missing function to api
+* Made changes for win32 build
+* Made IDL code optional
+
+_________________________________________________________
+0.9.1 -01 July 2009
+
+* Added remote tests
+* Irix fixes
+* Added a user manual
+* Fixed octest error
+* Added code for bug detection
+
+_________________________________________________________
+0.9 -04 April 2009
+
+* This is the initial release of the new C API "OC". This will eventually
+* be replacing the OCAPI-the original C API. We have decided
+* to implement this new API because it offers more functionality
+* that is required (ex. array of structures) and it has half the complexity
+* compared to the OCAPI. Furthermore the lines of code are reduced drastically.
+_________________________________________________________
+0.9 - 04/08/2009
+
+* Initial release
+

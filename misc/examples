@@ -1,0 +1,58 @@
+#!/bin/sh
+
+#V="valgrind --leak-check=full"
+#ALLATONCE=1
+
+TESTS="test.01 test.02 test.06 NestedSeq"
+TESTS="test.06"
+
+LIBS=-lcurl
+
+rm -f ./temphdr ./ex1.c ./ex2.c ./tempfile
+
+./misc/extract octutorial.html 1
+mv ex1.c tempfile
+cat >>ex1.c <<EOF 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <oc.h>
+static void generatedds(OClink,OCdatanode,int);
+static void generateddsattributes(OClink,OCdatanode,int);
+static void check_err(int stat);
+static void indent(int depth);
+EOF
+sed -e 's/&amp;/&/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' <tempfile >> ./ex1.c
+
+gcc -I. -g -O0 -o ex1.exe ex1.c .libs/liboc.a $LIBS
+
+./misc/extract octutorial.html 2
+mv ex2.c tempfile
+cat >>ex2.c <<EOF 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <oc.h>
+#define FAIL(x) if((x) != OC_NOERR)  {abort();}
+static OCerror FC(OClink link, OCdatanode instance);
+static OCerror FF(OClink link, OCdatanode instance);
+static OCerror FL(OClink link, OCdatanode instance);
+static void odom_init(size_t rank, size_t* indices);
+static int odom_more(size_t rank, size_t* indices, size_t* dimsizes);
+static void odom_next(size_t rank, size_t* indices, size_t* dimsizes);
+static void process(OCtype,size_t,size_t,char*,size_t);
+EOF
+if test "x$ALLATONCE" = x1 ; then
+echo '#define ALLATONCE' >>ex2.c
+fi
+
+sed -e 's/&amp;/&/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' <tempfile >> ./ex2.c
+
+gcc -I. -g -O0 -o ex2.exe ex2.c .libs/liboc.a $LIBS
+
+for t in $TESTS; do
+./ex1.exe "file:///home/dmh/svn/oc2.0/tests/testdata/$t"
+./ex2.exe "file:///home/dmh/svn/oc2.0/tests/testdata/$t"
+done
+
+exit

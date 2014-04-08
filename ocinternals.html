@@ -1,0 +1,1078 @@
+<!-- Obsolete ? -->
+<!-- Copyright 2009, UCAR/Unidata and OPeNDAP, Inc. -->
+<!-- See the COPYRIGHT file for more information. -->
+<html>
+<body>
+<center>
+<h2>OC Internals Documentation</h2>
+<h3>Draft: 01/12/2009<br>
+Last Revised: 03/14/2012<br>
+OC Version 1.1</h3>
+</center>
+
+<h2 class="break"><u>Table of Contents</u></h2>
+<ul>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Parsers">Parsers</a>
+  <ul>
+  <li><a href="#DDS/DAS Parser">DDS/DAS Parser: dap.y</a>
+  <li><a href="#Constraint Parser">Constraint Parser: ce.y</a>
+  </ul>
+<li><a href="#OC Node Tree">OC Node Tree</a>
+  <ul>
+  <li><a href="#OCSKIP">struct OCSKIP</a>
+  </ul>
+<li><a href="#OCstate Management">OCstate Management</a>
+  <ul>
+  <li><a href="#OCstate Structure">OCstate Structure</a>
+  </ul>
+<li><a href="#OCstate Trees">OCstate Trees</a>
+<li><a href="#API">API</a>
+<li><a href="#OCDATA API">OC Data Access API</a>
+  <ul>
+  <li><a href="#Caching and Skipping">Caching and Skipping</a>
+  </ul>  
+<li><a href="#Error Handling">Error Handling</a>
+  <ul>
+  <li><a href="#Logging">Logging</a>
+  </ul>
+<li><a href="#OC URI">OC URI</a>
+<li><a href="#Miscellaneous">Miscellaneous</a>
+<li><a href="#Multi-Dimensional Array">Multi-Dimensional Array Handling</a>
+<li><a href="#Change Log">Change Log</a>
+<li><a href="#Copyright">Copyright</a>
+</ul>
+
+<h3><a name="Introduction"><u>Introduction</u></a></h3>
+This document is an ongoing effort to
+describe the internal operation of oc.
+
+<h3><a name="Parsers"><u>Parsers</u></a></h3>
+
+<h4><a name="DDS/DAS Parser"><u>DDS/DAS Parser: dap.y</u></a></h4>
+The dap.y parser parses DDSs, DATADDSs, and DASs.
+The supported syntax is essentially the same
+as the Ocapi parser, but the actions are different.
+Take a production of this form, for example.
+<pre>
+nonterm: nonterm1 nonterm2 nonterm3 ;
+</pre>
+The corresponding action calls an external procedure
+named for the left hand side and taking the values of the
+right side non-terminals as arguments.
+<pre>
+{$$=nonterm(parsestate,$1,$2,$3);}
+</pre>
+
+Note that this form of parsing action was requested by John Caron
+so that the same .y file could be used for C and Java parsers.
+In line with this, all non-terminals are defined to return
+a type of "Object", which is "void*" for C parsers and "Object"
+for Java parsers. The cost is the use of a lot of casting
+in the action procedures.
+<p>
+Note the extra "parsestate" argument. The parsers are constructed as
+reentrant and this argument contains the per-parser state information.
+<p>
+The bodies of the action procedures is defined in a separate file
+called "dapparselex.c".  That file also contains the lexer
+required by the parser. Note that lex was not used because
+of the simplicity of the lexemes.
+<p>
+One of the issues that must be addressed by any bottom-up
+parser is handling the accumulation of sets of items (nodes,
+etc.)
+<p>
+The canonical way that this is handled in the <i>oc</i> parsers
+is to use the following form of production.
+<pre>
+1  declarations:
+2            /* empty */ {$$=declarations(parsestate,NULL,NULL);}
+3          | declarations declaration {$$=declarations(parsestate,$1,$2);}
+4          ;
+</pre>
+The base case (line 2) action is called with NULL arguments to indicate
+the base case. The recursive case (line 3) is called with
+the values of the two right side non-terminals.
+<p>
+The corresponding action code is defined as follows.
+<pre>
+1  Object
+2  declarations(DAPparsestate* state, Object decls, Object decl)
+3  {
+4      Oclist* alist = (Oclist*)decls;
+5      if(alist == NULL) alist = oclistnew();
+6      else oclistpush(alist,(ocelem)decl);
+7      return alist;
+8  }
+</pre>The base case is handled in line 5. It creates and returns
+a Sequence instance; a Sequence is a dynamically extendible
+array of arbitrary items (see below).
+The recursive case is in line 6, where it is assumed that the
+Sequence argument is defined and there is a decl object
+that should be inserted into the sequence.
+<p>
+This pattern, in various forms, is ubiquitous in the parsers.
+
+<h4><a name="Constraint Parser"><u>Constraint Parser: ce.y</u></a></h4>
+The ce.y parser parses DAP url projections
+(see <a href="#OCURI">OCURI</a>).
+There is code to also parse selections,
+but since that is not needed, it is commented out.
+This does not mean that selections are not used, only
+that the selection string is passed unmodified to the server.
+<p>
+Currently, there is no need for this parser, so it is included
+in the source tree, but is not used.
+
+<h3><a name="OC Node Tree"><u>OC Node Tree</u></a></h3>
+As with Ocapi, the dap parser produces a node tree
+defining the DDS (or DAS) structure.
+The node structure (struct OCnode) is defined in <i>ocnode.h</i>
+and has the following fields, some of which are of subsidiary
+struct types that are defined below.
+This particular structure is relatively similar to that of the Ocapi node,
+but with all the extra data storage information elided.
+<p>
+<table>
+<tr><td>unsigned int magic<td>&nbsp;&ndash;&nbsp;<td>A magic number to identify this structure.
+<tr><td>OCtype octype<td>&nbsp;&ndash;&nbsp;<td>Defines the general kind of node.
+<tr><td>OCtype etype<td>&nbsp;&ndash;&nbsp;<td>Used for attribute nodes and primitive nodes to define the primitive type.
+<tr><td>char* name<td>&nbsp;&ndash;&nbsp;<td>From the DDS.
+<tr><td>char* fullname<td>&nbsp;&ndash;&nbsp;<td>Fully qualified name such as a.b.c.
+<tr><td>OCnode* container<td>&nbsp;&ndash;&nbsp;<td>Parent node of this node.
+<tr><td>OCnode* root<td>&nbsp;&ndash;&nbsp;<td>root node of the tree containing this node.
+<tr><td>OCnode* datadds<td>&nbsp;&ndash;&nbsp;<td>The correlated DATA DDS node, if any */
+<tr><td>OCdiminfo dim<td>&nbsp;&ndash;&nbsp;<td>Extra information about dimension nodes.
+<tr><td>OCarrayinfo array<td>&nbsp;&ndash;&nbsp;<td>Extra information about nodes that have rank > 0.
+<tr><td>OClist* subnodes<td>&nbsp;&ndash;&nbsp;<td>(Sequence<OCnode*>) The subnodes of this node.
+<tr><td>Sequence* attributes<td>&nbsp;&ndash;&nbsp;<td>(Sequence<Attributes*>)Any attributes associated with this node.
+<tr><td>struct OCSKIP skip<td>&nbsp;&ndash;&nbsp;
+<td>Extra information about the node vis-a-vis the datadds data
+to improve access times.
+<tr><td>OCtypeinfo<td>&nbsp;&ndash;&nbsp;
+<td>Extra information about type definitions
+if netcdf-4 is being supported.
+<tr><td>OCtypeinfo<td>&nbsp;&ndash;&nbsp;
+<td>Extra information about group definitions
+if netcdf-4 is being supported.
+</table>
+<p>
+The auxilliary structs are as follows.
+<table>
+<tr><th>Struct<th>Field<th><th>Description
+<tr><td>struct OCdiminfo
+<tr><td>
+    <td>OCnode* array
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The defining array node, if known
+<tr><td>
+    <td>unsigned int arrayindex
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The rank position in the defining array node, if known
+<tr><td>
+    <td>ocindex_t declsize
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Dimension size as specified in the (data)DDS
+
+<tr><td>struct OCarrayinfo
+<tr><td>
+    <td>OClist* dimensions
+    <td>&nbsp;&ndash;&nbsp;
+    <td>(Sequence<OCnode*>)The complete set of dimensions
+<tr><td>
+    <td>unsigned int rank
+    <td>&nbsp;&ndash;&nbsp;
+    <td>|dimensions|
+
+<tr><td>struct OCattribute
+<tr><td>
+    <td>char* name
+    <td>&nbsp;&ndash;&nbsp;
+    <td>of the attribute
+<tr><td>
+    <td>OCtype etype
+    <td>&nbsp;&ndash;&nbsp;
+    <td>primitive type of the attribute
+<tr><td>
+    <td>char* name
+    <td>&nbsp;&ndash;&nbsp;
+    <td>of the attribute
+<tr><td>
+    <td>size_t nvalues
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Length of the values field
+<tr><td>
+    <td>char** values
+    <td>&nbsp;&ndash;&nbsp;
+    <td>List of values associated with the attribute
+</table>
+
+<h4><a name="OCSKIP">struct OCSKIP</a></h3>
+The OCSKIP structure requires some detailed explanation
+because it is important in optimizing access to data.
+The idea is that for many DATADDS OCnode objects,
+it is possible to precompute information about that
+object vis-a-vis the xdr formatted data packet.
+In particular it is possible to calculate, sometimes,
+the following information (kept as OCSKIP fields).
+<ol>
+<li>ocindex_t count - defined only for nodes with rank &gt; 0
+as the cross product of the dimension sizes.
+<p>
+<li>ocoffset_t instancesize -
+For some nodes, it is possible to pre-compute
+the exact size of an instance of the node.
+For example, any primitive array that is not of type
+String or URL can have its exact size computed.
+Any Grid, or Structure, or Sequence whose fields
+all have defined totalsizes, can have its instance size
+pre-computed.
+<p>
+<li>ocoffset_t totalsize -
+If the instance size and count are known, then the total
+size of the object is ((instancesize * count) + overhead)
+where the overhead is any preceding counts. For scalars,
+the overhead is zero, for non-string/url primitives, the overhead
+is 8 bytes of xdr data representing the count and its repetition
+(an artifact of the DAP2 protocol xdr encoding).
+<p>
+Note that the totalsize of sequences is not possible to compute
+because the number of records is unknown before any data is fetched.
+<li>ocoffset_t offset -
+If all objects (preceding a node) in the preorder listing of the DATADDS nodes
+have a defined totalsize, then it is possible to define the exact offset
+in the xdr data packet of that node by adding up the total sizes
+of the preceding object. Of course, as soon as a String/URL or Sequence typed
+object is encountered, the offset becomes indeterminate.
+</ol>
+<p>
+The skip values are pre-computed recursively in the procedure
+<i>occomputeskipdata</i> in <i>ocnode.c</i> and should be consulted
+to see how the computation is carried out.
+
+<h3><a name="OCstate Management">OCstate Management</a></h3>
+The overarching concept in the API is that of a <i>OCstate</i>,
+which is an opaque identifier representing a DAP
+state; it is used to maintain persistent state about the state
+to a specific DAP server, as well as the various requests and responses
+between the client and the server.
+<p>
+A good analog is to the FILE object used by C standard IO.
+Like a FILE, an OCstate provides the context for some
+operation or object.
+<p>
+The state is used for a variety of purposes and is as a rule
+the first argument of any of the API procedures.
+
+<h4><a name="OCstate Structure"><u>OCstate Structure</u></a></h4>
+The OCstate structure contains the following fields.
+<table>
+<tr><td>unsigned int magic<td>&nbsp;&ndash;&nbsp;<td>A magic number to identify this structure.
+<tr><td>CURL* curl<td>&nbsp;&ndash;&nbsp;<td>The handle to a CURL connection. Its lifetime
+is that of the OCstate structure.
+<tr><td>OClist* trees<td>&nbsp;&ndash;&nbsp;<td>The set of root objects for previously fetched
+DAP requests. See <a href="#OC Trees">OC Trees</a>.
+<tr><td>OCURI* uri<td>&nbsp;&ndash;&nbsp;<td>URI for fetching data.
+<tr><td>OCbytes* packet<td>&nbsp;&ndash;&nbsp;<td>buffer for temporary storage of fetched data.
+<tr><td>OCcontent* contentlist<td>&nbsp;&ndash;&nbsp;<td>linked list of all created OCcontent objects.
+<tr valign=top><td>struct OCerrdata error<td>&nbsp;&ndash;&nbsp;<td>A struct to hold error return info from server
+(see below).
+<tr valign=top><td>struct OCcurlflags curlflags<td>&nbsp;&ndash;&nbsp;<td>The curl flags to set before fetch.
+(see below).
+<tr valign=top><td>struct OCSSL ssl<td>&nbsp;&ndash;&nbsp;<td>SSL related Authorization and
+authentication information.
+(see below).
+<tr valign=top><td>struct OCproxy proxy<td>&nbsp;&ndash;&nbsp;<td>Proxy information.
+(see below).
+<tr valign=top><td>struct OCcredentials creds<td>&nbsp;&ndash;&nbsp;<td>Credentials for BASIC
+(i.e. password-based) authentication
+(see below).
+</table>
+<p>
+The auxilliary structs are as follows. For the curl flags,
+the curl documentation should be consulted.
+<table>
+<tr valign="top"><th width=200>Struct<th>Field<th><th>Description
+<tr valign="top"><td>struct OCerrdata
+<tr valign="top"><td>
+    <td>char* code
+    <td>&nbsp;&ndash;&nbsp;
+    <td>A numeric error code (in ascii) from the dap server
+<tr valign="top><td>
+    <td>char* message
+    <td>&nbsp;&ndash;&nbsp;
+    <td>A more detailed error message
+<tr valign="top"><td>
+    <td>long httpcode
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Any HTTP error code returned (i.e. 404)
+<tr valign="top"><td>struct OCcurlflags
+<tr valign="top"><td>
+    <td>int compress
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_ENCODING
+<tr valign="top"><td>
+    <td>int verbose
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_VERBOSE
+<tr valign="top"><td>
+    <td>int timeout
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_TIMEOUT
+<tr valign="top"><td>
+    <td>int followlocation
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_FOLLOWLOCATION
+<tr valign="top"><td>
+    <td>int maxredirs
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_MAXREDIRS (=10)
+<tr valign="top"><td>
+    <td>char* useragent
+    <td>&nbsp;&ndash;&nbsp;
+    <td>
+<tr valign="top"><td>
+    <td>char* cookiejar
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_COOKIESESSION, CURLOPT_COOKIEJAR
+<tr valign="top"><td>
+    <td>char* cookiefile
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_COOKIEFILE
+<tr valign="top"><td>struct OCSSL
+<tr valign="top"><td>
+    <td>int validate
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_SSL_VERIFYPEER
+<tr valign="top"><td>
+    <td>char* certificate
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_SSLCERT
+<tr valign="top"><td>
+    <td>char* key
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_SSLKEY
+<tr valign="top"><td>
+    <td>char* keypasswd
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_KEYPASSWD
+<tr valign="top"><td>
+    <td>char* cainfo
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_CAINFO
+<tr valign="top"><td>
+    <td>char* capath 
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_CAPATH
+<tr valign="top"><td>
+    <td>int verifypeer
+    <td>&nbsp;&ndash;&nbsp;
+    <td>CURLOPT_SSL_VERIFYPEER
+<tr valign="top"><td>struct OCproxy
+<tr valign="top"><td>
+    <td>char* host
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The proxy host name
+<tr valign="top"><td>
+    <td>int port
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The proxy port number
+<tr valign="top"><td>struct OCcredentials
+<tr valign="top"><td>
+    <td>char* username
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The username for logging into the proxy
+<tr valign="top"><td>
+    <td>char* password
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The pass word for logging into the proxy
+</table>
+
+<h3><a name="OCstate Trees"><u>OCstate Trees</u></a></h3>
+Every time that a DAP DDS, DAS, or DATADDS is fetched from a server,
+it is parsed and a tree of OCnode instances is constructed.
+The roots of these trees are kept in the OCstate and may be created
+by fetching and destroyed by appropriate interface procedures.
+<p>
+Associated with the root node of every tree is an instance
+of OCtree, which is used to store information about the
+fetch and the tree.
+<p>
+The OCtree structure contains the following fields.
+<table>
+<tr><td>OCdxd dxdclass<td>&nbsp;&ndash;&nbsp;<td>Enumeration instance: one of OCDAS, OCDDS
+or OCDATADDS.
+<tr><td>char* constraint<td>&nbsp;&ndash;&nbsp;<td>The constraint string used when fetching
+the DAP object.
+<tr><td>char* text<td>&nbsp;&ndash;&nbsp;<td>The text of the DAP object as received from
+the server.
+<tr><td>OCnode* root<td>&nbsp;&ndash;&nbsp;<td>Cross link to the root node to which this
+OCtree instance is attached.
+<tr><td>OCstat* state<td>&nbsp;&ndash;&nbsp;<td>Cross link to the state containing the root.
+<tr><td>OClist* nodes<td>&nbsp;&ndash;&nbsp;<td>A list of all nodes in the tree rooted at root.
+</table>
+<p>
+When the dxdclass is OCDATADDS, the the following additional fields
+are defined and used.
+<table>
+<tr><td>unsigned long bod<td>&nbsp;&ndash;&nbsp;<td>offset in the datadds packet to the beginning
+                                of the binary XDR data.
+<tr><td>char* filename<td>&nbsp;&ndash;&nbsp;<td>name of the temporary file for holding
+                             datadds data.
+<tr><td>FILE* file<td>&nbsp;&ndash;&nbsp;<td>FILE object for the temporary file.
+<tr><td>unsigned long filesize<td>&nbsp;&ndash;&nbsp;<td>size of the temporary file.
+<tr><td>XDR* xdrs<td>&nbsp;&ndash;&nbsp;<td>XDR handle for walking the temporary file.
+<tr><td>OCmemdata*&nbsp;memdata<td>&nbsp;&ndash;&nbsp;<td>root of the compiled datadds packet.
+</table>
+
+<!--
+<h4><a name="OCstate Procedural API"><u>OCstate Procedural API</u></a></h4>
+The basic state API is as follows.
+<p>
+<table border=1 cellpadding=5>
+<tr valign=top><th>Operation<th>Arguments<th>Return<th>Semantics
+
+<tr valign=top><td>ocopen
+<td>1.&nbsp;const char* url<br>2.&nbsp;OCstate* statep
+<td>OCerror
+<td>Create an OCstate instance.
+Return a reference to the new state in argument 2.
+
+<tr valign=top><td>occlose
+<td>1.&nbsp;OCstate*
+<td>OCerror
+<td>Close a state and reclaim any associated resources.
+
+<tr valign=top><td>ocfetchdds
+<td>1.&nbsp;OCState*
+<td>OCerror
+<td>Fetch a DDS from the DAP server. The specific DDS is determined by
+the url specified at ocopen().
+The returned DDS is parsed and the rootnode of the parse is stored
+in the State state.
+
+<tr valign=top><td>ocfetchdas
+<td>1.&nbsp;OCstate*
+<td>OCerror
+<td>Fetch a DAS from the DAP server. The specific DAS is determined by
+the url specified at ocopen().
+The returned DAS is parsed and the rootnode of the parse is stored
+in the State state.
+
+<tr valign=top><td>ocfetchdatadds
+<td>1.&nbsp;OCstate*<br>2.&nbsp;const char* constraints
+<td>OCerror
+<td>Fetch a DATADDS from the DAP server.
+Combine the constraints with the URL specified at ocopen
+to create the data to fetch.
+The returned DDS is parsed and the rootnode of the parse is stored
+in the State state. The associated data, referred to here as
+the "data packet" is also captured and stored in a temporary file
+with a random name.
+For security reasons, the file must not already exist,
+and only the creator has read/write permission to the file.
+
+<tr valign=top><td>ocgetdds<td>1.&nbsp;OCstate*<td>OCnode**
+<td>OCerror
+<td>Return the root node of the DDS.
+If <i>ocfetchdds</i> has not been called or if the DDS is malformed,
+then the root will not exist and the value NULL will be returned.
+
+<tr valign=top><td>ocgetdas<td>1.&nbsp;OCstate*<td>OCnode**
+<td>OCerror
+<td>Return the root node of the DAS.
+If <i>ocfetchdas</i> has not been called or if the DAS is malformed,
+then the root will not exist and NULL will be returned.
+
+<tr valign=top><td>ocgetdatadds<td>1.&nbsp;OCstate*<td>OCnode**
+<td>Return the root node of the DATADDS.
+If <i>ocfetchdatadds</i> has not been called or if the DATADDS is malformed,
+then the root will not exist and NULL will be returned.
+</table>
+-->
+
+<h3><a name="API"><u>API</u></h4>
+The API is best understood
+by reading the user's manual
+and following the code for
+procedures of interest.
+The API is defined in oc.[ch].
+<p>
+One important thing to understand is that the
+externally visible API hides the actual definitions
+of the <i>OCstate</i>, <i>OCnode</i>, and <i>OCcontent</i>
+types. This is accomplished by defining
+alternate, externally visible, types that are internally
+mapped to the appropriate actual type and are the values
+passed into and out of the API procedures.
+<p>
+The types and mapping are as follows.
+<ol>
+<li>
+External type <i>OClink</i>
+maps to
+internal type <i>OCstate</i>
+<li>
+External type <i>OCobject</i>
+maps to
+internal type <i>OCnode</i>
+<li>
+External type <i>OCdata</i>
+maps to
+internal type <i>OCcontent</i>
+</ol>
+The three external types are all
+defined as being either
+<ul>
+<li> unsigned int* if the flag OC_FASTCONSISTENCY is defined
+(which it is by default).
+<li> or unsigned long otherwise
+</ul>
+The assumption is that in all cases
+the size of the external type is the same size as <i>void*</i>.
+<p>
+It is important to be able to verify for each API
+that its arguments are semantically correct
+This is handled by the macro <i>OCVERIFY</i>.
+<p>
+If OC_FASTCONSISTENCY is defined, then OCVERIFY
+will check, by casting, for an expected magic number at the beginning
+of the external object.
+If OC_FASTCONSISTENCY is not defined, then a table of all created
+objects is searched.
+Since the fast consistency check is preferable, the option
+of using the object map is only useful in certain debugging
+situations when it might be desirable to track all of the created
+object.
+<p>
+Once an API argument is verified, it needs to be cast
+to the appropriate internal type.  This is accomplished using the
+<i>OCDEREF</i> macro, which casts the argument to the proper type
+and stores it in a specified local variable of internal type.
+
+<h3><a name="OCDATA API"><u>OC Data Access API</u></a></h3>
+Accessing the actual data associated with a DATADDS fetch
+is perhaps the most complex and confusing part of the oc API.
+This is, unfortunately, a direct reflection of the complexity
+of the DAP2 protocol data model, and especially the consequences of
+Sequences.
+<p>
+A navigational interface
+has been defined that allows for simplified walking of the data dds
+packet data.  The navigational interface has been modified multiple
+times, and the one described here is a variation on the one designed
+by Patrick West for the IDL client for OPeNDAP.
+<p>
+The oc user's manual (<i>ocuserman.html</i>)
+should be read to obtain a working understanding
+of the navigational interface (the <i>oc_data_XXX</i> procedures).
+This section discusses the complexities underlying that interface.
+<p>
+In addition to the <i>OCstate</i> structure
+and the <i>OCnode</i> structure,
+the navigational interface defines an <i>OCcontent</i> structure.
+<table>
+<tr><td>unsigned int magic
+    <td>&nbsp;&ndash;&nbsp;
+    <td>A magic number to identify this structure.
+<tr><td>OCmode mode
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The access mode (see below).
+<tr><td>OCstate* state
+    <td>&nbsp;&ndash;&nbsp;
+    <td>the state object to which this content is associated.
+<tr><td>OCnode* node
+    <td>&nbsp;&ndash;&nbsp;
+    <td>the OCnode that serves as template for the data
+        pointed to by this content object.
+<tr><td>OCtree tree
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The specific tree of nodes, typically refers to the DDS tree
+        associated with a DATADS fetch.
+<tr><td>int packed
+    <td>&nbsp;&ndash;&nbsp;
+    <td>True if this content points to packed data,
+	which means that the node octype is OC_PRIMITIVE,
+	its etype is OC_BYTE or OC_CHAR, and it is not a scalar object.
+<tr><td>struct OCCACHE
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Cache to track last index and xdr positions (see below).
+<tr valign="top"><td>struct&nbsp;OCcontent*&nbsp;next
+    <td>&nbsp;&ndash;&nbsp;
+    <td>link to next OCcontent object; allows reclamation and reuse.
+</table>
+<p>
+<!--
+The particular "kind" of subset is specified by a mode flag and corresponds
+to one of the following possible kinds of subsets.
+<ul>
+<li> <i>OCARRAYMODE</i> - This means that the instance is actually some
+     ordered set of instances corresponding to a array of
+     objects. The OCARRAYMODE instance for a dimensioned structure
+     instance, say <code>Structure {...} S[2][3]</code>,
+     represents the 2 X 3 = 6 instances of the structure.
+<li> <i>OCRECORDMODE</i> - This means that the instance is actually some
+     ordered set of records corresponding to some Sequence instance.
+     Thus, the OCRECORDMODE instance for,
+     say <code>Sequence {...} S</code>,
+     represents all the records for a given Sequence.
+<li> <i>OCFIELDMODE</i> - This means that the instance is some set of fields
+     (aka members) of some class of object. In particular, this
+     will correspond to some instance of a Dataset, Structure, Sequence,
+     or Grid. Note that for Grids, the array is field 0 and the maps
+     are fields 1 thru n.
+<li> <i>OCSCALARMODE</i> - This means that the instance is a single data value
+     of some primitive type (e.g. int, float, etc).
+</ul>
+</ul>
+-->
+<p>
+The OCcontent object represents a subset
+of the data (aka an instance) within the data part of a DATADDS response.
+The <i>node</i> field serves as a template for accessing the data
+(in xdr format) pointed to by the <i>OCcontent</i> object.
+<p>
+The mapping between nodes and contents is one-to-many.
+That is, there often will be multiple data instances
+of a given node type in a DATADDS response.
+Consider the following example.
+<pre>
+Dataset {
+  Structure {
+    int16 f11[2];
+    float32 f12;
+  } S1;
+  Structure {
+    int16 f21;
+    float32 f22[2];
+  } S2[3]
+} D1;
+</pre>
+If we have a data response with this DDS, then the
+following instances will exist.
+<table border=1>
+<tr valign=top><th>Class<th>Count<th>Instances
+<tr valign=top><td>D1<td>1<td>D1
+<tr valign=top><td>S1<td>1<td>D1.S1
+<tr valign=top><td>f11<td>2<td>D1.S1.f11[0]<br>D1.S1.f11[1]
+<tr valign=top><td>f12<td>1<td>D1.S1.f12
+<tr valign=top><td>S2<td>3<td>D1.S2[0]<br>D1.S2[1]<br>D1.S2[2]
+<tr valign=top><td>f21<td>3<td>D1.S2[0].f21<br>D1.S2[1].f21<br>D1.S2[2].f21
+<tr valign=top><td>f22<td>6<td>D1.S2[0].f22[0]<br>D1.S2[0].f22[1]<br>
+		    D1.S2[1].f22[0]<br>D1.S2[1].f22[1]<br>
+		    D1.S2[2].f22[0]<br>D1.S2[2].f22[1]
+</table>
+<p>
+The goal is to allow the user to navigate
+to all of the instances contained in a given
+DATADDS data packet and, when desired,
+extract the instance as usable data.
+Note however, that only primitive typed arrays (or scalars)
+can have their data extracted. It is not possible in the current
+interface to, for example, extract a whole Structure object; rather
+it must be be done by extracting each field in turn. This may
+require recursion if one of the fields is itself, for example,
+a Grid, Structure, or Sequence.
+<p>
+The most important internal procedures are as follows.
+<p>
+<table>
+<tr><th>Procedure<th><th>Abbreviated Semantics
+<tr valign="top">
+    <td>OCcontent* ocnewcontent(OCstate* state)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Obtain a unused OCcontent object; either off the free list
+        or using malloc().
+<tr valign="top">
+    <td>void ocfreecontent(OCstate* state, OCcontent* content)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Release a content object onto the free list for later reuse
+
+<tr valign="top">
+    <td>int ocrootdata(struct OCstate*, struct OCnode*, struct OCcontent*)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Obtain an OCcontent object that points to the data dds as a whole
+
+<tr valign="top">        
+    <td>int ocdataith(struct OCstate*, OCcontent*, size_t, OCcontent*)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Move to the i'th "position" of this object as controlled
+        by the object's type and a mode.
+
+<tr valign="top">        
+    <td>int ocgetcontent(struct OCstate*, struct OCcontent*, void* memory,
+                        size_t memsize, size_t start, size_t count)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Extract the data associated with the current content.
+        As mentioned above, this can only be done for primitive
+        array or scalar data.
+
+<tr valign="top">        
+    <td>int ocxdrread(struct OCcontent*, XXDR*, char* memory, size_t, ocindex_t index, ocindex_t count)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>This is the workhorse internal procedure to actually extract the
+        xdr formatted data and convert it to the proper form in memory.
+
+<tr valign="top">        
+    <td>int ocskipinstance(OCnode* node, XXDR* xdrs, int state, int* tagp)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>In order to get to some point in the data, it is often
+        necessary to skip over preceding data. This can be a complex
+        activity when sequences and strings are involved. This procedure
+        handles the skipping over of arbitrary data.
+<tr valign="top">        
+    <td>OCmode modetransition(OCnode* node, OCmode srcmode)
+    <td>&nbsp;&ndash;&nbsp;
+    <td>This procedure determines the mode of the new content
+        returned by the <i>ocdataith</i> procedure.
+</table>
+<p>
+One note about OCcontent objects.  The reason that there
+are explicit create and destroy operations is to allow/force
+the user to control the number of created OCcontent objects
+and to reuse previously created OCcontent objects.  If the API
+created a new object for every call to, say, ocdimcontent,
+then there would be an explosion of OCcontent objects equal to
+the product of the dimension. There would be no way to reclaim them
+either because it would be impossible to know which are still actively in use.
+<p>
+It is important to understand
+the <i>modetransition</i> procedure
+in order to understand how the navigation works.
+The idea is that we have the following pieces of information:
+<ul>
+<li>A current OCcontent object in some current mode
+<li>A new OCcontent object whose mode we wish to determine
+<li>An index specifying the i'th element of the current content object.
+</ul>
+<p>
+The transition table has three columns.
+<ol>
+<li>Mode of the current OCcontent Object
+<li>OCtype of the node associated with the current OCcontent object  
+<li>Mode to be assigned to the new content object representing
+           the i'th element of the current content object.
+</ol>
+<table>
+<tr><th>Case<th>Current Mode<th>Current OCtype<th>New Mode
+<tr><td>1<td>OCARRAYMODE<td>OC_Grid<td>OCFIELDMODE
+<tr><td>2<td>           <td>OC_Structure<td>OCFIELDMODE
+<tr><td>3<td>           <td>OC_Sequence<td>OCSEQUENCEMODE
+<tr><td>4<td>OCSEQUENCEMODE&nbsp;&nbsp;<td>any mode<td>OCFIELDMODE
+<tr><td>5<td>OCFIELDMODE<td>OC_Sequence<td>OCARRAYMODE
+<tr><td>6<td>           <td>OC_Grid<td>OCARRAYMODE
+<tr><td>7<td>           <td>OC_Structure<td>OCARRAYMODE
+<tr><td>8<td>           <td>OC_Primitive<td>OCPRIMITIVEMODE
+</table>
+Any combinations not listed are illegal.
+<p>
+The general idea is that given a set of objects
+(i.e. an array of them or a sequence of them),
+asking for the i'th element should cause transition
+to pointing to the actual i'th data item in the sequence.
+This is seen in cases 1, 2, and 3, where we are transitioning
+from referencing an array of Grids or Structures or Sequences
+to referencing a specific Grid/Structure/Sequence in the array.
+Not that, for purposes of the transitions,
+scalars are considered arrays of size 1.
+Also note that arrays of sequences are supported here, but
+are illegal according to the DAP 2 specification.
+<p>
+Case 4 also shows the same kind of transition, but here
+the transition is from a pointer to a whole Sequence
+to the fields of a specific (i'th) record in the Sequence.
+<p>
+Cases 5, 6, 7, and 8 occur when we are moving from
+to a specific i'th field
+of a Grid object, Structure Object, or Sequence record.
+If the field octype is OC_Structure or OC_Grid, we assume
+that we are moving to an array of those objects, hence the new mode
+is OCARRAYMODE. If the field type is OC_Sequence, then we are
+moving to the Sequence object, hence the mode becomes OC_Sequence.
+If the field type is OC_Primitive, then we have reached the point
+where actual data extraction is possible, so the mode becomes
+OCPRIMITIVEMODE.
+<h4><a name="Caching and Skipping"><u>Caching and Skipping</u></a></h4>
+The <i>OCCACHE</i> structure is
+used to track information that enables
+the <i>ocskipinstance</i> procedure to
+more quickly find a point in the xdr data packet.
+This structure contains the following fields.
+<ol>
+<li>int valid - 1 if this cache is valid, 0 otherwise
+<li>ocindex_t index - the last index argument reached by the OCcontent object
+<li>ocindex_t maxindex -  max allowable index, if known, 0 => max is unknown;
+                          used to check for index out of bounds errors
+                          in <i>oc_data_ith</i> calls.
+<li>ocoffset_t offset - offset (from 0) of the index'th object encountered.
+</ol>
+The idea is that as <i>oc_data_ith</i> is applied to an OCcontent object,
+with different index arguments, the cache tracks the last index used
+and the associated xdr offset of that index'th object.
+<p>
+The <i>ocdataith</i> and <i>ocskipinstance</i> procedures
+use the
+<a href="#OCSKIP">OCSKIP</a> and
+OCCACHE information to efficiently point to, or skip over, objects
+in the xdr data cache.
+For example, if the user is trying to reach the i'th element
+in a primitive typed array field inside a structure, and the
+offset of the field is known in the OCSKIP information, then
+a simple calculation will immediately produce a pointer into
+the xdr data packet to the beginning of that primitive typed
+field. At that point, <i>oc_data_get</i>
+can quickly extract the data directly from the xdr data packet.
+<p>
+Even if the offset is not known, other information such as
+the total object size, or even the instance size,
+can speed up access by changing what would otherwise be a series
+of data reads (looking for counts or record tags, for example)
+into a mix of data reads and repositionings that is faster than
+the reads alone.
+<p>
+Further, by caching the last referenced index and its corresponding
+xdr data packet offset, the OCCACHE information can speed
+up a call to <i>oc_data_ith</i> to access the index'th + 1 object
+because the search can start with the cached information rather
+than having to begin at position zero.
+
+<!--
+<h3><a name="OC Data Compilation"><u>OC Data Compilation</u></a></h3>
+The original Ocapi operated by converting the xdr packet
+to an in-memory structure attached to the node tree of the DDS
+(although it did not handle the full DDS).
+The base version of oc, however, leaves the data in the packet
+and extracts it as needed during the processing of OCcontent
+operations: in effect it does lazy extraction.
+The assumption is that if the data is to be accessed once,
+then lazy is the appropriate choice.
+If the same data is to be accessed N times (where N is &gt; 1),
+then pre-compiling the xdr data into a memory structure may be
+more efficient for some values of N.
+<p>
+In order to experiment with this issue, the API
+<pre>
+extern int oc_compile(OCstate*);
+</pre>
+has been added. It does a one-time conversion of the xdr data
+to an in-memory structure. The OCcontent API operations
+(ocfieldcontent, etc.) will use the memory version if it is available.
+-->
+
+<h3><a name="Error Handling"><u>Error Handling</u></a></h3>
+Error handling in <i>oc</i>  is somewhat different than in Ocapi,
+and follows mostly the netCDF model.  That is, procedures
+return simple numeric error codes to indicate success
+(OC_NOERR) or failure (OC_EXXX). The current error codes are defined
+in oc.h, but it needs reorganization and extension.
+
+<h4><a name="Logging"><u>Logging</u></a></h4>
+One good thing about Ocapi was that it provided a mechanism for
+returning detailed error information strings.
+In order to keep something like that, <i>oc</i> has a log mechanism
+(oclog.[ch])
+that can be used to dump extra error or warning info
+and it can be used to dump debug info (see the DEBUG macros
+in ocdebug.h).
+<p>
+The logging interface is defined by the following procedures,
+but they are just the internal versions of the ones
+described in <i>ocuserman.html</i>
+<ul>
+<li>void oc_loginit(void)
+<li>void oc_setlogging(int tf)
+<li>void oc_logopen(const char* file)
+<li>void oc_logclose(void)
+<li>void oc_log(int tag, const char* fmt, ...)
+<li>void oc_logtext(int tag, const char* text)
+</ul>
+
+<h3><a name="OCURI"><u>OCURI</u></a></h3>
+Surprisingly, it appears that libcurl does not export
+any kind of URL parsing capability. Therefore, the ocuri
+type was created to support this. It is defined in <i>ocuri.[ch]</i>.
+In the following the terms "url" and "uri" will be used interchangeably,
+even though there are subtle semantic differences.
+<p>
+The uri is assumed to be (most generally)
+of the form
+<pre>[param=...,param=...,...]protocol://username:password@host:port/file?constraint</pre>
+The constraint, in turn is composed of projections and selections.
+<pre>?projection,projection,...&selection&selection...</pre>
+<p>
+The OCURI structure contains the following fields.
+<table>
+<tr valign="top"><td>char*&nbsp;uri
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The uri as originally passed in to the parser
+<tr valign="top"><td>char*&nbsp;protocol
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Protocol field (e.g. "https") of the uri
+<tr valign="top"><td>char*&nbsp;user
+    <td>&nbsp;&ndash;&nbsp;
+    <td>User name field; NULL if not present
+<tr valign="top"><td>char*&nbsp;password
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Password field; NULL if not present
+<tr valign="top"><td>char*&nbsp;host
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Host field
+    <td>
+<tr valign="top"><td>char*&nbsp;port
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Port number; 0 if not present
+    <td>
+<tr valign="top"><td>char*&nbsp;file
+    <td>&nbsp;&ndash;&nbsp;
+    <td>File part of the uri, with the leading '/'
+<tr valign="top"><td>char*&nbsp;constraint
+    <td>&nbsp;&ndash;&nbsp;
+    <td>Constraint (not including leading '?'); NULL if not present
+    <td>
+<tr valign="top"><td>char*&nbsp;projection
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The projections in the constraint; NULL if not present.
+<tr valign="top"><td>char*&nbsp;selection
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The selections in the constraint; NULL if not present.
+<tr valign="top"><td>char*&nbsp;params
+    <td>&nbsp;&ndash;&nbsp;
+    <td>The parameters in the constraint; NULL if not present.
+    <td>
+<tr valign="top"><td>char**&nbsp;paramlist
+    <td>&nbsp;&ndash;&nbsp;
+    <td>A "compiled" version of the params in envv format,
+        where paramlist[i] is the param name
+        and paramlist[i+1] is the param value.
+	The whole list is NULL terminated.
+        It is assumed that the name part and the value part are never NULL.
+        Rather, the empty string ("") is used to indicated no value.
+</table>
+<p>
+The most important parts of the ocuri API are as follows.
+<p>
+<table>
+<tr valign=top><th>Operation<th><th>Semantics
+<tr valign=top>
+<td>int ocuriparse(const char* uri, OCURI** ocurip)
+<td>&nbsp;&ndash;&nbsp;
+<td>Creates an instance of <i>OCURI</i>,
+stores the pointer to it in <i>ocurip</i>,
+and fills the created instance with data
+from parsing the uri string into its component parts.
+It returns 0 if fails, 1 otherwise.
+
+<tr valign=top>
+<td>void ocurifree(OCURI* ocuri)
+<td>&nbsp;&ndash;&nbsp;
+<td>Free all the memory associated with the argument,
+    including the argument instance.
+
+<tr valign=top>
+<td>int ocuridecodeparams(OCURI* ocuri)
+<td>&nbsp;&ndash;&nbsp;
+<td>Parses ocuri->params into ocuri->parmlist
+
+<tr valign=top>
+<td>const&nbsp;char*&nbsp;ocurilookup(OCURI*&nbsp;ocuri,&nbsp;const&nbsp;char*&nbsp;param)
+<td>&nbsp;&ndash;&nbsp;
+<td>Searches ocuri->paramlist for a match to param.
+If not found, then return NULL, otherwise return the
+value associated with the param; an empty value is represented
+by the zero-length string "", not by NULL.
+
+<tr valign=top>
+<td>char* ocuriencode(char* s, char* allowable);
+<td>&nbsp;&ndash;&nbsp;
+<td>Applies URL character encoding and returns
+a new encoded instance of <i>s</i>.
+The set of characters to not encode is specified
+by the <i>allowable</i> argument.
+
+<tr valign=top>
+<td>char* ocuribuild(OCURI* ocuri, const&nbsp;char* prefix, const&nbsp;char* suffix, int flags)
+<td>&nbsp;&ndash;&nbsp;
+<td>Construct a url string from the fields in <i>ocuri</i>;
+the new url is prefixed (before any parameters are added)
+with the <i>prefix</i> argument
+and suffixed (before any constraints are added) with the
+<i>suffix</i> argument; the protocol, host, port, and file
+parts are always included, and the <i>flags</i> argument
+(possibly an or of multiple flags)
+determines what other parts are included as follows
+<ul>
+<li>OCURICONSTRAINTS - include the constraints
+<li>OCURIUSERPWD - include user name and password
+<li>OCURIPARAMS	- include the parameters in the parameter list
+<li>OCURIENCODE	- url encode the output
+</ul>
+</table>
+
+<h3><a name="Miscellaneous"><u>Miscellaneous</u></a></h3>
+The two datatypes OClist and OCbytes are used through out the
+code.  They correspond closely in semantics to the Java Arraylist
+and Stringbuffer types, respectively.  They are used to help
+encapsulate dynamically growing lists of objects or bytes
+to reduce certain kinds of errors.
+<p>
+The canonical code for non-destructive walking of a Sequence<T>
+is as follows.
+<pre>
+for(i=0;i&lt;oclistlength(list);i++) {
+    T* element = (T*)oclistget(list,i);
+    ...
+}
+</pre>
+<p>
+OCbytes provides two ways to access its internal buffer of characters.
+One is "ocbytescontents()", which returns a direct pointer to the buffer,
+and the other is "ocbytesdup()", which returns a malloc'd string containing
+the contents and null terminated.
+
+<h3><a name="Multi-Dimensional Array"><u>Multi-Dimensional Array Handling</u></a></h3>
+Within a data packet, the DAP protocol "linearizes" multi-dimensional
+arrays into a single dimension. The rule for converting a multi-dimensional
+array to a single dimensions is as follows.
+<p>
+Suppose we have the DDS field <code>Int F[2][5][3];</code>.
+There are obviously a total of 2 X 5 X 3 = 30 integers in F.
+Thus, these three dimensions will be reduced to a single dimension of size 30.
+<p>
+A particular point in the three dimensions, say [x][y][z], is reduced to
+a number in the range 0..29 by computing <code>((x*5)+y)*3+z</code>.
+The corresponding general C code is as follows.
+<pre>
+size_t
+dimmap(int rank, size_t* indices, size_t* sizes)
+{
+    int i;
+    size_t count = 0;
+    for(i=0;i&lt;rank;i++) {
+	count *= sizes[i];
+	count += indices[i];
+    }
+    return count;
+}
+</pre>
+In this code, the indices variable corresponds to the x,y, and z.
+The sizes variable corresponds to the 2,5, and 3.
+
+<h3><a name="Change Log"><u>Change Log</u></a></h3>
+<ul>
+<li>01/21/2011 - Revised to discuss the new data walking algorithms;
+                 clean up, and fix inconsistencies with the code.
+<li>06/02/2009 - Revised to remove material essentially duplicated in the
+                 users manual
+<li>04/24/2009 - Revised to support the new API and new names.
+<li>01/31/2009 - Defined the content-based navigational
+interface to supercede all others.
+<li>01/27/2009 - Significant modifications to include navigational interface.
+<li>01/12/2009 - First draft.
+</ul>
+
+<h3><a name="Copyright"><u>Copyright</u></a></h3>
+Copyright 2009, UCAR/Unidata and OPeNDAP, Inc.
+</body
+</html>
+

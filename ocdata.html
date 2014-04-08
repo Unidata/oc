@@ -1,0 +1,477 @@
+<!-- This document is, I think, obsolete -->
+<html>
+<h3 class="break"><u><a name="Data">Data Management</a></u></h3>
+The procedures described in this section
+allow for the location and extraction
+of data from the data packet part of a DATADDS.
+<p>
+Before starting, it is important to know that the relationship
+between objects (of type OCobject) and the associated data is not
+a simple one. The reason for this is that a single OCobject
+may be associated with multiple instances of data. This is commonly
+noted as being one-to-many (one OCobject is associated with many
+pieces of data. For an example, consider a structure that has a single
+dimension. There is one OCobject for the structure, but there will be
+multiple instances of that structure: one for each element in the dimension.
+<p>
+Data is assumed to be "nested" in the sense that, for example,
+the data of each field of a structure is "contained" in the
+data of the structure.  The whole of the data packet data
+is the data associated with the Dataset OCobject.
+<p>
+The key idea is then that given access to some instance of
+the data for a container object (dataset, structure,
+sequence, or grid), it is possible to "move" to an instance
+of some field within the container.  This process can
+recurse if the field is itself a container. If the field is,
+however, a primitive type (e.g. int, float, etc), then the
+only thing that can be done is to extract some or all of the
+data associated that primitive typed field.
+<p>
+If a container is a dimensioned structure, then its associated
+data will consist of a linear array of instances of that structure:
+one for each value of the dimension. Thus, if we had
+<pre>
+Structure {...} S[4];
+</pre>
+then we would have an array of four structure instances one after
+another.  So, when given a dimensioned array, we must first "move"
+to the i'th element in the array of structures before we can
+move to some field of that instance of the structure.
+<p>
+Analogously, if we have a Sequence, its data is a linear sequence
+of some number of records. So, we must first move to the r'th record
+before we can move to a specific field of that record.
+The movement from object to object is performed by the a related set
+of operations specific to the particular container and the particular
+case of dimensioned structures or sequence records.
+<p>
+In order to track the state of our "movements" through the
+data, we define a <i>OCdata</i> type of object. The idea is
+that if we have, for example, an <i>OCdata</i> object
+referring to, say, the data of an undimensioned Structure,
+then we can apply one of our operators to produce another
+<i>OCdata</i> object to refer to the data of some specific
+field of that structure. Moving to the i'th element of an array
+or the r'th record of a sequence will be handled by similar
+operators.
+<p>
+In order to kick off this whole process, we need to have
+an <i>OCdata</i> object referring to the data for the whole
+dataset.
+<p>
+The process proceeds as follows:
+<p>
+First, obtain the
+<i>OCdata</i>
+object for the whole dataset by calling
+<a href="#oc_dds_getdataroot">oc_dds_getdataroot</a>.
+This procedure takes the root of the DDS tree as one of its
+arguments and returns the root of the data tree.
+<p>
+Next, "move" to a specific field of the dataset
+by invoking 
+<a href="#oc_data_moveto_field">oc_data_moveto_field</a>.
+<p>
+If, for example, the dataset field is a dimensioned structure,
+then we can move to an element of that array using
+<a href="#oc_data_moveto_dimension">oc_data_moveto_dimension</a>.
+At that point, we will have a reference to the data for
+some element (i.e. an instance of a structure), we can
+move to a specific field of that structure using, again,
+<a href="#oc_data_moveto_field">oc_data_moveto_field</a>.
+<p>
+If, for example, the dataset field is a Sequence,
+then we can move to a specific record of that sequence using
+<a href="#oc_data_moveto_record">oc_data_moveto_record</a>.
+At that point, we will have a reference to the data for
+some record and we can
+move to a specific field of that record using, again,
+<a href="#oc_data_moveto_field">oc_data_moveto_field</a>.
+<p>
+This process can be repeated until we finally reach a primitive typed field.
+At this point, it is time to actually read the data using the
+<a href="#oc_data_get">oc_data_get</a>
+function to obtain the actual data.
+<p>
+One obvious question arises: if we move to, say, some field, how do
+we know what is the type of the field and how do we know if the field
+is dimensioned.  The answer is that there a function
+<a href="#oc_data_octype">oc_data_octype</a> that will
+tell you the kind of object. Additionally, there is another function
+<a href="#oc_data_dimension">oc_data_dimension</a> that will tell you
+the (single) dimension, if any.
+If the data is actually multi-dimensional, then it is treated
+as its one dimensional equivalent using the rules defined
+<a href="#multi">for converting from n dimensions to one dimension</a>
+Technically, these two function are convenient but redundant since
+they can be computed using the appropriate combination of
+<a href="#oc_data_object">oc_data_object</a>,
+<a href="#oc_inq_type">oc_inq_type</a>,
+<a href="#oc_inq_rank">oc_inq_type_rank</a>,
+<a href="#oc_inq_dimset">oc_inq_type_dimset</a>,
+<a href="#oc_inq_dimset">oc_inq_type_dimset</a>,
+and 
+<a href="#oc_inq_ithdim">oc_inq_type_ithdim</a>.
+<p>
+One more thing. If the object is a grid, then field 0 is the array of grid
+and fields 1 through m are the grid coordinate variables.
+
+<h4 class="break"><u><a name="Data Free">OCdata New/Free</a></u></h4>
+Before discussing the data move operations, it is desirable
+to first discuss the API procedures for creating and destroying
+instance of <i>OCdata</i>.
+
+<h4><a name="oc_data_new"><u>oc_data_new</u></a></h4>
+The procedure oc_data_new creates a reusable OCdata object
+that can be associated with any sub-data of a DATADDS packet.
+<p>
+The reason that there are explicit <i>oc_data_new</i> and
+<i>oc_data_free</i> operations is to allow/force the user to
+control the number of created OCdata objects and to reuse
+previously created OCdata objects.  If the API created a
+new object for every call to, say, <i>oc_data_moveto_dimension</i>, then
+there would be an explosion of OCdata objects equal to
+the the number of elements in each array.
+There would be no way to
+reclaim them either because it would be impossible to know
+which were still actively in use.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCdata&nbsp;oc_data_new</code>
+<td><code>(OClink link);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>The newly created OCdata instance.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_free"><u>oc_data_free</u></a></h4>
+The procedure oc_data_free reclaims the resources
+associated with some OCdata object.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_free</code>
+<td><code>(OClink link, OCdata ocdata);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>ocdata</i><td> - The OCdata object to be reclaimed.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4 class="break"><u><a name="Data API">OCdata Related API Procedures</a></u></h4>
+
+<h4><a name="oc_data_root"><u>oc_data_root</u></a></h4>
+Return the OCdata object
+that refers to the whole data associated with a
+DATADDS request.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_root</code>
+<td><code>(OClink link, OCobject root, OCdata ocdata);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>root</i><td> - The root object for some
+DATADDS content obtained via the <a href="#oc_fetch">oc_fetch</a>
+procedure.
+<tr valign=top><td><i>ocdata</i><td> - An OCdata object
+to which the root content will be associated.
+Typically, this object will have been created using
+<a name="oc_data_new"><u>oc_data_new</u></a>.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_moveto_field"><u>oc_data_moveto_field</u></a></h4>
+This procedure assumes that its input <i>OCdata</i> object
+is a container of type Dataset, Structure, or Sequence.
+It modifies the second <i>OCdata</i> argument to "point"
+to the i'th field of the container.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_moveto_field</code>
+<td><code>(OClink link, OCdata container,</code>
+<tr><td><td><code>size_t fieldindex, OCdata fielddata);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>container</i><td> - The OCdata object associated
+with a container and for which we want to get a pointer to the data for
+the "ith" field.
+<tr valign=top><td><i>fieldindex</i><td> - Specifies the i'th
+field of the parent OCdata container object.
+<tr valign=top><td><i>fielddata</i><td> - The fielddata OCdata
+object is modified to "point" to the i'th field of the container's data.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>OC_EINDEX<td> - if the fieldindex is greater than the number of fields in the container.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_moveto_dimension"><u>oc_data_moveto_dimension</u></a></h4>
+This procedure assumes that its input <i>OCdata</i> object
+is an array of objects. It modifies the second <i>OCdata</i> argument to "point"
+to the i'th element of the dimensions.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_moveto_dimension</code>
+<td><code>(OClink link, OCdata array,</code>
+<tr><td><td><code>size_t dimindex, OCdata elementdata);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>array</i><td> - The OCdata object associated
+with an array and for which we want to get a pointer to the data for
+the i'th element.
+<tr valign=top><td><i>dimindex</i><td> - Specifies the i'th
+element of the parent OCdata array object.
+<tr valign=top><td><i>elementdata</i><td> - The elementdata OCdata
+object is modified to "point" to the i'th element of the array's data.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>OC_EINDEX<td> - if the dimindex is greater than the number of elements in the array.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_moveto_record"><u>oc_data_moveto_record</u></a></h4>
+This procedure assumes that its input <i>OCdata</i> object
+is a sequence consisting of some number of records.
+It modifies the second <i>OCdata</i> argument to "point"
+to the i'th record of the sequence.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_moveto_dimension</code>
+<td><code>(OClink link, OCdata sequence,</code>
+<tr><td><td><code>size_t recordindex, OCdata recorddata);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>sequence</i><td> - The OCdata object associated
+with a sequence and for which we want to get a pointer to the data for
+the i'th record.
+<tr valign=top><td><i>recordindex</i><td> - Specifies the i'th
+record of the parent OCdata array object.
+<tr valign=top><td><i>recorddata</i><td> - The recorddata OCdata
+object is modified to "point" to the i'th record of the sequence's data.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>OC_EINDEX<td> - if the recordindex is greater than the number of records in the sequence.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_get"><u>oc_data_get</u></a></h4>
+The procedure oc_data_get extracts data from the a primitive typed
+field and stores it into memory for use by the client code.
+<p>
+The OCdata is assumed to be referencing either a scalar
+primitive value or an array of primitive values.
+Scalars are treated as one dimensional arrays of length 1, so
+if scalar, then the index must be 0 and count must be 1.
+If the data is actually multi-dimensional, then it is treated
+as its one dimensional equivalent using the rules defined
+<a href="#multi">for converting from n dimensions to one dimension</a>
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_get</code>
+<td><code>(OClink link, OCdata fielddata,</code>
+<tr><td><td><code>void* memory, size_t memsize,</code>
+<tr><td><td><code>size_t firstindex, size_t count);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>fielddata</i><td> - The OCdata field
+from which data is to be extracted.
+<tr valign=top><td><i>memory</i><td> - Specifies the 
+chunk of client memory into which the extracted data is to be stored.
+<tr valign=top><td><i>startindex</i><td> - Specifies the index of the
+first element of the array at which to begin extraction.
+<tr valign=top><td><i>count</i><td> - Specifies number of
+values of the array to be extracted. Thus, the elements
+<i>startindex</i> thru <i>startindex + count - 1</i> are
+extracted.  The type of the extracted values is determined
+by the type of the fielddata object.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>OC_EINDEX<td> - if the start index is greater than the number of elements in the array.
+<tr valign=top><td width=20><td>OC_ECOUNT<td> - if start+count-1 is greater than the number of elements in the array.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_octype"><u>oc_data_octype</u></a></h4>
+This procedure returns the <i>OCtype</i> of the
+object associated with some specified <i>OCdata</i> object.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_octype</code>
+<td><code>(OClink link, OCdata ocdata, OCtype* typep);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>ocdata</i><td> - The OCdata object of interest.
+<tr valign=top><td><i>typep</i><td> - A pointer into which the
+<i>OCtype</i> value is stored.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_dimension"><u>oc_data_dimension</u></a></h4>
+This procedure returns the size of the (single) dimension
+of the object associated with some specified <i>OCdata</i> object
+&ndash remember that multiple-dimensions are converted to a single dimension.
+If the size is zero, then the object is a scalar.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_dimension</code>
+<td><code>(OClink link, OCdata ocdata, size_t* sizep);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>ocdata</i><td> - The OCdata object of interest.
+<tr valign=top><td><i>sizep</i><td> - A pointer into which the
+size of the dimension is stored.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+
+<h4><a name="oc_data_object"><u>oc_data_object</u></a></h4>
+It may sometimes be useful to have the
+ OCobject associated with some specified <i>OCdata</i> object.
+That is, the associated data is an instance of the returned object.
+<a href="#Data">As mentioned before</a>, the relationship between
+an OCobject and an OCdata is one-to-many, so that means that
+the inverse relationship 
+between OCdata and an OCobject is many-to-one, so that means that
+this function is always well-defined.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_object</code>
+<td><code>(OClink link, OCdata ocdata, OCobject* objectp);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>ocdata</i><td> - The OCdata object of interest.
+<tr valign=top><td><i>objectp</i><td> - A pointer into which the
+object is stored.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+
+<h4><a name="oc_data_recordcount"><u>oc_data_recordcount</u></a></h4>
+The procedure oc_data_recordcount
+computes the the number of records for some some Sequence instance.
+Note that this is potentially computationally costly.
+<p>
+<table cellspacing=4>
+<tr valign=top><td><b>Usage</b><td><td>
+<tr valign=top><td><code>OCerror&nbsp;oc_data_recordcount</code>
+<td><code>(OClink link, OCdata seqdata, size_t* countp);</code>
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Parameters</b>
+<tr valign=top><td><i>link</i><td> - The link through which the server is accessed.
+<tr valign=top><td><i>seqdata</i><td> - The OCdata object pointing to
+a sequence.
+<tr valign=top><td><i>countp</i><td> - A pointer into which the
+count of the number of records is stored.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Return Value</b>
+<tr valign=top><td width=20><td>Any error associated with invoking the procedure.
+</table>
+<table>
+<tr valign=top><td colspan=2><b>Errors</b>
+<tr valign=top><td width=20><td>OC_NOERR<td>  - the procedure executed normally.
+<tr valign=top><td width=20><td>Other Error<td> - one of the arguments (link, etc.) was invalid.
+</table>
+</html>

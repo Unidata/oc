@@ -1,0 +1,1434 @@
+<!- Copyright 2009, UCAR/Unidata and OPeNDAP, Inc. --> 
+<!- See the COPYRIGHT file for more information. --> 
+<html> 
+<style> 
+.break { page-break-before: always; } 
+body { counter-reset: H2; font-size: 12pt; } 
+h2:before { 
+  content: counter(H2) " "; 
+  counter-increment: H2; 
+} 
+h2 { counter-reset: H3; } 
+h3:before { 
+  content: counter(H2) "." counter(H3) " "; 
+  counter-increment:H3; 
+} 
+h3 { counter-reset: H4; }
+h4:before { 
+  content: counter(H2) "." counter(H3) "." counter(H4) " "; 
+  counter-increment:H4; 
+} 
+h4 {
+margin: 0px;
+padding: 0px;
+}
+h5 {font-size: 14pt; } /* For Appendices */ 
+h6 {font-size: 16pt; } /* For Subtitles */ 
+dt { margin: 0px; padding: 0px; }
+dl { margin: 0px; padding: 0px; }
+pre { margin-top: 0px; padding: 0px; }
+.fcn {
+font-size: 120%;
+text-decoration:underline;
+margin-top: 1em ;
+}
+</style> 
+<body>
+
+<center>
+<h1>OC Users Manual</h1>
+<h1>Draft: 06/04/2009
+Last Revised: 06/06/2012
+OC Version 2.0</h1>
+</center>
+
+<h1 class="break"><u>Table of Contents</u></h1>
+<ol>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Overview">API Overview</a>
+<li><a href="#Error Handling">Error Handling</a>
+<li><a href="#API Types">API Types</a>
+<li><a href="#API Procedures">API Procedures</a>
+  <ol>
+  <li><a href="#Link">Link Management</a>
+  <li><a href="#Tree">Tree Management</a>
+  <li><a href="#Node">Node Management</a>
+  <li><a href="#Attribute">Attribute Management</a>
+  <li><a href="#Attach">Node Interconnection Procedures</a>
+  <li><a href="#Instance">Instance Management</a>
+  <li><a href="#Iterator">Iteration Management</a>
+  <li><a href="#Read">Read Instance Data</a>
+  <li><a href="#Misc Instance">Miscellaneous Instance Procedures</a>
+  <li><a href="#OCtype">OCtype Procedures</a>
+  <li><a href="#Logging">Logging</a>
+  <li><a href="#Misc">Miscellaneous Procedures</a>
+  <li><a href="#Experimental">Experimental Procedures</a>
+  </ol>
+<li><a href="#dodsrc">Configuration File: .dodsrc</a>
+<li><a href="#SSL">SSL Client-Side Keys Support</a>
+<li><a href="#build">Compiling and Executing oc-based Programs</a>
+<li><a href="#install">Configure Options</a>
+<li><a href="#Change Log">Change Log</a>
+<li><a href="#Copyright">Copyright</a>
+<p>
+<dl>
+<dt><a href="#Multi">Appendix A.Multi-Dimensional Arrays</a>
+<dt><a href="#Odom">Appendix B. Iteration Using Odometers</a>
+</dl>
+</ol>
+
+<h2 class="break"><a name="Introduction"><u>Introduction</u></a></h2>
+OC is a completely new implementation of the client side OPeNDAP
+data retrieval system. It has the following properties.
+<ul>
+<li>It is completely implemented in C; no C++ is required.
+<li>It completely replaces the previous OCAPI system.
+<li>It provides a complete API that does not require knowledge
+of the internals of OC. This interface was strongly influenced
+by the netCDF interface.
+</ul>
+
+<p>
+Version 2.0 introduces a completely new access model that (one hopes)
+provides a clearer and simpler API.
+<p>
+This document is intended for developers. It documents
+the API as defined in the <i>oc.h</i> file.
+Familiarity with DAP2 concepts such as DAS, DDS, and DataDDS are assumed. 
+In addition, it is desirable if the reader has is familiar with the
+contents of the <i>octutorial.html</i> document.
+
+<h2><a name="Overview"><u>API Overview</u></a></h2>
+The <i>oc</i> API is based on the concept of tree data structures. 
+The DDS, the DAS, the DATADDS, and the DATADDS data (aka data tree) 
+all are represented as trees. 
+Trees are recursive in that a given node 
+has "subnodes" as defined by the node's edges. 
+So, given a tree, it is possible to "traverse" it starting at 
+its root and moving to sucessive subnodes. 
+<p> 
+Consider, for example, this DDS. 
+<pre> 
+Dataset { 
+  Structure { 
+    int32 f0; 
+    float64 f1; 
+  } S1[2]; 
+  byte v1; 
+} D; 
+</pre> 
+We can represent the corresponding tree as follows, with depth 
+levels at the left. 
+<pre> 
+[0] Dataset D 
+[1]   Structure S1[2] 
+[2]    int32 f0 
+[2]    float32 f1 
+[1]  byte v1; 
+</pre> 
+Alternatively, in graph form, it looks like this. 
+<p> 
+<img src="https://docs.google.com/drawings/pub?id=19jrjn-7WjlkmYIshSeuE0N3gpxM7hW-jF271yieIlIo&amp;w=364&amp;h=334"> 
+<p> 
+The Dataset, D, is the top level node. 
+D has two subnodes: S1 and v1. S1, in turn, has two 
+subnodes: f0, and f1.  These nodes &ndash; f0, f1, and v1 &ndash; 
+are sometimes referred to as leaves because they have no subnodes 
+and cannot be further traversed. 
+<p> 
+The key operations of the API consist of obtaining a reference 
+to the root node of a tree and then "walking" around the tree 
+by asking for the subnodes of a nod, or asking for the container 
+of a node. 
+<p> 
+Be warned, however, that walking around 
+a data tree has some complications not present when 
+walking around a DAS or DDS. 
+<p> 
+In addition to tree movement operations, there are operations to 
+<ol> 
+<li> establish a link to a dataset on a server, 
+<li> fetch template information (e.g. the DDS and/or DAS) for that dataset, 
+<li> fetch data from that dataset using information from the template 
+     and, if desired, constraints on the data to be fetched. 
+</ol> 
+<p> 
+Every time that the client invokes 
+the <i>oc_fetch</i> procedure 
+the following actions occur. 
+<ol> 
+<li>A request is sent to an OPeNDAP server 
+to obtain template information about either a DAS, a DDS, or a DATADDS. 
+<li>The server returns a response 
+containing information relevant to the request. 
+This information may be a DAS, a DDS, or a DATADDS. 
+Recall that the DATADDS has two parts. At the front 
+of the DATADDS packet is a modified version of the DDS. 
+Following that DDS is the actual data. 
+<li>The textual part of the response is parsed 
+to produce a tree whose nodes are of type <i>OCnode</i>. 
+<li>The data part is also converted 
+to a <i>data tree</i>  (see <a href="#Example2">example 2</a>). 
+<li>The client uses the tree walking API defined in this document
+to traverse the trees. 
+</ol> 
+<p> 
+The client code can perform as many fetches as it desires 
+with varying constraints on the fetch request. 
+The root nodes of the resulting trees are available 
+for client actions. 
+When finished with a tree, the user can (and should) 
+release the tree and have its resources reclaimed. 
+<p> 
+It should also be noted that as a rule, the DAS tree is rarely 
+used directly. Rather, an operation called 
+<i>oc_attach_attr</i> 
+is provided to attach the attributes in the DAS to some DDS node. 
+
+<h2><a name="Error Handling"><u>Error Handling</u></a></h2>
+Most of the API procedures return a
+value of type <i>OCerror</i>
+to indicate some kind of error status.
+Positive valued error values
+map directly to the standard C <i>errno</i>
+errors.
+The value OC_NOERR (value 0) indicates
+that no error occurred.
+Negative error values indicate that some
+kind of <i>oc</i> error occurred.
+The currently defined set of values is defined in
+the <i>oc.h</i> file.
+
+<h2 class="break"><a name="API Types"><u>API Types</u></a></h2>
+The <i>oc</i> API defines a set of types (some opaque) that control
+the operation of the interface.
+The primary such types are described in the following subsections.
+
+<h3><u>OCtype</u></h3> 
+The file <i>oc.h</i> defines the type <i>OCtype</i> that is 
+an enumeration that is used to classify nodes of a tree. 
+The type defines primitive types as defined in the OPeNDAP specification 
+and also container types corresponding to the kinds of things found in, 
+say, the DDS or DAS: Structures or Grids, for example. 
+<p> 
+The primitive types are as follows. 
+<table border=1> 
+<tr>OC_NAT:NAT stands for "Not A Type". 
+<tr>OC_Byte:Signed 8-bit integer. 
+<tr>OC_Int16:Signed 16-bit integer. 
+<tr>OC_UInt16:Unsigned 16-bit integer. 
+<tr>OC_Int32:Signed 32-bit integer. 
+<tr>OC_UInt32:Unsigned 32-bit integer. 
+<tr>OC_Float32:32-bit floating point value. 
+<tr>OC_Float64:64-bit floating point value. 
+<tr>OC_String:A null-terminated string of UTF-8 characters. 
+<tr>OC_URL:A null-terminated string of UTF-8 characters. 
+</table> 
+<p> 
+It should be noted that the type enumeration in <i>oc.h</i> 
+actually defines additional primitive types that are 
+currently unused. These are 
+OC_Ubyte, OC_Char, OC_Int64, and OC_UInt64. 
+<p> 
+The container types are as follows. 
+<p> 
+<table border=1> 
+<tr>OC_Dataset:The top-level object in a DDS. 
+<tr>OC_Sequence:A DDS Sequence object. 
+<tr>OC_Grid:A DDS Sequence object. 
+<tr>OC_Structure:A DDS Sequence object. 
+<tr>OC_Dimension:A DDS Dimension occurrence. 
+<tr>OC_Attribute:A DAS leaf attribute. 
+<tr>OC_Attributeset:A DAS non-leaf set of attributes. 
+<tr>OC_Primitive:A primitive valued object, 
+where the value typeis one of the primitive types 
+defined in the table above. 
+</table> 
+ 
+<h3><u>OClink</u></h3> 
+OClink points to all the state information 
+about an OPeNDAP URL, the server connection information  (via libcurl), all of the DAS, DDS, and DATADDS root nodes, and 
+any <i>OCinstance</i> data nodes. 
+Think of OClink as analogous to the C stdio FILE structure. 
+Note especially that it is tied to a specific URL (including 
+constraints). 
+ 
+<h3><u>OCnode</u></h3> 
+Each DAS, DDS, DATADDS, and DATADDS data part is converted (parsed) 
+internally into a tree. 
+The nodes of the tree are of opaque type <i>OCnode</i>. 
+It is termed "opaque" because its internal memory representation 
+is hidden. 
+ 
+<h3><u>OCinstance</u></h3> 
+The <i>OCinstance</i> opaque type represents 
+a node in a data tree. The term "instance" indicates 
+that actual data is being traversed. 
+ 
+<h2 class="break"><a name="API Procedures"><u>API Procedures</u></a></h2>
+
+<h3><a name="Link"><u>Link Management</u></a></h3>
+
+<div class="fcn"><a name="oc_open"><b>oc_open</b></a></div>
+The procedure oc_open opens a link to some OPeNDAP
+data server to request a specific url, possibly with constraints.
+It returns an <i>OClink</i> object.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror oc_open(const char* url, OClink* link);</code>
+<dt><b>Parameters:</b>
+<dd><i>url</i> &ndash; The url for the OPeNDAP server to which a connection
+is created and the request is made.
+<dd><i>link</i> &ndash; A pointer to a location into which the link
+object is to be returned.
+<dt><b>Errors</b>
+<dd>OC_NOERR &ndash; the link was successfully created.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_close"><b>oc_close</b></a></div>
+The procedure <i>oc_close</i> closes a previously opened
+link and releases all resources associated with
+that link.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror oc_close(OClink link);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link object to be closed.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR   &ndash; the link was successfully closed.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Tree"><u>Tree Management</u></a></h3>
+
+<div class="fcn"><a name="oc_fetch"><b>oc_fetch</b></a></div>
+The procedure <i>oc_fetch</i>
+pis used to send requests to the server
+to obtain either a DAS, DDS, or DATADDS response
+and produce a corresponding tree.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror oc_fetch(OClink link, const char* constraints, OCdxd dxdclass,OCflags flags,OCnode* rootp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>constraints</i> &ndash; The constraints to be applied to the request.
+<dd><i>dxdclass</i> &ndash; The kind of object being requested.
+The possible values are defined by the <i>OCdxd</i> enumeration defined in <i>oc.h</i>:
+one of OCDDS, OCDAS, or ODDATA.
+<dd><i>flags</i> &ndash; 'OR' of OCflags to control the fetch:
+currently only OCINMEMORY flag is defined to cause the fetched
+xdr data to be stored in memory instead of in a temporary file.
+<dd><i>rootp</i> &ndash; A pointer a location to store
+the root node of the tree associated with the the request.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_root_free"><b>oc_root_free</b></a></div>
+The procedure oc_root_free reclaims all resources
+associated with a given tree root node object.
+If the root is that of a DataDDS, then the associated data tree
+will be reclaimed as well.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_root_free (OClink link, OCnode root);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>root</i> &ndash; The root of the tree to be reclaimed.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_tree_text"><b>oc_tree_text</b></a></div>
+The procedure <i>oc_tree_text</i> returns the textual part of
+a DAS, DDS, or DATADDS request exactly as sent by the server.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>const&nbsp;char*&nbsp;oc_tree_text (OClink link, OCnode root);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>root</i> &ndash; The node root whose text is to be returned.
+<dt><b>Return Value:</b>
+<dd>The text of the response.
+Note that the caller must free the returned response.
+</dl>
+
+<h3 class="break"><a name="Node"><u>Node Management</u></a></h3>
+
+<div class="fcn"><a name="oc_node_properties"><b>oc_node_properties</b></a></div>
+The procedure oc_node_properties returns a variety of properties
+associated with a specific node.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>(OClink link, OCnode node,</code>
+char** namep, OCtype* typep,
+OCtype* primitivetypep, OCnode* containerp,
+size_t* rankp, size_t* nsubnodesp,
+size_t* nattrp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node whose properties are of interest.
+<dd><i>namep</i> &ndash; Pointer for storing the node's associated name.
+The caller must free the returned name.
+<dd><i>classp</i> &ndash; Pointer for storing the node's class.
+<dd><i>primitivetypep</i> &ndash; Pointer for storing the object's
+primitive type (i.e. OC_NAT .. OC_URL);only defined when
+the object's class is OC_Primitive.
+<dd><i>containerp</i> &ndash; Pointer for storing the
+OCnode for which this object is a subnode. The value OCNULL
+is stored if the object is a root object.
+<dd><i>rankp</i> &ndash; Pointer for storing the rank (i.e. the number
+of dimensions) for this object; zero implies a scalar.
+<dd><i>nsubnodesp</i> &ndash; Pointer for storing the number
+of subnodes of this object.
+<dd><i>nattrp</i> &ndash; Pointer for storing the number
+of attributes associated with this object.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_XXX"><b>oc_node_XXX</b></a></div>
+Using oc_node_properties can be cumbersome if only a single value
+is required. So a variety of simpler accessor procedures are defined.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<p>
+<dl><code>OCerror&nbsp;oc_node_name(OClink link, OCnode node, char** namep);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_class(OClink link, OCnode node,OCtype* classp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_type &ndash;</code>  Alias for oc_node_class
+<p>
+<dl><code>OCerror&nbsp;oc_node_octype &ndash;</code> Alias for oc_node_class
+<p>
+<dl><code>OCerror&nbsp;oc_node_primtype(OClink link, OCnode node,OCtype* primtypep);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_rank(OClink link, OCnode node,size_t* rankp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_attr_count(OClink link, OCnode node,size_t* countp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_root(OClink link, OCnode node,OCnode* rootp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_container(OClink link, OCnode node,OCnode* containerp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_root(OClink link, OCnode node,OCnode* rootp);</code>
+<p>
+<dl><code>OCerror&nbsp;oc_node_subnode_count(OClink link, OCnode node,int* countp);</code></code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node from which the value is taken.
+<dd><i>namep</i> &ndash; Pointer for storing the node's name.
+The caller must free the returned name.
+<dd><i>classp</i> &ndash; Pointer for storing the node's class.
+<dd><i>primtypep</i> &ndash; Pointer for storing the node's
+primitive type (i.e. OC_NAT .. OC_URL);only defined when
+the object's class is OC_Primitive.
+<dd><i>rankp</i> &ndash; Pointer for storing the rank (i.e. the number
+of dimensions) for this node; zero implies a scalar.
+<dd><i>countp</i> &ndash; Pointer for storing the number
+of attributes or subnodes associated with this node.
+<dd><i>root</i> &ndash; Pointer for storing the
+<i>OCnode</i> that is the root node containing this node.
+<dd><i>containerp</i> &ndash; Pointer for storing the
+<i>OCnode</i> for which this node is an immediate subnode. The value OCNULL
+is stored if the node is a root object.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_dimensions"><b>oc_node_dimensions</b></a></div>
+The procedure oc_node_dimensions returns a vector of dimension
+nodes associated with a specific node.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_dimensions(OClink link, OCnode node, OCnode* dimset);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node whose dimensions are desired.
+<dd><i>dimset</i> &ndash; A vector into which the dimension
+nodes are stored. 
+The length of the vector should be the same as the rank value from the
+<a href="oc_node_properties">oc_node_properties</a> procedure.
+Allocate and free for this vector are the responsibility of the caller.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_ESCALAR &ndash; if the node's rank is zero.
+<dd>OC_EINDEX &ndash; the index was greater than the number of dimensions.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_ithdimension"><b>oc_node_ithdimension</b></a></div>
+This convenience procedure returns the i'th
+dimension object associated with the specified node.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_ithdimension(OClink link, OCnode node, OCnode* dimp);</code>
+<dt><b>Parameters:</b>
+<dd><i>node</i> &ndash; The node whose i'th dimension is desired.
+<dd><i>index</i> &ndash; The index of the desired dimension.
+<dd><i>dimp</i> &ndash; A pointer into which the i'th dimension is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_ESCALAR &ndash; if the node's rank is zero.
+<dd>OC_EINDEX &ndash; the index was greater than the number of dimensions.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_dimension_properties"><b>oc_dimension_properties</b></a></div>
+The procedure oc_dim_properties returns the name and size of the
+specified dimension node. The returned name is NULL
+for anonymous dimensions.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_dimension_properties (OClink link, OCnode dimnode, size_t* sizep, char** namep);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>dimnode</i> &ndash; The dimension node whose properties are desired.
+<dd><i>sizep</i> &ndash; A pointer into which the dimension size is stored.
+<dd><i>namep</i> &ndash; A pointer into which the dimension name is stored.
+If the dimension is anonymous, then the name value is NULL.
+The caller must free the name value.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_ithfield"><b>oc_node_ithfield</b></a></div>
+This procedure obtains the DDS node corresponding to the i'th field
+of a node that itself is a container (Dataset, Structure, Sequence, or Grid)
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_ithfield (OClink link, OCnode container, size_t index, OCnode* fieldnode);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>container</i> &ndash; The container node.
+<dd><i>index</i> &ndash; Specifies the index of the
+field to return. Numbering begins at zero.
+If the container is a Grid, then index 0 (zero) refers to the Grid
+Array and indices 1 through n refer to the maps of the Grid.
+<dd><i>fieldnode</i> &ndash; pointer into which the field node is stored
+as a return value.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; the index was greater than the number of
+fields.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_gridarray"><b>oc_node_gridarray</b></a></div>
+This is a convenience procedure that is equivalent to
+<i>oc_node_ithfield(link, gridnode, 0, arraynodep)</i>
+when the container is a Grid.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_gridarray (OClink link, OCnode gridnode, OCnode* arraynodep);</code>
+</dl>
+
+<div class="fcn"><a name="oc_node_gridmap"><b>oc_node_gridmap</b></a></div>
+This is a convenience procedure that is equivalent to
+<i>oc_node_ithfield(link, gridnode, index+1, mapnodep)</i>
+when the container is a Grid. Note the +1.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_gridmap (OClink link, OCnode gridnode, int index, OCnode* mapnodep);</code>
+</dl>
+
+<div class="fcn"><a name="oc_node_container"><b>oc_node_container</b></a></div>
+This procedure returns the container <i>OCnode</i> node
+of a given node.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_container (OClink link, OCnode node, OCnode* containerp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node of interest.
+<dd><i>containerp</i> &ndash; Pointer into which to store the container node.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; if this node has no parent (i.e. it is a Dataset).
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_node_root"><b>oc_node_root</b></a></div>
+This procedure return the root <i>OCnode</i> of the tree
+of which the node argument is a member.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_root (OClink link, OCnode node, OCnode* rootp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node of interest.
+<dd><i>rootp</i> &ndash; Pointer into which the root node is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; if this node has no parent (i.e. it is a Dataset).
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Attribute"><u>Attribute Management</u></a></h3>
+
+<div class="fcn"><a name="oc_node_attr"><b>oc_node_attr</b></a></div>
+The procedure <i>oc_node_attr</i> returns the name, type, length,
+and values associated with the i'th attribute of a specified
+node. The actual attribute strings are returned and the user
+must do any required conversion based on the octype.
+The strings argument must be allocated and freed by caller.
+Standard practice is to call twice, once with the strings
+argument == NULL so we get the number of values,
+then the second time with an allocated char** vector.
+The caller should reclaim the contents of the returned
+string vector using <a href="#oc_attr_reclaim">oc_attr_reclaim</a>.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_attr (OClink link, OCnode node, size_t index,
+char** name, OCtype* octype,
+size_t* nvaluesp, char** strings);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The node whose i'th attribute is desired.
+<dd><i>index</i> &ndash; Index of the desired attribute.
+<dd><i>octypep</i> &ndash; A pointer into which to return the
+type of the attribute. This will always be one of the primitive types.
+<dd><i>nvaluesp</i> &ndash; A pointer into which to return
+the count of values in the strings vector.
+<dd><i>strings</i> &ndash; A vector of type char**
+into which the actual values are returned.
+The user is responsible for allocating and free'ing the vector.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINVAL &ndash; the index was greater than the number of attributes.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_das_attr"><b>oc_das_attr</b></a></div>
+The procedure oc_das_attr returns the i'th string value
+associated with a DAS object of type <i>OC_Attribute</i>.
+Note carefully that this operation applies to DAS nodes
+and not to DDS or DATADDS nodes.
+Note also that the returned value is always a string
+and it is the caller responsibility to free the returned string.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_das_attr (OClink link, OCnode node, unsigne int index,
+OCtype* primtypep, char** valuep);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The DAS object whose i'th attribute
+string is desired.
+<dd><i>index</i> &ndash; Index of the desired attribute.
+<dd><i>octypep</i> &ndash; A pointer into which to return the
+type of the attribute. This will always be one of the primitive types.
+<dd><i>valuep</i> &ndash; A pointer into which the the
+returned attribute string is stored.
+The user is responsible for free'ing the returned string.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; the index was greater than the number of attributes.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_das_attr_count"><b>oc_das_attr_count</b></a></div>
+Return the count of DAS attribute values.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_das_attr_count (OClink link, OCnode node, size_t index,
+OCtype* primtypep, size_t* countp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>node</i> &ndash; The DAS object whose i'th attribute
+string is desired.
+<dd><i>index</i> &ndash; Index of the desired attribute.
+<dd><i>octypep</i> &ndash; A pointer into which to return the
+type of the attribute. This will always be one of the primitive types.
+<dd><i>countp</i> &ndash; A pointer into which the the
+count of values is returned.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; the index was greater than the number of attributes.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_attr_reclaim"><b>oc_attr_reclaim</b></a></div>
+Given a counted vector of strings, free up all of the strings,
+BUT NOT THE VECTOR since that was allocated by the caller.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_attr_reclaim (size_t nvalues, char** stringvector);</code>
+<dt><b>Parameters:</b>
+<dd><i>nvalues</i> &ndash; The number of strings in the vector.
+<dd><i>stringvector</i> &ndash; The vector of string pointers.
+</dl>
+
+<h3><a name="Attach"><u>Node Interconnection Procedures</u></a></h3>
+
+<div class="fcn"><a name="oc_merge_das"><b>oc_merge_das</b></a></div>
+As a rule, the attributes of an object are accessed using
+the <i>oc_node_attr</i> procedure rather than by traversing a
+DAS.  In order to support this, the <i>oc_merge_das</i>
+procedure annotates a DDS node with attribute values taken
+from a specified DAS node.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_merge_das (OClink link, OCnode dasroot, OCnode ddsroot);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>dasroot</i> &ndash; the root object of a DAS node.
+<dd><i>ddsroot</i> &ndash; the root object of a DDS node (or a DATADDS node).
+<dd><b>Return Value</b>
+<dd>OC_NOERR &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Instance"><u>Instance Management</u></a></h3>
+As mentioned in the introduction, walking the data tree is
+more complex than walking a DDX. Consider this DDS.
+<pre> 
+Dataset { 
+  Structure { 
+    Structure { 
+        int32 f1[2]; 
+    } S2[3]; 
+  } S1[2]; 
+} D; 
+</pre> 
+Note the following. 
+<ul> 
+<li> S1 is dimensioned so that it has two instances. 
+<li> S2 is also dimensioned, but since it has dimension size 3, 
+there are six (6) instances: three for each instance of S1. 
+<li> each instance of f1 has two instances because it has dimension two, 
+but in total, there are 12 instances: 2(S1) * 3(S2) * 2(f1). 
+</ul> 
+<p>
+This rather ugly graph shows the situation. 
+<img src="https://docs.google.com/drawings/pub?id=13U7MiQnyJsBr_r2Z09BFD_5zJdWDERIocUqnkWIWBqo&amp;w=952&amp;h=389"> 
+<p> 
+A nested box graph shows the situation a little more clearly.<br> 
+<img src="https://docs.google.com/drawings/pub?id=1matB6tvHOxwA6qgZqnpheRwVifuAbILO0X66eWVYfDU&amp;w=717&amp;h=195"> 
+<p> 
+This is the key fact: each node in the DDS tree may have multiple instances in the 
+data tree. This makes traversal more complex. 
+<p> 
+Note also that this is the situation with Sequences as well. A Sequence instance may have 
+an arbitrary number of associated records, where a record is an instance of that Sequence. 
+<p> 
+Note also that every instance maps uniquely to a node in the DDS. In effect, the DDS nodes serve 
+as "templates" for the instances in the data tree. 
+<p>
+When the leaf instance of a data tree is reached,
+it is necessary to invoke a procedure
+<a href="#oc_instance_read">oc_instance_read</a>
+to actually extract the data into memory for use by the client program.
+
+<div class="fcn"><a name="oc_instance_ithfield"><b>oc_instance_ithfield</b></a></div>
+This procedure return the instance node corresponding to the i'th field
+of a container instance.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_ithfield (OClink link, OCinstance container, size_t index, OCinstance* fieldp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>container</i> &ndash; The container instance.
+<dd><i>index</i> &ndash; Specifies the index of the
+field to return. Numbering begins at zero.
+If the container is a Grid, then index 0 (zero) refers to the Grid
+Array and indices 1 through n refer to the maps of the Grid.
+<dd><i>fieldo</i> &ndash; pointer into which the field instance is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; the index was greater than the number of
+fields.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_instance_gridarray"><b>oc_instance_gridarray</b></a></div>
+This is a convenience procedure that is equivalent to
+<i>oc_instance_ithfield(link, grid, 0, arrayp)</i>
+when the container is a Grid.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_gridarray (OClink link, OCinstance grid, OCinstance* arrayp);</code>
+</dl>
+
+<div class="fcn"><a name="oc_instance_gridmap"><b>oc_instance_gridmap</b></a></div>
+This is a convenience procedure that is equivalent to
+<i>oc_instance_ithfield(link, grid, index+1, mapp)</i>
+when the container is a Grid. Note the +1.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_gridmap (OClink link, OCinstance grid, int index, OCinstance* mapp);</code>
+</dl>
+
+<div class="fcn"><a name="oc_instance_container"><b>oc_instance_container</b></a></div>
+This procedure returns the container of a given instance.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_container (OClink link, OCinstance instance, OCinstance* containerp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The instance of interest.
+<dd><i>containerp</i> &ndash; Pointer into which to store the container instance.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; if this instance has no parent (i.e. it is a Dataset).
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_instance_root"><b>oc_instance_root</b></a></div>
+This procedure return the root instance of the tree
+of which the instance argument.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_root (OClink link, OCinstance instance, OCinstance* rootp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The instance of interest.
+<dd><i>rootp</i> &ndash; Pointer into which the root instance is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EINDEX &ndash; if this instance has no parent (i.e. it is a Dataset).
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Iterator"><u>Iteration Management</u></a></h3>
+The procedures in this section do not have any correspondence
+in the node management procedures. The operate on dimensioned
+structures or Sequence records.
+
+<div class="fcn"><a name="oc_instance_ithelement"><b>oc_instance_ithelement</b></a></div>
+This procedure returns an instance corresponding to some
+element instance of a dimensioned Structure.
+The instance is specified by giving the dimension values corresponding
+to the element of interest.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_ithelement (OClink link, OCinstance instance, size_t* indices, OCinstance* elementp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The (structure) instance of interest.
+<dd><i>indices</i> &ndash; The vector of dimension indices specifying the
+array element instance to be returned in <i>elementp</i>.
+Note that the caller is responsible for allocating and free'ing the
+this argument. The length of the vector is determined by the rank
+of the template node for this instance.
+<dd><i>elementp</i> &ndash; Pointer into which the instance 
+specified by the indices is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_ESCALAR &ndash; if this instance is a scalar.
+<dd>OC_EBADTYPE &ndash; if this instance is not a Structure.
+<dd>OC_EINDEX &ndash; if the set of indices does not specify a legal
+array element.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_instance_ithrecord"><b>oc_instance_ithrecord</b></a></div>
+This procedure returns an instance corresponding to some
+record instance of a Sequence.
+The instance is specified by giving the record index (starting at 0).
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_ithrecord (OClink link, OCinstance instance, size_t index, OCinstance* recordp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The (Sequence) instance of interest.
+<dd><i>indices</i> &ndash; The record index; record indices start at zero.
+<dd><i>recordp</i> &ndash; Pointer into which the record instance 
+specified by the index is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EBADTYPE &ndash; if this instance is not a Sequence.
+<dd>OC_EINDEX &ndash; if the index is greater than the number of records
+associated with this sequence instance.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Read"><u>Read Instance Data</u></a></h3>
+<div class="fcn"><a name="oc_instance_read"><b>oc_instance_read</b></a></div>
+This procedure does the work of actually extracting data
+from a leaf instance of a data tree and storing it into
+memory for use by the calling code.  The instance must be
+referencing either a scalar primitive value or an array of
+primitive values.  If the variable is a scalar, then the
+index and count vectors will be ignored.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_read (OClink link, OCinstance instance, size_t* startindices, size_t* counts, void* memory);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The leaf instance from which data
+is to be extracted.
+<dd><i>startindices</i> &ndash; A vector
+of starting indices indicating where to begin the extraction.
+If the leaf node is scalar, then this argument is ignored.
+<dd><i>counts</i> &ndash; A vector
+of counts indicating how many elements to read along
+each dimension.
+If the leaf node is scalar, then this argument is ignored.
+If, for example, the node has a single dimension, then
+the elements
+<i>startindex</i> thru <i>startindex + count &ndash; 1</i> will be
+extracted.  The type of the extracted values is determined
+by the type of the fielddata object.
+<dd><i>memory</i> &ndash; Specifies the 
+chunk of client memory into which the extracted data is to be stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR &ndash; the procedure executed normally.
+<dd>OC_EINVALCOORDS &ndash; if any of the start
+indices are too large.
+<dd>OC_ECOUNT &ndash; if start[i]+count[i]-1 
+is too large with respect to any of the dimensions.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3><a name="Misc Instance"><u>Miscellanous Instance Procedures</u></a></h3>
+
+<div class="fcn"><a name="oc_instance_free"><b>oc_instance_free</b></a></div>
+This procedure tells the oc library that a particular instance is no
+longer needed and may be reclaimed.
+After calling this, it is an error, though possibly undectable,
+to attempt to use the specified instance.
+This procedure technically is optional as long as the caller is willing
+to pay some cost in terms of memory usage.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_free (OClink link, OCinstance instance);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The instance to be free'd.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_instance_position"><b>oc_instance_position</b></a></div>
+This procedure returns the array indices (for structures)
+or record index (for sequences) indicating the current
+location associated with an instance.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_position (OClink link, OCinstance instance, size_t* indices);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The (Structure or Sequence) instance of interest.
+<dd><i>indices</i> &ndash; The current position will be stored in this
+vector of indices. For Sequences, only indices[0] is used.
+The caller is responsible for allocating and free'ing this argument.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR  &ndash; the procedure executed normally.
+<dd>OC_EBADTYPE &ndash; if this instance is not a Sequence or Structure.
+<dd>OC_ESCALAR &ndash; if this instance is a scalar Structure.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<div class="fcn"><a name="oc_instance_recordcount"><b>oc_instance_recordcount</b></a></div>
+It can be desirable to know the number of records associated
+with a Sequence instance.  One could, of course, attempt to
+iterate over successive records until an error was returned,
+but using the procedure here is substantially more
+efficient.  Note, however, that invoking this procedure can
+still be costly because it still requires walking all of the
+records of the Sequence.
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_instance_recordount (OClink link, OCinstance instance, size_t* countp);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>instance</i> &ndash; The (Sequence) instance of interest.
+<dd><i>recordp</i> &ndash; Points to an integer into which the
+count of recordss is stored.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR &ndash; the procedure executed normally.
+<dd>OC_EBADTYPE &ndash; if the instance is not a Sequence.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="OCtype"><u>OCtype Procedures</u></a></h3>
+This section describes a number of miscellaneous procedures
+relating to <i>OCtype</i>.
+
+<div class="fcn"><a name="oc_typesize"><b>oc_typesize</b></a></div>
+The procedure oc_typesize returns the memory size for
+a given OCtype. It is valid only for primitive types.
+<dl>
+<dt><b>Usage:</b>
+<code>size_t&nbsp;oc_typesize(OCtype octype);</code>
+<dt><b>Parameters:</b>
+<dd><i>octype</i> &ndash; the type whose size is desired.
+<dt><b>Return Value:</b>
+<dd>The type's memory size in bytes.
+A value of zero will be returned
+if the octype is not a legal type.
+</dl>
+
+<div class="fcn"><a name="oc_typetostring"><b>oc_typetostring</b></a></div>
+The procedure oc_typetostring returns a printable string
+representing the specified type.
+For example, <i>oc_typetostring(OCByte)</i> returns "Byte".
+DO NOT free the returned string.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>const char* &nbsp;oc_typetostring(OCtype octype);</code>
+<dt><b>Parameters:</b>
+<dd><i>octype</i> &ndash; the type whose string is desired.
+<dt><b>Return Value:</b>
+<dd>A string representing the type as it would have appeared in a DDS.
+A value of NULL will be returned
+if the octype is not a legal type.
+</dl>
+
+<div class="fcn"><a name="oc_typeprint"><b>oc_typeprint</b></a></div>
+The procedure oc_typeprint takes a value and prints a canonical
+representation of the value into a specified memory buffer.
+It is primarily for debugging.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_node_typeprint (OCtype octype, char* buf, size_t bufsize, void* value);</code>
+<dt><b>Parameters:</b>
+<dd><i>octype</i> &ndash; the type of the value.
+<dd><i>buf</i> &ndash; the buffer into which to place
+the printed representation.
+<dd><i>bufsize</i> &ndash; the size of the buffer.
+<dd><i>value</i> &ndash; a pointer to memory
+containing the value to be printed.
+<dt><b>Return Value:</b>
+<dd>OC_NOERR &ndash; the procedure executed normally.
+<dd>Other Error &ndash; one of the arguments (link, etc.) was invalid.
+</dl>
+
+<h3 class="break"><a name="Logging"><u>Logging</u></a></h3>
+The original OCDAPI provided a mechanism for
+returning detailed error information strings.
+In order to keep something like that, <i>oc</i> has a log mechanism
+It can be used to dump extra error or warning information
+and it can be used to dump debug info.
+
+<div class="fcn"><a name="oc_loginit"><b>oc_loginit</b></a></div>
+The procedure oc_loginit initializes the logging system.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_loginit(void);</code>
+</dl>
+
+<div class="fcn"><a name="oc_logset"><b>oc_logset</b></a></div>
+The procedure oc_logset turns logging on and off.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_logset(int onoff);</code>
+<dt><b>Parameters:</b>
+<dd><i>onoff</i> &ndash; 1 indicates to start/resume logging.
+</dl>
+
+<div class="fcn"><a name="oc_logopen"><b>oc_logopen</b></a></div>
+The procedure oc_logopen specifies the file to which log
+entries are to be <b>appended</b>.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_logopen(const char* logfilename);</code>
+<dt><b>Parameters:</b>
+<dd><i>logfilename</i> &ndash; name of the file to which
+log entries are sent.
+If the file name is NULL or is of length zero, then <i>stderr</i>
+is used as the log file.
+If the file cannot be opened for writing, then logging
+will be disabled.
+</dl>
+
+<div class="fcn"><a name="oc_logclose"><b>oc_logclose</b></a></div>
+The procedure oc_logclose
+closes any currently open log file.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_logclose(void);</code>
+</dl>
+
+<div class="fcn"><a name="oc_log"><b>oc_log</b></a></div>
+The procedure oc_log is the usual way to add log entries.
+It operates like <i>printf</i> in that it takes a format
+string and a variable number of arguments.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_log(int tag, const char* fmt, ...);</code>
+<dt><b>Parameters:</b>
+<dd><i>tag</i> &ndash; the tag to be associated with the text.
+The legal tags are:
+OCLOGNOTE,
+OCLOGWARN,
+OCLOGERR,
+and OCLOGDBG.
+<dd><i>format</i> &ndash; the format string.
+<dd><i>...</i> &ndash; a variable number of arguments.
+</dl>
+
+<div class="fcn"><a name="oc_logtext"><b>oc_logtext</b></a></div>
+The procedure oc_logtext sends text to the log file along with a specied tag.
+The text may have newlines in it and each line is sent separately.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>void&nbsp;oc_logtext(int tag, const char* text);</code>
+<dt><b>Parameters:</b>
+<dd><i>tag</i> &ndash; the tag to be associated with the text.
+<dd><i>text</i> &ndash; the text sent to the log file.
+</dl>
+
+<h3 class="break"><a name="Misc"><u>Miscellaneous</u></a></h3>
+
+<div class="fcn"><a name="oc_errstring"><b>oc_errstring</b></a></div>
+The procedure oc_errstring takes an OCerror and
+returns a string giving a terse elaboration of its meaning.
+DO NOT free the resulting string.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>const char*&nbsp;oc_errstring(int err);</code>
+<dt><b>Parameters:</b>
+<dd><i>err</i> &ndash; the error code
+<dt><b>Return Value:</b>
+<dd>The error string elaborating on the error's meaning.
+</dl>
+
+<div class="fcn"><a name="oc_clientparam_get"><b>oc_clientparam_get</b></a></div>
+Client parameters are (name,value) pairs associated
+with an OPeNDAP URL. The idea for them comes from OCAPI
+and is included in the <i>oc</i> interface.
+The legal forms for the client parameters are as follows.
+<ol>
+<!--<li> "#<name>=<value>;...<name>=<value>", which is prefixed to the URL.
+The whole set of parameters is separated from any constraint by '#' and
+multiple parameters are separated by semicolons.-->
+<li> "[{name}={value}]...[{name}={value}]",
+which is prefixed to the URL.
+</ol>
+<!-- The second form is deprecated in favor of the first form.<p>-->
+In effect, such parameters represent a way to provide extra
+information to OC on a per-link basis.
+This procedure, <i>oc_clientparam_get</i>, returns the value, if any,
+associated with the specified client parameter name or NULL
+if the parameter name is not defined.
+DO NOT free the resulting string.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>const char*&nbsp;oc_clientparam_get(OClink link, const char* param);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>param</i> &ndash; the client parameter name.
+<dt><b>Return Value:</b>
+<dd>The value associated with the specified client parameter.
+The value NULL is returned if the parameter is not defined.
+</dl>
+
+<div class="fcn"><a name="oc_clientparam_insert"><b>oc_clientparam_insert</b></a></div>
+The procedure oc_clientparam_insert inserts a new (name,value) pair in the set of client parameters
+associated with a link. This can be a useful way to annotate
+a link with user-defined information.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>int&nbsp;oc_clientparam_insert(OClink link, const char* param, const char* value);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>param</i> &ndash; the client parameter name.
+<dd><i>value</i> &ndash; the client parameter value.
+If the parameter is already defined, then no change is made
+Otherwise, insert the new (name,value) pair.
+<dt><b>Return Value:</b>
+<dd>1 if insertion performed, 0 if insertion not performed.
+</dl>
+
+<div class="fcn"><a name="oc_clientparam_replace"><b>oc_clientparam_replace</b></a></div>
+The procedure oc_clientparam_replace replaces
+a (name,value) pair in the set of client parameters.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_clientparam_replace (OClink link, const char* param, const char* value);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>param</i> &ndash; the client parameter name.
+<dd><i>value</i> &ndash; the client parameter value.
+If the parameter is already defined, then its value is replaced.
+Otherwise, it acts like oc_clientparam_insert.
+<dt><b>Return Value</b>
+<dd>1 if replacement performed, 0 if insertion performed.
+</dl>
+
+<div class="fcn"><a name="oc_clientparam_delete"><b>oc_clientparam_delete</b></a></div>
+The procedure oc_clientparam_delete deletes
+a (name,value) pair in the set of client parameters.
+<p>
+<dl>
+<dt><b>Usage:</b>
+<code>OCerror&nbsp;oc_clientparam_delete (OClink link, const char* param);</code>
+<dt><b>Parameters:</b>
+<dd><i>link</i> &ndash; The link through which the server is accessed.
+<dd><i>param</i> &ndash; the client parameter name to delete.
+If the parameter is not defined, then no action is taken,
+otherwise, it deletes the (name,value) pair whose name matches
+the procedure's argument.
+<dd><b>Return Value</b>
+<dd>1 if deletion performed, 0 if deletion not performed.
+</dl>
+
+<h3><a name="Experimental"><u>Experimental Procedures</u></a></h3>
+See the experimental section in oc.h.
+
+<h2><a name="dodsrc"><u>Configuration File: .dodsrc</u></a></h2>
+It is convenient to support configuration of the operation
+of the oc library by allowing users to specify traditional
+"key=value" pairs. Using environment variables is one
+possible solution, but tracking down all the relevant
+environment variables can sometimes be frustrating.
+<p>
+The solution used here is the ".dodsrc" file approach.
+This is consistent with the .dodsrc files already used
+in libdap and libnc-dap libraries.
+The relevant .dodsrc file is located by first looking
+in the current working directory, and if not found, then
+looking in the directory specified by the "$HOME"
+environment variable.
+<p>
+The format of each line in .dodsrc conforms to this
+syntax.
+<pre>
+    ['[' &lt;url&gt; ']'] &lt;key&gt; '=' &lt;value&gt;
+</pre>
+That is, each line is a key=value pair prefixed
+with an optional URL.
+The URL is enclosed in square brackets.
+The URL controls which key=value pairs are used
+in configuring each instance of OClink as created
+by the oc_open() function.
+<p>
+For a given pair of KEY and URL strings, the value chosen is as follows:
+<ol>
+<li> If URL is null, then look for the .dodsrc entry
+that has no url prefix and whose key is same as the KEY
+for which we are looking.
+<p>
+<li> If the URL is not null, then look for all the .dodsrc
+entries that have a url, URL1, say,
+and for which URL1 is a prefix (in the string sense) of URL.
+For example, if URL = http//x.y/a, then it will match
+entries of the form
+<pre>[http//x.y/a]KEY=VALUE</pre>
+and of the form
+<pre>http//x.y/a/b]KEY=VALUE</pre>
+as well.
+It will not match an entry of the form
+<pre>[http//x.y/b]KEY=VALUE</pre>
+because "http://x.y/b" is not a string prefix of "http://x.y/a".
+<p>
+From the set so constructed, choose the entry with the longest
+matching url prefix: "http//x.y/a/b]KEY=VALUE" in this case.
+</ol>
+<p>
+Currently, the supported set of keys are as follows.
+The libcurl documentation on the corresponding CURLOPT flag
+defines the meaning of the key.
+<table>
+<tr><th>Key Name<th>Value<th>CURL_SETOPT Flag
+<tr><td>CURL.VERBOSE<td>1/0<td>CUROPT_VERBOSE
+<tr><td>CURL.TIMEOUT<td>integer<td>CUROPT_TIMEOUT+CURLOPT_NOSIGNAL
+<tr><td>CURL.DEFLATE<td>1/0<td>CURLOPT_ENCODING
+<tr><td>CURL.COOKIEJAR<td>file path<td>CURLOPT_COOKIEJAR
+<tr><td>CURL.COOKIEFILE<td>file path<td>CURLOPT_COOKIEFILE
+<tr><td>CURL.CREDENTIALS.USER<td>string<td>CURLOPT_
+<tr><td>CURL.CREDENTIALS.PASSWORD<td>string<td>CURLOPT_?
+<tr><td>CURL.SSL.CERTIFICATE<td>file path<td>CURLOPT_CERT
+<tr><td>CURL.SSL.KEY<td>file path<td>CURLOPT_SSLKEY
+<tr><td>CURL.SSL.KEYPASSWORD<td>file path<td>CURLOPT_KEYPASSWD
+<tr><td>CURL.SSL.CAINFO<td>file path<td>CURLOPT_CAINFO
+<tr><td>CURL.SSL.CAPATH<td>directory path<td>CURLOPT_CAPATH
+<tr valign="top"><td>CURL.SSL.VALIDATE<td>1/0<td>CURLOPT_SSL_VERIFYPEER +CURLOPT_SSL_VERIFYHOST
+<tr valign="top"><td>CURL.PROXY_SERVER<td>http://[username:password@]host[:port]<td>CURLOPT_PROXY +CURLOPT_PROXYPORT +CURLOPT_PROXYUSERPWD
+</table>
+
+<h2><a name="SSL"><b>SSL Client-Side Keys Support</b></a></h2>
+Limited support for SSL client-side keys is provided via
+parameters set in the <a href="#dodsrc">.dodsrc</a>
+configuration file.  Note that this support was added at the
+request of the Earth System Grid (ESG) and as such it
+provides the minimum needed for accessing ESG data.
+<p>
+The .dodsrc parameters needed to access client-side keys
+are the following:
+<ul>
+<li>CURL.SSL.VALIDATE
+<li>CURL.COOKIEJAR
+<li>CURL.SSL.CERTIFICATE
+<li>CURL.SSL.KEY
+<li>CURL.SSL.CAPATH
+</ul>
+<p>
+For ESG, the CURL.SSL.CERTIFICATE and CURL.SSL.KEY entries
+should have same value, which is the file path for the
+certificate produced by MyProxyLogon.  The CURL.SSL.CAPATH
+entry should be the path to the "certificates" directory
+produced by MyProxyLogon.
+<p>
+Support for other SSL servers can be added by sending a request
+to support at opendap.org.
+
+<h2><a name="build"><u>Compiling and Executing oc-based Programs</u></a></h2>
+Compiling a program that uses oc requires knowledge of the location
+of the following items.
+<ol>
+<li> The curl library. If the curl-config program is available, then
+the command <code>curl-config --libs</code> will provide the
+command line arguments needed to load with curl. Typically, this will
+be the string "-lcurl" and possibly some other support libraries.
+<p>
+<li> The oc library.
+The command <code>oc-config --libs</code> will provide the
+command line arguments needed to access oc. Typically, this will
+be the string "-loc -lcurl".
+<p>
+<li> The oc include files.
+The command <code>oc-config --cflags</code> will provide the
+command line arguments needed to access the oc includes. Typically, this will
+be the string "-I/usr/local/include/oc"
+</ol>
+<p>
+If curl-config is not available, then your local system administrator
+may be able to assist you.
+<p>
+Compilation of a program called, for example, test.c
+is then as simple as executing this command.
+<pre>
+gcc -I/usr/local/include/oc test.c -loc -lcurl
+</pre>
+
+<h2><a name="install"><u>Configure Options</u></a></h2>
+The file INSTALL in the source node for oc should be consulted
+for details about compiling and installing oc on your system.
+The ./configure program for oc supports the following build options.
+<table>
+<tr valign="top"><th width="20em">Option<th width="60em">Descriptions
+<tr valign="top"><td>--with-curl-config
+<td>&ndash; the path (or the containing directory) of the curl-config program
+<tr valign="top"><td>--with-curl
+<td>&ndash; the location of CURL library; configure will expect to find subdirs bin, include and lib.
+</table>
+
+<h2><a name="Change Log"><u>Change Log</u></a></h2>
+<table>
+<tr><td><u>Version 2.0</u>
+<tr><td>05/04/2012 &ndash; 
+Completely rebuild the interface.
+<tr><td><u>Version 1.0</u>
+<tr><td>01/10/2011 &ndash; Added configure options section.
+<tr><td>07/24/2010 &ndash; Added .dodsrc section.
+<tr><td>07/18/2010 &ndash; Added SSL section.
+<tr><td>06/04/2009 &ndash; First draft.
+</table>
+
+<h2><a name="Copyright"><u>Copyright</u></a></h2>
+Copyright 2010, UCAR/Unidata and OPeNDAP, Inc.
+
+<h2 class="break"><a name="Multi"><u>Appendix A. Multi-Dimensional Arrays</u></a></h2>
+When walking a multi-dimensional array that has been stored in
+a single chunk of memory by
+<a href="#oc_node_read">oc_node_read</a>,
+it is convenient to be able to figure out how a vector of start
+and counts maps to a position in that memory.
+<p>
+The rule for converting N dimensions into a linear offset
+is as follows.
+<p>
+Suppose we have the array <code>Int32 F[2][5][3]</code>.
+There are a total of 2 X 5 X 3 = 30 integers in F.
+Thus, there are a total of 30 integers stored sequentially
+in a chunk of memory.
+<p>
+A particular point in the three dimensions, say [x][y][z], is reduced to
+a number in the range 0..29 by computing <code>((x*5)+y)*3+z</code>.
+The corresponding general C code is as follows.
+<pre>
+size_t
+linearize(int rank, size_t* dimsizes, size_t* indices)
+{
+    int i;
+    size_t count = 0;
+    for(i=0;i&lt;rank;i++) {
+        count *= dimsizes[i];
+        count += indices[i];
+    }
+    return count;
+}
+</pre>
+In this code, the indices variable corresponds to the x,y, and z.
+The sizes variable corresponds to the 2,5, and 3.
+<p>
+Note that this function is actually invertible because, by definition,
+each set of indices maps to a unique serial index.
+Again using our examples, we can convert
+an integer,i, in the range 0..29  [x][y][z] as follows.
+<ol>
+<li> z = i % 3 ; i = (i - z)/3
+<li> y = i % 5 ; i = (i - y)/5
+<li> x = i
+</ol>
+The inversion function is as follows:
+<pre>
+void
+delinearize(int index, int rank, size_t* dimsizes, size_t* indices)
+{
+    int i;
+    for(i=rank-1;i>0;i--) {
+	indices[i] = index % dimsizes[i];
+	index = (index - indices[i]) / dimsizes[i];
+    }
+    indices[0] = index;
+}
+</pre>
+Note that the de-linearize function only works when the index is less than
+the cross product, 30 in this example.
+
+<h2 class="break"><a name="Odom"><u>Appendix B. Iteration Using Odometers</a></h2>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+F=octutorial
+
+gcc -g -O0 -o lno.exe misc/lno.c
+
+rm -f /tmp/$F.save /tmp/$F.html
+cp $F.html /tmp/$F.save
+rm -f $F.html
+./lno.exe /tmp/$F.save > ./$F.html
+

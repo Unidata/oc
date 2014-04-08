@@ -1,0 +1,22 @@
+1. remove need to initialize the logging system.
+2. add a logging flag stack
+3. trailing url client parameters - done; needs testing
+4. remove calls to ocmalloc, etc.
+
+
+
+
+object
+entity
+item
+walker
+cursor
+component
+datanode
+ddsnode
+element
+part
+piece
+atom
+chunk
+
