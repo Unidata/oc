@@ -493,7 +493,7 @@ static OCerror
 printdata_indices(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel)
 {
     OCerror stat = OC_NOERR;
-    int i;
+    size_t i;
     OCmetanode node;
     size_t rank;
     OCtype octype;
