@@ -45,6 +45,9 @@
 #cmakedefine VERSION "${VERSION}"
 #cmakedefine NC_VERSION "${VERSION}"
 
+/* Various other options. */
+#cmakedefine ENABLE_DAP4 1
+
 /* Define to 1 if you have the <alloca.h> header file. */
 #cmakedefine HAVE_ALLOCA_H @HAVE_ALLOCA_H@
 
@@ -188,6 +191,16 @@
 #cmakedefine HAVE_SYSCONF
 #cmakedefine HAVE_MREMAP
 #cmakedefine HAVE_DECL_ISINF
+
+
+/* Some linux systems have getrlimit, but
+   no definition of RLIM_INFINITY */
+//#cmakedefine HAVE_RLIM_INFINITY
+//#ifdef HAVE_RLIM_INFINITY
+	#cmakedefine HAVE_GETRLIMIT
+//#else
+//	#undef HAVE_GETRLIMIT
+//#endif
 
 /* Specifies if various libraries are present. */
 #cmakedefine HAVE_LIBM 1

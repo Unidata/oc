@@ -31,7 +31,6 @@ static char* rctrimright(char* more, char* trimchars);
 static char* rctrimleft(char* more, char* trimchars);
 
 static void ocdodsrcdump(char* msg, struct OCTriple*, int ntriples);
-
 static char* curllookup(char* suffix,char* url);
 
 /* The Username and password are in the URL if the URL is of the form:
@@ -87,7 +86,7 @@ ocextract_credentials(const char *url, char **name, char **pw, char **result_url
 		if (!result_url)
 			return OC_ENOMEM;
 
-		strncpy(*result_url, url, (size_t)(pos - url));
+		strncpy(*result_url, url,(size_t(pos - url));
 		strncpy(*result_url + (pos - url), end + 1, url_len - (pos - url));
 
 #if 0

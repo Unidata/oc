@@ -34,10 +34,8 @@ lib_LTLIBRARIES = liboc.la
 bin_SCRIPTS = oc-config
 
 liboc_la_SOURCES = config.h oc.h ocx.h oc.c \
-dapparselex.h daplex.c dapparse.c daptab.h daptab.c \
 ocbytes.h ocbytes.c \
 occlientparams.h occlientparams.c \
-occompile.h occompile.c \
 occonstraints.h \
 occurlfunctions.h occurlfunctions.c \
 ocdata.h ocdata.c \
@@ -53,25 +51,20 @@ ocrc.h ocrc.c \
 ocread.h ocread.c \
 ocuri.h ocuri.c \
 ocutil.h ocutil.c \
+dap2parselex.h dap2lex.c dap2parse.c dap2tab.h dap2tab.c \
+dap2compile.h dap2compile.c \
+dap4parselex.h dap4lex.c dap4parse.c dap4tab.h dap4tab.c \
+dap4_perfect.c yax.h yax.c \
 xxdr.h xxdr.c
 
 liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@
 
 pkginclude_HEADERS = oc.h
 
-#noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \
-		occlientparams.h occonstraints.h occontent.h \
-		occurlfunctions.h ocdata.h ocdatatypes.h ocdebug.h \
-		ocdrno.h ocdump.h ochttp.h ocinternal.h \
-		oclist.h oclog.h ocnode.h ocrc.h \
-		ocread.h ocuri.h ocutil.h xxdr.h \
-		config.h
-
 EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README
-EXTRA_DIST += dap.y
+EXTRA_DIST += dap2.y dap4.y dap4.gperf
 EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
-EXTRA_DIST += ocprint.1
 EXTRA_DIST += CMakeLists.txt
 
 EXTRA_DIST += docs
@@ -96,13 +89,34 @@ ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 # BTW: note that renaming is essential because otherwise
 # autoconf will forcibly delete files of the name *.tab.*
 
-.PHONEY: parser
+.PHONEY: parsers parser2 parser4
 
-# Generate daptab.c and daptab.h from dap.y
-parser::
-	rm -f dap.tab.c dap.tab.h	
-	bison --debug -d -p dap dap.y
-	mv dap.tab.c daptab.c; mv dap.tab.h daptab.h
+parsers:: parser2 parser4
+
+# Generate dap2tab.c and dap2tab.h from dap2.y
+parser2::
+	rm -f dap2.tab.c dap2.tab.h	
+	bison --debug -d -p dap2 dap2.y
+	mv dap2.tab.c dap2tab.c; mv dap2.tab.h dap2tab.h
+
+
+# Generate dap4tab.c and dap4tab.h from dap4.y
+# Assumes bison version 3.0 or later
+parser4::
+	rm -f dap4tab.c dap4tab.h	
+	bison --debug -d -p dap4 dap4.y
+	sed -e 's/dap4.tab.c/dap4tab.c/'< dap4.tab.c >dap4tab.c
+	sed -e 's/dap4.tab.h/dap4tab.h/'< dap4.tab.h >dap4tab.h
+	rm -f dap4.tab.c dap4.tab.h	
+
+##################################################
+# These rule are used if someone wants to rebuild the perfect hash function.
+# Otherwise never invoked, but records how to do it.
+# Only invoke if gperf program is available
+# Remove the line numbers for easier debug with gdb
+perfect::
+	rm -f dap4_perfect.c 
+	gperf dap4.gperf | sed -e '/^[#]line/d' >dap4_perfect.c
 
 ###########################################################################
 

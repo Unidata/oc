@@ -58,12 +58,12 @@ static OClink glink;
 /* define a large stack of DUMPPATH datanodes */
 struct DUMPPATH {
     OCdatanode datanode;
-    OCddsnode   node;
+    OCmetanode   node;
     OCtype      octype;
     size_t      rank;
-    size_t      dimsizes[OC_MAX_DIMENSIONS];
+    size_t      dimsizes[OC_MAX_RANK];
     int         indexed; /* 1 => indices is valid */
-    size_t      indices[OC_MAX_DIMENSIONS];
+    size_t      indices[OC_MAX_RANK];
 } stack[2048];
 
 static size_t stacknext;
@@ -104,12 +104,12 @@ static int odom_more(size_t rank, size_t* indices, size_t* dimsizes);
 static void odom_next(size_t rank, size_t* indices, size_t* dimsizes);
 
 static OCerror dumpdatanode(OClink, OCdatanode, size_t count, void* memory, OCbytes*);
-static OCerror generatedds(OClink, OCddsnode, OCbytes*, int depth);
-static char* generatedas(OClink,OCddsnode);
-static OCerror generatedasr(OClink, OCddsnode, OCbytes*, int depth);
-static OCerror generateddsattributes(OClink, OCddsnode node, OCbytes*, int);
+static OCerror generatedds(OClink, OCmetanode, OCbytes*, int depth);
+static char* generatedas(OClink,OCmetanode);
+static OCerror generatedasr(OClink, OCmetanode, OCbytes*, int depth);
+static OCerror generateddsattributes(OClink, OCmetanode node, OCbytes*, int);
 
-static OCerror printdims(OClink link, OCddsnode node, OCbytes* buffer);
+static OCerror printdims(OClink link, OCmetanode node, OCbytes* buffer);
 static char* stringescape(char*);
 static char* idescape(char*, char*, size_t);
 static int needsescapes(const char* s);
@@ -343,7 +343,7 @@ processdata(OCflags flags)
 {
     char* totalurl;
     OClink link;
-    OCddsnode dasroot, ddsroot, dataddsroot;
+    OCmetanode dasroot, ddsroot, dataddsroot;
     OCdatanode rootdatanode;
 
     totalurl = nulldup(urlsrc);
@@ -397,7 +397,7 @@ processdata(OCflags flags)
             }
         }
         if(debug.dumpdds)
-            oc_dds_ddnode(link,ddsroot);
+            oc_meta_ddnode(link,ddsroot);
     }
     fflush(stdout);
 
@@ -411,11 +411,11 @@ processdata(OCflags flags)
             exit(1);
         }
         if(debug.dumpdds)
-            oc_dds_ddnode(link,dataddsroot);
+            oc_meta_ddnode(link,dataddsroot);
         if(debug.dumpdatadds)
-            oc_dds_dd(link,dataddsroot,debug.dumplevel);
+            oc_meta_dd(link,dataddsroot,debug.dumplevel);
 
-        FAIL(oc_dds_getdataroot(link,dataddsroot,&rootdatanode));
+        FAIL(oc_meta_getdataroot(link,dataddsroot,&rootdatanode));
         if(debug.dumpdatatree)
 	    oc_data_ddtree(link,rootdatanode);
         stacknext = 0;
@@ -458,13 +458,13 @@ printdata_container(OClink link, OCdatanode datanode, OCbytes* buffer, int istop
 {
     OCerror stat = OC_NOERR;
     int i;
-    OCddsnode node;
+    OCmetanode node;
     OCtype octype;
     size_t nsubnodes;
 
     /* Obtain some information about the node */     
-    FAIL(oc_data_ddsnode(link,datanode,&node));
-    FAIL(oc_dds_nsubnodes(link,node,&nsubnodes));
+    FAIL(oc_data_metanode(link,datanode,&node));
+    FAIL(oc_meta_nsubnodes(link,node,&nsubnodes));
     FAIL(oc_data_octype(link,datanode,&octype));
 
     /* If this is not a single instance container, then
@@ -492,16 +492,16 @@ printdata_indices(OClink link, OCdatanode datanode, OCbytes* buffer, int istople
 {
     OCerror stat = OC_NOERR;
     int i;
-    OCddsnode node;
+    OCmetanode node;
     size_t rank;
     OCtype octype;
-    size_t dimsizes[OC_MAX_DIMENSIONS];
-    size_t indices[OC_MAX_DIMENSIONS];
+    size_t dimsizes[OC_MAX_RANK];
+    size_t indices[OC_MAX_RANK];
 
     /* Obtain some information about the node */     
-    FAIL(oc_data_ddsnode(link,datanode,&node));
-    FAIL(oc_dds_octype(link,node,&octype));
-    FAIL(oc_dds_rank(link,node,&rank));
+    FAIL(oc_data_metanode(link,datanode,&node));
+    FAIL(oc_meta_octype(link,node,&octype));
+    FAIL(oc_meta_rank(link,node,&rank));
 
     /* If this is not an indexed structure or a sequence then
        defer to the appropriate function */
@@ -513,7 +513,7 @@ printdata_indices(OClink link, OCdatanode datanode, OCbytes* buffer, int istople
     /* Iterate over the datanodes */
     if(octype == OC_Structure) {
 	/* Get dimension sizes */
-        FAIL(oc_dds_dimensionsizes(link,node,dimsizes));
+        FAIL(oc_meta_dimensionsizes(link,node,dimsizes));
         
 	/* init odometer and get cross-product */
 	odom_init(rank,indices,dimsizes);
@@ -557,7 +557,7 @@ printdata_indices(OClink link, OCdatanode datanode, OCbytes* buffer, int istople
 static OCerror
 printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel)
 {
-    OCddsnode node;
+    OCmetanode node;
     OCtype octype,atomtype;
     size_t elemsize;
     size_t memsize;
@@ -565,15 +565,15 @@ printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel
     size_t count,rank;
 
     /* Obtain some information about the node */     
-    FAIL(oc_data_ddsnode(link,datanode,&node));
-    FAIL(oc_dds_octype(link,node,&octype));
-    FAIL(oc_dds_atomictype(link,node,&atomtype));
-    FAIL(oc_dds_rank(link,node,&rank));
+    FAIL(oc_data_metanode(link,datanode,&node));
+    FAIL(oc_meta_octype(link,node,&octype));
+    FAIL(oc_meta_basetype(link,node,&atomtype));
+    FAIL(oc_meta_rank(link,node,&rank));
 
     assert(octype == OC_Atomic);
 
     /* If this variable is top-level then
-       use the oc_dds_read functions
+       use the oc_meta_read functions
        in order to test them
     */
 
@@ -583,15 +583,15 @@ printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel
 	memory = calloc(elemsize,1); /* reading only one value */
         /* read the scalar */
 	if(istoplevel) {
-	    FAIL(oc_dds_read(link,node,NULL,NULL,elemsize,memory));
+	    FAIL(oc_meta_read(link,node,NULL,NULL,elemsize,memory));
 	} else {
 	    FAIL(oc_data_read(link,datanode,NULL,NULL,elemsize,memory));
 	}
         count = 1;
     } else { 
-	size_t dimsizes[OC_MAX_DIMENSIONS];
-	size_t indices[OC_MAX_DIMENSIONS];
-        FAIL(oc_dds_dimensionsizes(link,node,dimsizes));
+	size_t dimsizes[OC_MAX_RANK];
+	size_t indices[OC_MAX_RANK];
+        FAIL(oc_meta_dimensionsizes(link,node,dimsizes));
 	/* init odometer and get cross-product */
 	count = odom_init(rank,indices,dimsizes);
         memsize = elemsize*count;
@@ -600,14 +600,14 @@ printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel
 #ifdef ALLATONCE /* read all at once */
         /* indices should be all zeros at this point */
 	if(istoplevel) {
-	    FAIL(oc_dds_read(link,node,indices,dimsizes,memsize,memory));
+	    FAIL(oc_meta_read(link,node,indices,dimsizes,memsize,memory));
 	} else {
 	    FAIL(oc_data_read(link,datanode,indices,dimsizes,memsize,memory));
 	}
 #else /* BYITEM */
         {
   	    size_t offset;
-	    size_t one[OC_MAX_DIMENSIONS]; 
+	    size_t one[OC_MAX_RANK]; 
             /* Initialize the read-by-one counts */ 
 	    for(i=0;i<rank;i++) one[i]=0; 
 	    one[rank-1] = 1; 
@@ -616,7 +616,7 @@ printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel
 		if(!odom_more(rank,indices,dimsizes))
 		    abort();
 		if(istoplevel) {
-		    FAIL(oc_dds_read(link,node,
+		    FAIL(oc_meta_read(link,node,
                                       indices,one,
 				      elemsize,memory+offset));
 		} else {
@@ -637,18 +637,18 @@ printdata_leaf(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel
 }
 
 static OCerror
-generatedds(OClink link, OCddsnode node, OCbytes* buffer, int depth)
+generatedds(OClink link, OCmetanode node, OCbytes* buffer, int depth)
 {
     size_t i,rank,nattr,nsubnodes;
     OCtype octype, atomtype;
-    OCddsnode container,field;
+    OCmetanode container,field;
     char id1[1024];
     char* name;
 
     ocbytescat(buffer,indent(depth));
 
     /* get all info about the node */
-    FAIL(oc_dds_properties(link,node,&name,&octype,&atomtype,&container,
+    FAIL(oc_meta_properties(link,node,&name,&octype,&atomtype,&container,
                              &rank,&nsubnodes,&nattr));
 
     if(octype == OC_Atomic) {
@@ -666,7 +666,7 @@ generatedds(OClink link, OCddsnode node, OCbytes* buffer, int depth)
         ocbytescat(buffer,LBRACE);
         ocbytescat(buffer,"\n");
         for(i=0;i<nsubnodes;i++) {
-	    FAIL(oc_dds_ithfield(link,node,i,&field));
+	    FAIL(oc_meta_ithfield(link,node,i,&field));
 	    if(octype == OC_Grid) {
                 ocbytescat(buffer,indent(depth));
 		switch (i) {
@@ -690,20 +690,20 @@ generatedds(OClink link, OCddsnode node, OCbytes* buffer, int depth)
 }
 
 static OCerror
-printdims(OClink link, OCddsnode node, OCbytes* buffer)
+printdims(OClink link, OCmetanode node, OCbytes* buffer)
 {
     int i;
     size_t rank,size;
-    OCddsnode dimids[OC_MAX_DIMENSIONS];
+    OCmetanode dimids[OC_MAX_RANK];
     char tmp[1024];
     char id1[1024];
 
-    FAIL(oc_dds_rank(link,node,&rank));
+    FAIL(oc_meta_rank(link,node,&rank));
     if(rank == 0) return OC_NOERR;
 
-    FAIL(oc_dds_dimensions(link,node,dimids));
+    FAIL(oc_meta_dimensions(link,node,dimids));
     for(i=0;i<rank;i++) {
-	OCddsnode dim = dimids[i];
+	OCmetanode dim = dimids[i];
 	char* dimname = NULL;
 	FAIL(oc_dimension_properties(link,dim,&size,&dimname));
 	if(dimname == NULL)
@@ -717,7 +717,7 @@ printdims(OClink link, OCddsnode node, OCbytes* buffer)
 }
 
 static OCerror
-generateddsattributes(OClink link, OCddsnode node, OCbytes* buffer, int depth)
+generateddsattributes(OClink link, OCmetanode node, OCbytes* buffer, int depth)
 {
     size_t i,j;
     char tmp[128];
@@ -729,14 +729,14 @@ generateddsattributes(OClink link, OCddsnode node, OCbytes* buffer, int depth)
     char** values = NULL;
     char id1[1024];
 
-    FAIL(oc_dds_attr_count(link,node,&nattrs));
-    FAIL(oc_dds_name(link,node,&name));
+    FAIL(oc_meta_attr_count(link,node,&nattrs));
+    FAIL(oc_meta_name(link,node,&name));
 
     if(showattributes && nattrs > 0) {
         for(i=0;i<nattrs;i++) {
-            FAIL(oc_dds_attr(link,node,i,NULL,NULL,&nvalues,NULL));
+            FAIL(oc_meta_attr(link,node,i,NULL,NULL,&nvalues,NULL));
    	    values = (char**)malloc(nvalues*sizeof(char*));
-            FAIL(oc_dds_attr(link,node,i,&aname,&atomtype,NULL,values));
+            FAIL(oc_meta_attr(link,node,i,&aname,&atomtype,NULL,values));
             snprintf(tmp,sizeof(tmp),"%s%s %s:%s = ",indent(depth),
                         oc_typetostring(atomtype),idescape(name,id1,sizeof(id1)),aname);
             ocbytescat(buffer,tmp);
@@ -764,17 +764,17 @@ generateddsattributes(OClink link, OCddsnode node, OCbytes* buffer, int depth)
 }
 
 static char*
-generatedas(OClink link, OCddsnode root)
+generatedas(OClink link, OCmetanode root)
 {
     size_t i, nsubnodes;
     char* result;
     OCbytes* buffer = ocbytesnew();
 
-    FAIL(oc_dds_nsubnodes(link,root,&nsubnodes));
+    FAIL(oc_meta_nsubnodes(link,root,&nsubnodes));
     ocbytescat(buffer,"Attributes {\n");
     for(i=0;i<nsubnodes;i++) {
-	OCddsnode attr;
-	FAIL(oc_dds_ithfield(link,root,i,&attr));
+	OCmetanode attr;
+	FAIL(oc_meta_ithfield(link,root,i,&attr));
         generatedasr(link,attr,buffer,1);
     }
     ocbytescat(buffer,"}\n");
@@ -784,27 +784,29 @@ generatedas(OClink link, OCddsnode root)
 }
 
 static OCerror
-generatedasr(OClink link, OCddsnode ddsnode, OCbytes* buffer, int depth)
+generatedasr(OClink link, OCdatanode datanode, OCbytes* buffer, int depth)
 {
     size_t i,nsubnodes;
     char tmp[256];
     OCtype octype, atomtype;
     char* name = NULL;
     char id1[1024];
+    OCmetanode node;
 
     /* get some node info */
-    FAIL(oc_dds_name(link,ddsnode,&name));
-    FAIL(oc_dds_octype(link,ddsnode,&octype));
-    FAIL(oc_dds_atomictype(link,ddsnode,&atomtype));
+    FAIL(oc_data_metanode(link,datanode,&node));
+    FAIL(oc_meta_name(link,node,&name));
+    FAIL(oc_meta_octype(link,node,&octype));
+    FAIL(oc_meta_basetype(link,node,&atomtype));
 
     if(octype == OC_Attributeset) {
         /* get node subcount */
-        FAIL(oc_dds_nsubnodes(link,ddsnode,&nsubnodes));
+        FAIL(oc_meta_nsubnodes(link,node,&nsubnodes));
         snprintf(tmp,sizeof(tmp),"%s%s {\n",indent(depth),idescape(name,id1,sizeof(id1)));
         ocbytescat(buffer,tmp);
         for(i=0;i<nsubnodes;i++) {
-	    OCddsnode attr;
-	    FAIL(oc_dds_ithfield(link,ddsnode,i,&attr));
+	    OCmetanode attr;
+	    FAIL(oc_meta_ithfield(link,datanode,i,&attr));
             generatedasr(link,attr,buffer,depth+1);
         }
         ocbytescat(buffer,indent(depth));
@@ -812,14 +814,14 @@ generatedasr(OClink link, OCddsnode ddsnode, OCbytes* buffer, int depth)
     } else if(octype == OC_Attribute) {
         /* get some info about the node */
 	size_t nvalues;
-	FAIL(oc_das_attr_count(link,ddsnode,&nvalues));
+	FAIL(oc_das_attr_count(link,node,&nvalues));
         snprintf(tmp,sizeof(tmp),"%s%s %s",indent(depth),
                 oc_typetostring(atomtype),idescape(name,id1,sizeof(id1)));
         ocbytescat(buffer,tmp);
         for(i=0;i<nvalues;i++) {
             char* value;
             OCtype ptype;
-            FAIL(oc_das_attr(link,ddsnode,i,&ptype,&value));
+            FAIL(oc_das_attr(link,node,i,&ptype,&value));
             if(i > 0) ocbytescat(buffer,",");
             if(ptype == OC_String || ptype == OC_URL) {
                 char* se = stringescape(value);
@@ -918,7 +920,7 @@ dumpdatanode(OClink link, OCdatanode datanode, size_t count, void* memory, OCbyt
 {
     size_t i;
     size_t delta;
-    OCddsnode node;
+    OCmetanode node;
     OCtype atomtype;
     OCtype octype;
     OCbytes* path = NULL;
@@ -927,9 +929,9 @@ dumpdatanode(OClink link, OCdatanode datanode, size_t count, void* memory, OCbyt
     char tmp[1024];
     struct DUMPPATH* entry = NULL;
 
-    FAIL(oc_data_ddsnode(link,datanode,&node));
-    FAIL(oc_dds_octype(link,node,&octype));
-    FAIL(oc_dds_atomictype(link,node,&atomtype));
+    FAIL(oc_data_metanode(link,datanode,&node));
+    FAIL(oc_meta_octype(link,node,&octype));
+    FAIL(oc_meta_basetype(link,node,&atomtype));
     delta = oc_typesize(atomtype);
 
 #ifdef TRACK
@@ -945,7 +947,7 @@ dumpdatanode(OClink link, OCdatanode datanode, size_t count, void* memory, OCbyt
 	if(i<(stacknext-1) && entry->node == stack[i+1].node) continue;
 
 	/* Get various pieces of additional node information */
-        FAIL(oc_dds_name(glink,entry->node,&name));
+        FAIL(oc_meta_name(glink,entry->node,&name));
         (void)idescape(name,id,sizeof(id));
 	if(name) free(name);
 
@@ -1074,11 +1076,11 @@ pushstack(OCdatanode datanode)
 {
     struct DUMPPATH* entry = stack+stacknext;
     entry->datanode = datanode;
-    FAIL(oc_data_ddsnode(glink,entry->datanode,&entry->node));
-    FAIL(oc_dds_octype(glink,entry->node,&entry->octype));
-    FAIL(oc_dds_rank(glink,entry->node,&entry->rank));
+    FAIL(oc_data_metanode(glink,entry->datanode,&entry->node));
+    FAIL(oc_meta_octype(glink,entry->node,&entry->octype));
+    FAIL(oc_meta_rank(glink,entry->node,&entry->rank));
     if(entry->rank > 0) {
-        FAIL(oc_dds_dimensionsizes(glink,entry->node,entry->dimsizes));
+        FAIL(oc_meta_dimensionsizes(glink,entry->node,entry->dimsizes));
     }
     entry->indexed = oc_data_indexed(glink,entry->datanode);
     if(entry->indexed) {
@@ -1096,14 +1098,14 @@ static void printstack(char* msg)
     fprintf(stderr,"\n%s@stack: %u\n",msg,stacknext);
     for(entry=stack,i=0;i<stacknext;i++,entry++) {
 	OCdatanode datanode = entry->datanode;
-	OCddsnode node;
+	OCmetanode node;
 	size_t rank;
-	size_t edges[OC_MAX_DIMENSIONS];
+	size_t edges[OC_MAX_RANK];
 	char* name;
-        FAIL(oc_dds_rank(glink,entry->node,&rank));
+        FAIL(oc_meta_rank(glink,entry->node,&rank));
         if(entry->rank > 0)
-            FAIL(oc_dds_dimensionsizes(glink,entry->node,edges));
-        FAIL(oc_dds_name(glink,node,&name));
+            FAIL(oc_meta_dimensionsizes(glink,entry->node,edges));
+        FAIL(oc_meta_name(glink,node,&name));
         fprintf(stderr,"    [%d] (%s)",(int)i,name)
 	for(j=0;j<rank;j++) 
             fprintf(stderr,"[%u]",(unsigned int)edges[j]);

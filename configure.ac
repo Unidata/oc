@@ -15,8 +15,8 @@ AC_SUBST(host)
 
 dnl library versionning: Update these when the interface changes. Generally,
 dnl assume that the interface tracks the major and minor release numbers.
-LIB_MAJOR=2
-LIB_MINOR=0
+LIB_MAJOR=1
+LIB_MINOR=1
 LIB_PATCH=0
 AC_SUBST(LIB_MAJOR)
 AC_SUBST(LIB_MINOR)
@@ -61,19 +61,11 @@ if test $found_curl = no ; then
   fi
 fi
 
-# These are needed for the oc-config script. jhrg 12/19/13
-CURL_CFLAGS=$curlheaders
-AC_SUBST([CURL_CFLAGS])
-CURL_LIBS=$curllibs
-AC_SUBST([CURL_LIBS])
-
 # CURLOPT_KEYPASSWD is not defined until curl version 7.16.4
 # See if defined by trying to compile a program using it
 # Save/restore CFLAGS
 SAVECFLAGS="$CFLAGS"
-# I think the following should be $curlheaders. jhrg 12/19/13
-# CFLAGS="${curl_cflags}"
-CFLAGS="${curlheaders}"
+CFLAGS="${curl_cflags}"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 [#include "curl/curl.h"],
 [[int x = CURLOPT_KEYPASSWD;]])],
@@ -139,6 +131,7 @@ test "x$enable_remote_tests" = xyes || enable_remote_tests=no
 AC_MSG_RESULT($enable_remote_tests)
 AM_CONDITIONAL(ENABLE_REMOTE_TESTS, [test "x$enable_remote_tests" = "xyes"])
 
+##################################################
 # Enable/disable distribute windows directory (off by default)
 AC_MSG_CHECKING([include win32 in the distribution (default no)])
 AC_ARG_ENABLE([win32-dist],

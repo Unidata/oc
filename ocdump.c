@@ -16,7 +16,7 @@
 #define ssize_t int
 #endif
 #define HAVE_SSIZE_T
-#endif
+#endif 
 
 #include "ocinternal.h"
 #include "ocdebug.h"
@@ -82,7 +82,7 @@ dumpocnode1(OCnode* node, int depth)
     case OC_Atomic: {
         fprintf(stdout,"[%2d]%s ",depth,dent(depth));
 	if(node->name == NULL) OCPANIC("prim without name");
-	fprintf(stdout,"%s %s",octypetostring(node->etype),node->name);
+	fprintf(stdout,"%s %s",octypetostring(node->basetype),node->name);
 	dumpdimensions(node);
 	fprintf(stdout," &%lx",(unsigned long)node);
 	fprintf(stdout,"\n");
@@ -140,7 +140,7 @@ dumpocnode1(OCnode* node, int depth)
     case OC_Attribute: {
         fprintf(stdout,"[%2d]%s ",depth,dent(depth));
 	if(node->name == NULL) OCPANIC("Attribute without name");
-	fprintf(stdout,"%s %s",octypetostring(node->etype),node->name);
+	fprintf(stdout,"%s %s",octypetostring(node->basetype),node->name);
 	for(n=0;n<oclistlength(node->att.values);n++) {
 	    char* value = (char*)oclistget(node->att.values,n);
 	    if(n > 0) fprintf(stdout,",");
@@ -165,18 +165,21 @@ dumpocnode1(OCnode* node, int depth)
     if(node->attributes != NULL) {
 	unsigned int i;
 	for(i=0;i<oclistlength(node->attributes);i++) {
-	    OCattribute* att = (OCattribute*)oclistget(node->attributes,i);
+	    OCnode* att = (OCnode*)oclistget(node->attributes,i);
+	    OCattinfo* info = &att->att;
+	    size_t nvalues;
 	    fprintf(stdout,"%s[%s=",dent2(depth+2),att->name);
-	    if(att->nvalues == 0)
-		OCPANIC("Attribute.nvalues == 0");
-	    if(att->nvalues == 1) {
-		dumpattvalue(att->etype,att->values,0);
+	    nvalues = oclistlength(info->values);
+	    if(nvalues == 0)
+		OCPANIC("|Attributes| == 0");
+	    if(nvalues == 1) {
+		dumpattvalue(att->basetype,(char*)oclistget(info->values,0));
 	    } else {
-		int j;
+		unsigned int j;
 	        fprintf(stdout,"{");
-		for(j=0;j<att->nvalues;j++) {
+		for(j=0;j<nvalues;j++) {
 		    if(j>0) fprintf(stdout,", ");
-		    dumpattvalue(att->etype,att->values,j);
+		    dumpattvalue(att->basetype,(char*)oclistget(info->values,j));
 		}
 	        fprintf(stdout,"}");
 	    }
@@ -198,12 +201,12 @@ dumpdimensions(OCnode* node)
 }
 
 static void
-dumpattvalue(OCtype nctype, char** strings, int index)
+dumpattvalue(OCtype nctype, char* string)
 {
     if(nctype == OC_String || nctype == OC_URL) {
-        fprintf(stdout,"\"%s\"",strings[index]);
+        fprintf(stdout,"\"%s\"",string);
     } else {
-        fprintf(stdout,"%s",strings[index]);
+        fprintf(stdout,"%s",string);
     }
 }
 
@@ -252,7 +255,7 @@ addfield(char* field, char* line, int align)
 }
 
 static void
-dumpfield(size_t index, char* n8, int isxdr)
+dumpfield(int index, char* n8, int isxdr)
 {
     char line[1024];
     char tmp[32];
@@ -456,10 +459,7 @@ ocdd(OCstate* state, OCnode* root, int xdrencoded, int level)
     char* mem;
     size_t len;
     if(root->tree->data.file != NULL) {
-        if(!ocreadfile(root->tree->data.file,
-                       root->tree->data.bod,
-                       &mem,
-                       &len)) {
+        if(!ocreadfile(root->tree->data.file,root->tree->data.bod,&mem,&len)) {
     	    fprintf(stderr,"ocdd could not read data file\n");
 	    return;
 	}
@@ -494,7 +494,7 @@ ocdumpdata(OCstate* state, OCdata* data, OCbytes* buffer, int frominstance)
     if(iscontainer(template->octype)) {
         snprintf(tmp,sizeof(tmp)," ninstances=%d",(int)data->ninstances);
         ocbytescat(buffer,tmp);
-    } else if(template->etype == OC_String || template->etype == OC_URL) {
+    } else if(template->basetype == OC_String || template->basetype == OC_URL) {
         snprintf(tmp,sizeof(tmp)," nstrings=%d",(int)data->nstrings);
         ocbytescat(buffer,tmp);
     }
@@ -576,9 +576,9 @@ ocdumpdatatree(OCstate* state, OCdata* data, OCbytes* buffer, int depth)
     tabto(tabstops[++tabstop],buffer);
 
     if(template->octype == OC_Atomic) {
-	typename = octypetoddsstring(template->etype);
+	typename = octypetostring(template->basetype);
     } else { /*must be container*/
-	typename = octypetoddsstring(template->octype);
+	typename = octypetostring(template->octype);
     }
     ocbytescat(buffer,typename);
 
@@ -653,11 +653,11 @@ ocdumpdatapath(OCstate* state, OCdata* data, OCbytes* buffer)
 	if(isrecord)
 	    ocbytescat(buffer,"Record");
 	else
-	    ocbytescat(buffer,octypetoddsstring(template->octype));
+	    ocbytescat(buffer,octypetostring(template->octype));
     } else if(isatomic(template->octype)) {
-	/* add the atomic etype */
+	/* add the atomic basetype */
 	ocbytescat(buffer,":");
-	ocbytescat(buffer,octypetoddsstring(template->etype));
+	ocbytescat(buffer,octypetostring(template->basetype));
     }
     snprintf(tmp,sizeof(tmp),"->0x%0lx",(unsigned long)pathdata);
     ocbytescat(buffer,tmp);	

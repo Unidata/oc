@@ -106,6 +106,7 @@ readpacket(OCstate* state, OCURI* url,OCbytes* packet,OCdxd dxd,long* lastmodifi
 	int flags = 0;
 	if(!fileprotocol) {
 	    flags |= OCURICONSTRAINTS;
+	    flags |= OCURIUSERPWD;
 	}
 	flags |= OCURIENCODE;
         fetchurl = ocuribuild(url,NULL,suffix,flags);

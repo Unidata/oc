@@ -174,8 +174,8 @@ octypesize(OCtype etype)
 {
     switch (etype) {
     case OC_Char:	return sizeof(char);
-    case OC_Byte:	return sizeof(signed char);
-    case OC_UByte:	return sizeof(unsigned char);
+    case OC_Int8:	return sizeof(signed char);
+    case OC_UInt8:	return sizeof(unsigned char);
     case OC_Int16:	return sizeof(short);
     case OC_UInt16:	return sizeof(unsigned short);
     case OC_Int32:	return sizeof(int);
@@ -188,19 +188,21 @@ octypesize(OCtype etype)
 #endif
     case OC_String:	return sizeof(char*);
     case OC_URL:	return sizeof(char*);
+    /* DAP4 */
+    case OC_Opaque:     return sizeof(unsigned char*);
     default: break;     /* Ignore all others */
     }
     return 0;
 }
 
 char*
-octypetostring(OCtype octype)
+octypename(OCtype octype)
 {
     switch (octype) {
     case OC_NAT:          return "OC_NAT";
     case OC_Char:         return "OC_Char";
-    case OC_Byte:         return "OC_Byte";
-    case OC_UByte:	   return "OC_UByte";
+    case OC_Int8:         return "OC_Int8";
+    case OC_UInt8:         return "OC_UInt8";
     case OC_Int16:        return "OC_Int16";
     case OC_UInt16:       return "OC_UInt16";
     case OC_Int32:        return "OC_Int32";
@@ -211,6 +213,9 @@ octypetostring(OCtype octype)
     case OC_Float64:      return "OC_Float64";
     case OC_String:       return "OC_String";
     case OC_URL:          return "OC_URL";
+    /* DAP4 */
+    case OC_Opaque:       return "OC_Opaque";
+    case OC_Enum:         return "OC_Enum";
     /* Non-primitives*/
     case OC_Dataset:      return "OC_Dataset";
     case OC_Sequence:     return "OC_Sequence";
@@ -220,16 +225,23 @@ octypetostring(OCtype octype)
     case OC_Attribute:    return "OC_Attribute";
     case OC_Attributeset: return "OC_Attributeset";
     case OC_Atomic:       return "OC_Atomic";
+    /* Dap4 */
+    case OC_Group:        return "OC_Group";
+    case OC_Map:          return "OC_Map";
+    case OC_Enumeration:  return "OC_Enumeration";
+
     default: break;
     }
     return NULL;
 }
 
 char*
-octypetoddsstring(OCtype octype)
+octypetostring(OCtype octype)
 {
     switch (octype) {
-    case OC_Byte:         return "Byte";
+    case OC_Char:         return "Char";
+    case OC_Int8:         return "Int8";
+    case OC_UInt8:        return "UInt8";
     case OC_Int16:        return "Int16";
     case OC_UInt16:       return "UInt16";
     case OC_Int32:        return "Int32";
@@ -238,6 +250,10 @@ octypetoddsstring(OCtype octype)
     case OC_Float64:      return "Float64";
     case OC_String:       return "String";
     case OC_URL:          return "Url";
+    /* DAP4 Additions */
+    case OC_Opaque:       return "Opaque";
+    case OC_Enum:       return "Enum";
+
     /* Non-atomics*/
     case OC_Dataset:      return "Dataset";
     case OC_Sequence:     return "Sequence";
@@ -247,6 +263,10 @@ octypetoddsstring(OCtype octype)
     case OC_Attribute:    return "Attribute";
     case OC_Attributeset: return "Attributeset";
     case OC_Atomic:       return "Atomic";
+    /* DAP4 Additions */
+    case OC_Group:        return "Group";
+    case OC_Map:          return "Map";
+    case OC_Enumeration:  return "Enumeration";
     default: break;
     }
     return "<unknown>";
@@ -262,10 +282,10 @@ octypeprint(OCtype etype, void* value, size_t bufsize, char* buf)
     case OC_Char:
 	snprintf(buf,bufsize,"'%c'",*(char*)value);
 	break;
-    case OC_Byte:
+    case OC_Int8:
 	snprintf(buf,bufsize,"%d",*(signed char*)value);
 	break;
-    case OC_UByte:
+    case OC_UInt8:
 	snprintf(buf,bufsize,"%u",*(unsigned char*)value);
 	break;
     case OC_Int16:
@@ -299,7 +319,7 @@ octypeprint(OCtype etype, void* value, size_t bufsize, char* buf)
 	char* s = *(char**)value;
 	snprintf(buf,bufsize,"\"%s\"",s);
 	} break;
-    default: break;
+    default: abort();
     }
     return OC_NOERR;
 }
@@ -309,8 +329,8 @@ xxdrsize(OCtype etype)
 {
     switch (etype) {
     case OC_Char:
-    case OC_Byte:
-    case OC_UByte:
+    case OC_Int8:
+    case OC_UInt8:
     case OC_Int16:
     case OC_UInt16:
     case OC_Int32:
@@ -325,6 +345,8 @@ xxdrsize(OCtype etype)
 	return (2*XDRUNIT);
     case OC_String:
     case OC_URL:
+    case OC_Opaque:
+    case OC_Enum:
     default: break;
     }
     return 0;
@@ -359,11 +381,11 @@ ocerrstring(int err)
 	case OC_EDIMSIZE:
 	    return "OC_EDIMSIZE: Invalid dimension size";
 	case OC_EDAP:
-	    return "OC_EDAP: unspecified DAP failure";
+	    return "OC_EDAP: DAP failure";
 	case OC_EXDR:
 	    return "OC_EXDR: XDR failure";
 	case OC_ECURL:
-	    return "OC_ECURL: unspecified libcurl failure";
+	    return "OC_ECURL: libcurl failure";
 	case OC_EBADURL:
 	    return "OC_EBADURL: malformed url";
 	case OC_EBADVAR:
@@ -380,10 +402,10 @@ ocerrstring(int err)
 	    return "OC_ENAMEINUSE: Duplicate name in DDS";
 	case OC_EDAS:
 	    return "OC_EDAS: Malformed or unreadable DAS";
-	case OC_EDDS:
-	    return "OC_EDDS: Malformed or unreadable DDS";
-	case OC_EDATADDS:
-	    return "OC_EDATADDS: Malformed or unreadable DATADDS";
+	case OC_EMETA:
+	    return "OC_EMETA: Malformed or unreadable meta data";
+	case OC_EDATA:
+	    return "OC_EDATA: Malformed or unreadable data response";
 	case OC_ERCFILE:
 	    return "OC_ERCFILE: Malformed or unreadable run-time configuration file";
 	case OC_ENOFILE:
@@ -399,6 +421,18 @@ ocerrstring(int err)
 	case OC_EOVERRUN:
 	    return "OC_EOVERRUN: internal concatenation failed";
 
+	/* Too many dimensions */
+	case OC_ERANK:
+	    return "OC_ERANK: variable has too many dimensions";
+  
+	/* Attempt to do an operation not supported by current protocol */
+	case OC_EPROTOCOL:
+	    return "OC_EPROTOCOL: Attempt to do an operation not supported by protocol for this connection";
+  
+        /* DAP4 Errors */
+	case OC_ERESPONSE: /* Error response was returned */
+	    return "OC_ERESPONSE: DAP4 error response was returned by server";
+
 	/* Authorization Error */
 	case OC_EAUTH:
 	    return "OC_EAUTH: authorization failure";
@@ -409,11 +443,15 @@ ocerrstring(int err)
 }
 
 OCerror
-ocsvcerrordata(OCstate* state, char** codep, char** msgp, long* httpp)
+ocsvcerrordata(OCstate* state, char** codep,
+               char** msgp, char** contextp, char** otherinfop,
+               long* httpcodep)
 {
     if(codep) *codep = state->error.code;
     if(msgp) *msgp = state->error.message;
-    if(httpp) *httpp = state->error.httpcode;
+    if(contextp) *contextp = state->error.context;
+    if(otherinfop) *otherinfop = state->error.otherinfo;
+    if(httpcodep) *httpcodep = state->error.httpcode;
     return OC_NOERR;    
 }
 
@@ -427,8 +465,7 @@ ocdataddsmsg(OCstate* state, OCtree* tree)
 #define ERRCHUNK 1024
 #define ERRFILL ' '
 #define ERRTAG "Error {" 
-    int i,j;
-    size_t len;
+    unsigned int i,j,len;
     XXDR* xdrs;
     char* contents;
     off_t ckp;
@@ -522,15 +559,15 @@ int
 oc_ispacked(OCnode* node)
 {
     OCtype octype = node->octype;
-    OCtype etype = node->etype;
+    OCtype basetype = node->basetype;
     int isscalar = (node->array.rank == 0);
     int packed;
 
     if(isscalar || octype != OC_Atomic)
 	return 0; /* is not packed */
-    packed = (etype == OC_Byte
-	      || etype == OC_UByte
-              || etype == OC_Char) ? 1 : 0;
+    packed = (basetype == OC_UInt8
+	      || basetype == OC_Int8
+              || basetype == OC_Char) ? 1 : 0;
     return packed;
 }
 
@@ -598,7 +635,7 @@ occopycat(char* dst, size_t size, size_t n, ...)
     va_list args;
     size_t avail = size - 1;
     int i; 
-    int status = 1; // assume ok
+    int status = 1; /* assume ok */
     char* p = dst;
 
     if(n == 0) {
@@ -642,7 +679,7 @@ int
 occoncat(char* dst, size_t size, size_t n, ...)
 {
     va_list args;
-    int status = 1; // assume ok
+    int status = 1; /* assume ok */
     size_t avail;
     int i; 
     char* p;
@@ -684,7 +721,6 @@ done:
     return status;    
 }
 
-
 /**
 Wrap mktmp
 */
@@ -700,12 +736,12 @@ ocmktmp(const char* base, char** tmpnamep, int* fdp)
     tmpname = (char*)malloc(tmpsize);
     if(tmpname == NULL) return OC_ENOMEM;
     if(!occopycat(tmpname,tmpsize,1,base)) {
-	free(tmpname);
+	(free)tmpname);
 	return OC_EOVERRUN;
     }
 #ifdef HAVE_MKSTEMP
     if(!occoncat(tmpname,tmpsize,1,"XXXXXX")) {
-        free(tmpname);
+	free(tmpname);
 	return OC_EOVERRUN;
     }
     /* Note Potential problem: old versions of this function
@@ -721,9 +757,9 @@ ocmktmp(const char* base, char** tmpnamep, int* fdp)
 	if(rno < 0) rno = -rno;
         snprintf(spid,sizeof(spid),"%06d",rno);
 	if(!occoncat(tmpname,tmpsize,1,spid)) {
-            free(tmpname);
+	    free(tmpname);
 	    return OC_EOVERRUN;
-        }
+	}
 #if defined(_WIN32) || defined(_WIN64)
         fd=open(tmpname,O_RDWR|O_BINARY|O_CREAT|O_EXCL|FILE_ATTRIBUTE_TEMPORARY, _S_IREAD|_S_IWRITE);
 #  else

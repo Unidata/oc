@@ -94,9 +94,9 @@ if autoreconf -i --force ; then ok=1; else exit ; fi
 fi
 
 FLAGS="--prefix ${PREFIX}"
-#FLAGS="${FLAGS} --disable-shared"
+FLAGS="${FLAGS} --disable-shared"
 #FLAGS="${FLAGS} --enable-shared"
-FLAGS="${FLAGS} --enable-remote-tests"
+#FLAGS="${FLAGS} --enable-remote-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #if test x$CURLCONFIG != x ; then

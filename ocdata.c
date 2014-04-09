@@ -195,10 +195,7 @@ ocdata_position(OCstate* state, OCdata* data, size_t* indices)
 	indices[0] = data->index;
     else if(fisset(data->datamode,OCDT_ELEMENT)) {
 	/* Transform the linearized array index into a set of indices */
-	ocarrayindices(data->index,
-                       template->array.rank,
-                       template->array.sizes,
-                       indices);
+	ocarrayindices(data->index,template->array.rank,template->array.sizes,indices);
     } else
 	return OCTHROW(OC_EBADTYPE);
     return OCTHROW(OC_NOERR);
@@ -238,7 +235,7 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
 {
     int stat = OC_NOERR;
     XXDR* xdrs;
-    OCtype etype, octype;
+    OCtype basetype, octype;
     int isscalar;
     size_t elemsize, totalsize, countsize;
     OCnode* template;
@@ -253,12 +250,12 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
     template = data->template;
     octype = template->octype;
     assert(octype == OC_Atomic);
-    etype = template->etype;
+    basetype = template->basetype;
 
     isscalar = (template->array.rank == 0 ? 1 : 0);
 
     /* validate memory space*/
-    elemsize = octypesize(etype);
+    elemsize = octypesize(basetype);
     totalsize = elemsize*data->ninstances;
     countsize = elemsize*count;
     if(totalsize < countsize || memsize < countsize)
@@ -292,7 +289,7 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 {
     int i;
     OCnode* template;
-    OCtype etype;
+    OCtype basetype;
     off_t elemsize, totalsize, xdrtotal, xdrstart;
     int scalar;
 
@@ -303,21 +300,21 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
     OCASSERT((start+count) <= data->ninstances);
 
     template = data->template;
-    etype = template->etype;
+    basetype = template->basetype;
     scalar = (template->array.rank == 0);
 
     /* Note that for strings, xdrsize == 0 */
     xdrtotal = count*data->xdrsize; /* amount (in xdr sizes) to read */
     xdrstart = start*data->xdrsize; /* offset from the start of the data */
 
-    elemsize = octypesize(etype); /* wrt memory, not xdrsize */
+    elemsize = octypesize(basetype); /* wrt memory, not xdrsize */
     totalsize = elemsize*count;
 
     /* validate memory space*/
     if(memsize < totalsize) return OCTHROW(OC_EINVAL);
 
     /* copy out with appropriate byte-order conversions */
-    switch (etype) {
+    switch (basetype) {
 
     case OC_Int32: case OC_UInt32: case OC_Float32:
 	xxdr_setpos(xdrs,data->xdroffset+xdrstart);
@@ -366,7 +363,7 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 	    unsigned short* sp = (unsigned short*)memory;
 	    for(i=0;i<count;i++,sp++) {
 	        unsigned int tmp;
-		if(!xxdr_getbytes(xdrs,(char*)&tmp,(off_t)XDRUNIT))
+		if(!xxdr_getbytes(xdrs,(char*)&tmp,(off_t)XDRUNIT))		
 		    {OCTHROW(OC_EDATADDS); goto xdrfail;}
 		/* convert from network order if necessary */
 		if(!xxdr_network_order)
@@ -378,8 +375,8 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 	} break;
 
     /* Do the byte types, packed/unpacked */
-    case OC_Byte:
-    case OC_UByte:
+    case OC_Int8:
+    case OC_UInt8:
     case OC_Char:
 	if(scalar) {
 	    /* scalar bytes are stored in xdr as int */
@@ -409,7 +406,7 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 	}
         } break;
 
-    default: OCPANIC("unexpected etype"); break;
+    default: OCPANIC("unexpected basetype"); break;
     }
 
     return OC_NOERR;
@@ -419,3 +416,13 @@ xdrfail:
     return OCTHROW(OC_EDATADDS);
 }
 
+void
+ocdata_free(OCstate* state, OCdata* data)
+{
+    if(state->version.protocol == 2)
+	dap2_data_free(state, data);
+    if(state->version.protocol == 4)
+	assert(1);
+    else
+	assert(0);
+}
