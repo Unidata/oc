@@ -16,10 +16,13 @@ extern int occopycat(char* dst, size_t size, size_t n, ...);
 extern int occoncat(char* dst, size_t size, size_t n, ...);
 
 extern size_t octypesize(OCtype etype);
+extern char*  octypename(OCtype octype);
 extern char*  octypetostring(OCtype octype);
-extern char*  octypetoddsstring(OCtype octype);
 extern char* ocerrstring(int err);
-extern OCerror ocsvcerrordata(struct OCstate*,char**,char**,long*);
+extern OCerror ocsvcerrordata(OCstate*, char** codep,
+                              char** msgp, char** contextp, char** otherinfop,
+                              long* httpcodep);
+
 extern OCerror octypeprint(OCtype etype, void* value, size_t bufsize, char* buf);
 extern size_t xxdrsize(OCtype etype);
 
@@ -52,5 +55,9 @@ extern const char* ocdtmodestring(OCDT mode,int compact);
 #define iscontainer(t) ((t) == OC_Dataset || (t) == OC_Structure || (t) == OC_Sequence || (t) == OC_Grid || (t) == OC_Attributeset)
 
 #define isatomic(t) ((t) == OC_Atomic)
+
+/* DAP4 */
+extern OCnode* ocfindbyname(OCnode* node, const char* name);
+extern OCnode* ocfindbyfqn(OCnode* root, const char* fqn0);
 
 #endif /*UTIL_H*/

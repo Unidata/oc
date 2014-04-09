@@ -1,24 +1,23 @@
+#!/bin/bash
+
 OCLOGFILE=""; PARMS="" ; CON=""; ARGS=""
 
-if test -f /cygdrive/f/svn ; then
+if test -e f:/svn ; then
 P=/cygdrive/f/svn
 else
 P=/home/dmh/svn
 fi
 
-T="test.22"
+#T="in1.nc"
 #B="$P/oc2.0/tests/baselines/$T"
-#CON=
+#F="http://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCinpKfmT"
+#CON='temperature&longitude>=-120.&longitude<=-118.4&latitude>=33&latitude<=34&time>=2007-01-01&time<=2007-02-01'
+F="file://$P/oc2.0/tests/testdata/Drifters"
 
-F="http://remotetest.unidata.ucar.edu/dts/${T}"
-CON="exp.ThreeD[5:1:7][5:8][1:3]"
-
-#ARGS="-L -T -g -p datadds"
-#ARGS="-DC -T -g -A -p dds"
+ARGS="-L -T -g -p datadds"
+#ARGS="-T -g -A -p dds"
 ARGS="-DD -T -g -p dds -p datadds"
-#ARGS="-DD -T -g -p das"
-#ARGS="-T -g -p dds"
-
+#ARGS="-D2 -T -p datadds"
 if test "x$CON" != x ; then
 ARGS="-C '$CON' $ARGS"
 fi
@@ -45,7 +44,6 @@ alias qh="$PROG -g -p dds '$U'"
 alias d0="$PROG -p dds -DX1 -DN '$U'"
 alias dd="gdb --args $PROG -p datadds -DX1 -DN '$U'"
 alias compare="diff -wBb ${B}.dods ./junk"
-alias cc="curl -L --head --location-trusted --trace - $F"
 
 if test 0 = 1; then
 F="http://localhost:8080/thredds/dodsC/test/badname.nc"
@@ -71,9 +69,6 @@ F="http://aurapar2u.ecs.nasa.gov/opendap/Aura_OMI_Level2/OMHCHO.003/2008/001/OMI
 #F="http://motherlode.ucar.edu:8081/thredds/dodsC/testdods/K1VHR_05JUL2012_0700_L2B_OLR.h5.das"
 F="http://motherlode.ucar.edu:8081/thredds/dodsC/testdods/nametest3.nc"
 F="http://ingrid.ldeo.columbia.edu/SOURCES/.USTOPO/dods"
-F="http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/.NASA-GMAO/.MONTHLY/.sst/dods"
-F="http://tiggeUser:tigge@thredds-test.ucar.edu/thredds/dodsC/restrict/testData.nc.dds"
-F="http://ticket:ticket1@utmea.enea.it:8080/thredds/dodsC/UNIDATA_passwd/head_out.nc"
 fi
 
 

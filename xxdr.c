@@ -473,7 +473,7 @@ xxdr_double(XXDR* xdr, double* dp)
    int status = 0;
    char data[2*XDRUNIT];
    /* Pull two units */
-   status = xxdr_opaque(xdr,data,(off_t)2*XDRUNIT);
+   status = xxdr_opaque(xdr,data,(off_t)(2*XDRUNIT));
    if(status && dp) {
 	xxdrntohdouble(data,dp);
    }
@@ -485,7 +485,7 @@ void
 xxdrntohdouble(char* c8, double* dp)
 {
     unsigned int ii[2];
-    memcpy(ii,c8,(size_t)2*XDRUNIT);
+    memcpy(ii,c8,(size_t)(2*XDRUNIT));
     if(!xxdr_big_endian) {
 	unsigned int tmp;
 	/* reverse byte order */
