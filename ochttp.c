@@ -35,7 +35,7 @@ ocfetchhttpcode(CURL* curl)
     return httpcode;
 }
 
-int
+OCerror
 ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
 		off_t* sizep, long* filetime)
 {
@@ -96,13 +96,14 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime,
 	int stat = OC_NOERR;
 	CURLcode cstat = CURLE_OK;
 	size_t len;
-    long httpcode = 0;
-	char tbuf[1024];
+        long httpcode = 0;
+
 	/* Set the URL */
 	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
 	if (cstat != CURLE_OK)
 		goto fail;
 	
+#if 0
 	if(creds != NULL && creds->password != NULL  && creds->username != NULL) {
 	    /* Set user and password */
 #if defined (HAVE_CURLOPT_USERNAME) && defined (HAVE_CURLOPT_PASSWORD)
@@ -119,6 +120,7 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime,
 			goto fail;
 #endif
 	}
+#endif
 
 	/* send all data to this function  */
 	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -258,7 +260,7 @@ encodeurltext(char* text, OCbytes* buf)
 
 #endif
 
-int
+OCerror
 occurlopen(CURL** curlp)
 {
 	int stat = OC_NOERR;
@@ -285,7 +287,7 @@ occurlclose(CURL* curl)
 		curl_easy_cleanup(curl);
 }
 
-int
+OCerror
 ocfetchlastmodified(CURL* curl, char* url, long* filetime)
 {
     int stat = OC_NOERR;
@@ -317,7 +319,7 @@ fail:
     return OCTHROW(OC_ECURL);
 }
 
-int
+OCerror
 ocping(const char* url)
 {
     int stat = OC_NOERR;
@@ -328,6 +330,14 @@ ocping(const char* url)
     /* Create a CURL instance */
     stat = occurlopen(&curl);
     if(stat != OC_NOERR) return stat;    
+
+    /* Use redirects */
+    cstat = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
+    if (cstat != CURLE_OK)
+        goto done;
+    cstat = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    if (cstat != CURLE_OK)
+        goto done;
 
     /* use a very short timeout: 10 seconds */
     cstat = curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)10);

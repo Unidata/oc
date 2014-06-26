@@ -43,8 +43,9 @@ build_triplet = i686-pc-cygwin
 host_triplet = i686-pc-cygwin
 bin_PROGRAMS = ocprint$(EXEEXT)
 #am__append_1 = win32
+am__append_2 = XGetopt.c XGetopt.h
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
+DIST_COMMON = $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/oc-config.in \
 	$(top_srcdir)/configure COPYING ChangeLog INSTALL conf/compile \
@@ -104,7 +105,9 @@ liboc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(liboc_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
-am_ocprint_OBJECTS = ocprint.$(OBJEXT)
+am__ocprint_SOURCES_DIST = ocprint.c XGetopt.c XGetopt.h
+am__objects_1 = XGetopt.$(OBJEXT)
+am_ocprint_OBJECTS = ocprint.$(OBJEXT) $(am__objects_1)
 ocprint_OBJECTS = $(am_ocprint_OBJECTS)
 am__DEPENDENCIES_1 =
 ocprint_DEPENDENCIES = $(top_builddir)/liboc.la $(am__DEPENDENCIES_1)
@@ -123,7 +126,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(liboc_la_SOURCES) $(ocprint_SOURCES)
-DIST_SOURCES = $(liboc_la_SOURCES) $(ocprint_SOURCES)
+DIST_SOURCES = $(liboc_la_SOURCES) $(am__ocprint_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -180,21 +183,21 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /cygdrive/f/git/oc2.0/conf/missing --run aclocal-1.11
+ACLOCAL = ${SHELL} /cygdrive/f/git/oc/conf/missing --run aclocal-1.11
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AR = ar
-AUTOCONF = ${SHELL} /cygdrive/f/git/oc2.0/conf/missing --run autoconf
-AUTOHEADER = ${SHELL} /cygdrive/f/git/oc2.0/conf/missing --run autoheader
-AUTOMAKE = ${SHELL} /cygdrive/f/git/oc2.0/conf/missing --run automake-1.11
+AUTOCONF = ${SHELL} /cygdrive/f/git/oc/conf/missing --run autoconf
+AUTOHEADER = ${SHELL} /cygdrive/f/git/oc/conf/missing --run autoheader
+AUTOMAKE = ${SHELL} /cygdrive/f/git/oc/conf/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -g -O0 -I/usr/local/include
+CFLAGS = 
 CPP = gcc -E
-CPPFLAGS = 
-CURL_CFLAGS = -I/usr/local/include
-CURL_LIBS = -L/usr/local/lib -lcurl -lz
+CPPFLAGS = -I/usr/local/include 
+CURL_CFLAGS = 
+CURL_LIBS = 
 CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -214,10 +217,10 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/i686-pc-cygwin/bin/ld.exe
-LDFLAGS = 
+LDFLAGS = -L/usr/local/lib -lcurl -lidn -lssh2 -lssl -lcrypto -llber -lldap -lz 
 LIBOBJS = 
 LIBOC_VERSION = 2:0:0
-LIBS =  -L/usr/local/lib -lcurl -lz
+LIBS = -lcurl 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIB_MAJOR = 2
 LIB_MINOR = 0
@@ -225,7 +228,7 @@ LIB_PATCH = 0
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /cygdrive/f/git/oc2.0/conf/missing --run makeinfo
+MAKEINFO = ${SHELL} /cygdrive/f/git/oc/conf/missing --run makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -251,10 +254,10 @@ VALGRIND =
 VERSION = 2.0
 YACC = bison -y
 YFLAGS = 
-abs_builddir = /cygdrive/f/git/oc2.0
-abs_srcdir = /cygdrive/f/git/oc2.0
-abs_top_builddir = /cygdrive/f/git/oc2.0
-abs_top_srcdir = /cygdrive/f/git/oc2.0
+abs_builddir = /cygdrive/f/git/oc
+abs_srcdir = /cygdrive/f/git/oc
+abs_top_builddir = /cygdrive/f/git/oc
+abs_top_srcdir = /cygdrive/f/git/oc
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
@@ -283,7 +286,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /cygdrive/f/git/oc2.0/conf/install-sh
+install_sh = ${SHELL} /cygdrive/f/git/oc/conf/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -292,7 +295,7 @@ mandir = ${datarootdir}/man
 mkdir_p = /usr/bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /tmp/install
+prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
@@ -345,7 +348,7 @@ ocuri.h ocuri.c \
 ocutil.h ocutil.c \
 xxdr.h xxdr.c
 
-liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) 
+liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) -L/usr/local/lib -lcurl -lidn -lssh2 -lssl -lcrypto -llber -lldap -lz 
 pkginclude_HEADERS = oc.h
 
 #noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \
@@ -359,7 +362,7 @@ EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README dap.y \
 	XGetopt.c oc.spec ocprint.1 CMakeLists.txt docs \
 	$(am__append_1)
 MAINTAINERCLEANFILES = Makefile.in
-ocprint_SOURCES = ocprint.c
+ocprint_SOURCES = ocprint.c $(am__append_2)
 ocprint_LDADD = $(top_builddir)/liboc.la ${CURL_LIBS}
 
 ###########################################################################
@@ -542,6 +545,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+include ./$(DEPDIR)/XGetopt.Po
 include ./$(DEPDIR)/daplex.Plo
 include ./$(DEPDIR)/dapparse.Plo
 include ./$(DEPDIR)/daptab.Plo

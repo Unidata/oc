@@ -82,9 +82,11 @@ struct OCD {
 static char blanks[2048];
 #define BLANKSPERDENT 2
 
+#ifdef ENABLE_XGETOPT
 extern int optind;
 extern int opterr;
 extern char* optarg;
+#endif
 
 /* Forward*/
 static void usage(char*);

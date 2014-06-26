@@ -43,8 +43,9 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = ocprint$(EXEEXT)
 @INCLUDE_WIN32_DIST_TRUE@am__append_1 = win32
+@ENABLE_XGETOPT_TRUE@am__append_2 = XGetopt.c XGetopt.h
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
+DIST_COMMON = $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/oc-config.in \
 	$(top_srcdir)/configure COPYING ChangeLog INSTALL conf/compile \
@@ -104,7 +105,9 @@ liboc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(liboc_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
-am_ocprint_OBJECTS = ocprint.$(OBJEXT)
+am__ocprint_SOURCES_DIST = ocprint.c XGetopt.c XGetopt.h
+@ENABLE_XGETOPT_TRUE@am__objects_1 = XGetopt.$(OBJEXT)
+am_ocprint_OBJECTS = ocprint.$(OBJEXT) $(am__objects_1)
 ocprint_OBJECTS = $(am_ocprint_OBJECTS)
 am__DEPENDENCIES_1 =
 ocprint_DEPENDENCIES = $(top_builddir)/liboc.la $(am__DEPENDENCIES_1)
@@ -123,7 +126,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(liboc_la_SOURCES) $(ocprint_SOURCES)
-DIST_SOURCES = $(liboc_la_SOURCES) $(ocprint_SOURCES)
+DIST_SOURCES = $(liboc_la_SOURCES) $(am__ocprint_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -359,7 +362,7 @@ EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README dap.y \
 	XGetopt.c oc.spec ocprint.1 CMakeLists.txt docs \
 	$(am__append_1)
 MAINTAINERCLEANFILES = Makefile.in
-ocprint_SOURCES = ocprint.c
+ocprint_SOURCES = ocprint.c $(am__append_2)
 ocprint_LDADD = $(top_builddir)/liboc.la ${CURL_LIBS}
 
 ###########################################################################
@@ -542,6 +545,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XGetopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daplex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dapparse.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daptab.Plo@am__quote@

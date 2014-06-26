@@ -4,11 +4,13 @@
  *   $Header$
  *********************************************************************/
 
+#include "config.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 
+#include "oc.h"
 #include "ocuri.h"
 
 #define OCURIDEBUG
@@ -35,8 +37,23 @@ static int failpoint = 0;
 #define NILLEN(s) ((s)==NULL?0:strlen(s))
 #endif
 
+#ifdef HAVE_STRDUP
 #ifndef nulldup
 #define nulldup(s) ((s)==NULL?NULL:strdup(s))
+#endif
+#endif
+
+#ifndef HAVE_STRDUP
+static char* nulldup(char* s)
+{
+    char* dup = NULL;
+    if(s != NULL) {
+	dup = (char*)malloc(strlen(s)+1);
+	if(dup != NULL)
+	    strcpy(dup,s);
+    }
+    return dup;
+}
 #endif
 
 #define terminate(p) {*(p) = EOFCHAR;}
@@ -598,6 +615,8 @@ ocuridecodeparams(OCURI* ocuri)
 
     /* plist is an env style list */
     plist = (char**)calloc(1,sizeof(char*)*(2*nparams+1)); /* +1 for null termination */
+    if(plist == NULL)
+	return 0;
 
     /* Break up each param into a (name,value) pair*/
     /* and insert into the param list */

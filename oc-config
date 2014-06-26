@@ -2,14 +2,14 @@
 #
 # Borrowed the idea for this script (and some code) from libcurl.
 #
-prefix="/tmp/install"
+prefix="/usr/local"
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 package_version="2.0"
 cc="gcc"
-libs="-L${libdir} -loc -L/usr/local/lib -lcurl -lz  -L/usr/local/lib -lcurl -lz" 
-cflags="-I${includedir}/oc -I/usr/local/include"
+libs="-L${libdir} -loc  -lcurl " 
+cflags="-I${includedir}/oc "
 
 usage()
 {

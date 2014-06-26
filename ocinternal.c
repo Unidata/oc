@@ -40,13 +40,13 @@
 /* Define default rc files and aliases*/
 static char* rcfilenames[4] = {".daprc",".dodsrc",".ocrc",NULL};
 
-static int ocextractddsinmemory(OCstate*,OCtree*,int);
-static int ocextractddsinfile(OCstate*,OCtree*,int);
+static OCerror ocextractddsinmemory(OCstate*,OCtree*,int);
+static OCerror ocextractddsinfile(OCstate*,OCtree*,int);
 static char* constraintescape(const char* url);
 static OCerror createtempfile(OCstate*,OCtree*);
 static int dataError(XXDR* xdrs, OCstate*);
 
-static int ocsetcurlproperties(OCstate*);
+static OCerror ocsetcurlproperties(OCstate*);
 
 extern OCnode* makeunlimiteddimension(void);
 
@@ -65,7 +65,7 @@ extern OCnode* makeunlimiteddimension(void);
 /* Collect global state info in one place */
 struct OCGLOBALSTATE ocglobalstate;
 
-int
+OCerror
 ocinternalinitialize(void)
 {
     int stat = OC_NOERR;
@@ -387,8 +387,12 @@ createtempfile(OCstate* state, OCtree* tree)
     return stat;
 
 fail:
-    if(name != NULL) free(name);
-    oclog(OCLOGERR,"oc_open: attempt to create tmp file failed: %s",name);
+    if(name != NULL) {
+        oclog(OCLOGERR,"oc_open: attempt to create tmp file failed: %s",name);
+	free(name);
+    } else {
+        oclog(OCLOGERR,"oc_open: attempt to create tmp file failed: NULL");
+    }
     return stat;
 }
 
@@ -556,7 +560,7 @@ ocupdatelastmodifieddata(OCstate* state)
 /*
     Set curl properties for link based on rc files etc.
 */
-static int
+static OCerror
 ocsetcurlproperties(OCstate* state)
 {
     CURLcode cstat = CURLE_OK;

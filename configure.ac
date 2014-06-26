@@ -148,6 +148,15 @@ test "x$enable_win32_dist" = xyes || enable_win32_dist=no
 AC_MSG_RESULT($enable_win32_dist)
 AM_CONDITIONAL(INCLUDE_WIN32_DIST, [test "x$enable_win32_dist" = "xyes"])
 
+# Control use of xgetopt
+AC_MSG_CHECKING([whether XGetopt should be used])
+AC_ARG_ENABLE([xgetopt],
+              [AS_HELP_STRING([--enable-xgetopt],
+                                 [enable use of XGetopt])])
+test "x$enable_xgetopt" = xyes || enable_xgetopt=no
+AC_MSG_RESULT($enable_xgetopt)
+AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
+
 ##################################################
 dnl autoheader macros; tack some text at the top and bottom of config_dap.h.in
 

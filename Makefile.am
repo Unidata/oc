@@ -88,6 +88,10 @@ MAINTAINERCLEANFILES = Makefile.in
 
 bin_PROGRAMS += ocprint
 ocprint_SOURCES = ocprint.c
+if ENABLE_XGETOPT
+ocprint_SOURCES += XGetopt.c XGetopt.h
+endif
+
 ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 
 ###########################################################################
