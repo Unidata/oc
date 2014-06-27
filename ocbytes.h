@@ -1,201 +1,58 @@
 /* Copyright 2009, UCAR/Unidata and OPeNDAP, Inc.
    See the COPYRIGHT file for more information. */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#ifndef OCBYTES_H
+#define OCBYTES_H 1
 
-#include "ocbytes.h"
+typedef struct OCbytes {
+  int nonextendible; /* 1 => fail if an attempt is made to extend this buffer*/
+  size_t alloc;
+  size_t length;
+  char* content;
+} OCbytes;
 
-#ifndef TRUE
-#define TRUE 1
+#if defined(_CPLUSPLUS_) || defined(__CPLUSPLUS__) || defined(__CPLUSPLUS)
+#define EXTERNC extern "C"
+#else
+#define EXTERNC extern
 #endif
-#ifndef FALSE
-#define FALSE 0
-#endif
 
-#define DEFAULTALLOC 1024
-#define ALLOCINCR 1024
+EXTERNC OCbytes* ocbytesnew(void);
+EXTERNC void ocbytesfree(OCbytes*);
+EXTERNC int ocbytessetalloc(OCbytes*,size_t);
+EXTERNC int ocbytessetlength(OCbytes*,size_t);
+EXTERNC int ocbytesfill(OCbytes*, char fill);
 
-static int ocbytesdebug = 1;
+/* Produce a duplicate of the contents*/
+EXTERNC char* ocbytesdup(OCbytes*);
+/* Extract the contents and leave buffer empty */
+EXTERNC char* ocbytesextract(OCbytes*);
 
-static long
-ocbytesfail(void)
-{
-    fflush(stdout);
-    fprintf(stderr,"bytebuffer failure\n");
-    fflush(stderr);
-    if(ocbytesdebug) abort();
-    return FALSE;
-}
+/* Return the ith byte; -1 if no such index */
+EXTERNC int ocbytesget(OCbytes*,size_t);
+/* Set the ith byte */
+EXTERNC int ocbytesset(OCbytes*,size_t,char);
 
-OCbytes*
-ocbytesnew(void)
-{
-  OCbytes* bb = (OCbytes*)malloc(sizeof(OCbytes));
-  if(bb == NULL) return (OCbytes*)ocbytesfail();
-  bb->alloc=0;
-  bb->length=0;
-  bb->content=NULL;
-  bb->nonextendible = 0;
-  return bb;
-}
+/* Append one byte */
+EXTERNC int ocbytesappend(OCbytes*,int); /* Add at Tail */
+/* Append n bytes */
+EXTERNC int ocbytesappendn(OCbytes*,const void*,size_t); /* Add at Tail */
 
-int
-ocbytessetalloc(OCbytes* bb, size_t sz)
-{
-  char* newcontent;
-  if(bb == NULL) return ocbytesfail();
-  if(sz <= 0) {sz = (bb->alloc?2*bb->alloc:DEFAULTALLOC);}
-  if(bb->alloc >= sz) return TRUE;
-  if(bb->nonextendible) return ocbytesfail();
-  newcontent=(char*)calloc(sz,sizeof(char));
-  if(newcontent == NULL) return FALSE;
-  if(bb->alloc > 0 && bb->length > 0 && bb->content != NULL) {
-    memcpy((void*)newcontent,(void*)bb->content,sizeof(char)*bb->length);
-  }
-  if(bb->content != NULL) free(bb->content);
-  bb->content=newcontent;
-  bb->alloc=sz;
-  return TRUE;
-}
+/* Null terminate the byte string without extending its length (for debugging) */
+EXTERNC int ocbytesnull(OCbytes*);
 
-void
-ocbytesfree(OCbytes* bb)
-{
-  if(bb == NULL) return;
-  if(!bb->nonextendible && bb->content != NULL) free(bb->content);
-  free(bb);
-}
+/* Concatenate a null-terminated string to the end of the buffer */
+EXTERNC int ocbytescat(OCbytes*,const char*);
 
-int
-ocbytessetlength(OCbytes* bb, size_t sz)
-{
-  if(bb == NULL) return ocbytesfail();
-  if(bb->length < sz) {
-      if(sz > bb->alloc) {if(!ocbytessetalloc(bb,sz)) return ocbytesfail();}
-  }
-  bb->length = sz;
-  return TRUE;
-}
+/* Set the contents of the buffer; mark the buffer as non-extendible */
+EXTERNC int ocbytessetcontents(OCbytes*, char*, size_t);
 
-int
-ocbytesfill(OCbytes* bb, char fill)
-{
-  size_t i;
-  if(bb == NULL) return ocbytesfail();
-  for(i=0;i<bb->length;i++) bb->content[i] = fill;
-  return TRUE;
-}
+/* Following are always "in-lined"*/
+#define ocbyteslength(bb) ((bb)!=NULL?(bb)->length:0)
+#define ocbytesalloc(bb) ((bb)!=NULL?(bb)->alloc:0)
+#define ocbytescontents(bb) (((bb)!=NULL && (bb)->content!=NULL)?(bb)->content:(char*)"")
+#define ocbytesextend(bb,len) ocbytessetalloc((bb),(len)+(bb->alloc))
+#define ocbytesclear(bb) ((bb)!=NULL?(bb)->length=0:0)
+#define ocbytesavail(bb,n) ((bb)!=NULL?((bb)->alloc - (bb)->length) >= (n):0)
 
-int
-ocbytesget(OCbytes* bb, size_t index)
-{
-  if(bb == NULL) return -1;
-  if(index >= bb->length) return -1;
-  return bb->content[index];
-}
-
-int
-ocbytesset(OCbytes* bb, size_t index, char elem)
-{
-  if(bb == NULL) return ocbytesfail();
-  if(index >= bb->length) return ocbytesfail();
-  bb->content[index] = elem;
-  return TRUE;
-}
-
-int
-ocbytesappend(OCbytes* bb, int elem)
-{
-  if(bb == NULL) return ocbytesfail();
-  /* We need space for the char + null */
-  while(bb->length+1 >= bb->alloc) {
-	if(!ocbytessetalloc(bb,0)) return ocbytesfail();
-  }
-  bb->content[bb->length] = (char)elem;
-  bb->length++;
-  bb->content[bb->length] = '\0';
-  return TRUE;
-}
-
-/* This assumes s is a null terminated string*/
-int
-ocbytescat(OCbytes* bb, const char* s)
-{
-    ocbytesappendn(bb,(void*)s,strlen(s)+1); /* include trailing null*/
-    /* back up over the trailing null*/
-    if(bb->length == 0) return ocbytesfail();
-    bb->length--;
-    return 1;
-}
-
-int
-ocbytesappendn(OCbytes* bb, const void* elem, size_t n)
-{
-  if(bb == NULL || elem == NULL) return ocbytesfail();
-  if(n == 0) {n = strlen((char*)elem);}
-  while(!ocbytesavail(bb,n+1)) {
-    if(!ocbytessetalloc(bb,0)) return ocbytesfail();
-  }
-  memcpy((void*)&bb->content[bb->length],(void*)elem,n);
-  bb->length += n;
-  bb->content[bb->length] = '\0';
-  return TRUE;
-}
-
-int
-ocbytesprepend(OCbytes* bb, char elem)
-{
-  int i; /* do not make unsigned */
-  if(bb == NULL) return ocbytesfail();
-  if(bb->length >= bb->alloc) if(!ocbytessetalloc(bb,0)) return ocbytesfail();
-  /* could we trust memcpy? instead */
-  for(i=bb->alloc;i>=1;i--) {bb->content[i]=bb->content[i-1];}
-  bb->content[0] = elem;
-  bb->length++;
-  return TRUE;
-}
-
-char*
-ocbytesdup(OCbytes* bb)
-{
-    char* result = (char*)malloc(bb->length+1);
-    memcpy((void*)result,(const void*)bb->content,bb->length);
-    result[bb->length] = '\0'; /* just in case it is a string*/
-    return result;
-}
-
-char*
-ocbytesextract(OCbytes* bb)
-{
-    char* result = bb->content;
-    bb->alloc = 0;
-    bb->length = 0;
-    bb->content = NULL;
-    return result;
-}
-
-int
-ocbytessetcontents(OCbytes* bb, char* contents, size_t alloc)
-{
-    if(bb == NULL) return ocbytesfail();
-    ocbytesclear(bb);
-    if(!bb->nonextendible && bb->content != NULL) free(bb->content);
-    bb->content = contents;
-    bb->length = 0;
-    bb->alloc = alloc;
-    bb->nonextendible = 1;
-    return 1;
-}
-
-/* Null terminate the byte string without extending its length */
-/* For debugging */
-int
-ocbytesnull(OCbytes* bb)
-{
-    ocbytesappend(bb,'\0');
-    bb->length--;
-    return 1;
-}
-
+#endif /*OCBYTES_H*/

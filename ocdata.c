@@ -249,15 +249,8 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
     assert(memsize > 0);
 
     template = data->template;
-<<<<<<< HEAD
     assert(template->octype == OC_Atomic);
     etype = template->etype;
-=======
-    octype = template->octype;
-    assert(octype == OC_Atomic);
-    basetype = template->basetype;
->>>>>>> Add svn changes to date
-
     isscalar = (template->array.rank == 0 ? 1 : 0);
 
     /* validate memory space*/

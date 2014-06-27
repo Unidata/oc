@@ -103,7 +103,6 @@ parser2::
 	bison --debug -d -p dap2 dap2.y
 	mv dap2.tab.c dap2tab.c; mv dap2.tab.h dap2tab.h
 
-
 # Generate dap4tab.c and dap4tab.h from dap4.y
 # Assumes bison version 3.0 or later
 parser4::

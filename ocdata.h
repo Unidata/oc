@@ -55,4 +55,14 @@ extern void dap4_data_free(OCstate* state, OCdata* data);
 /* From dap4compile.c */
 
 
+/* From dap2compile.c */
+extern OCerror dap2_compile(OCstate* state, OCnode* xroot);
+extern void dap2_data_free(OCstate* state, OCdata* data);
+
+extern OCerror dap4_compile(OCstate* state, OCnode* xroot);
+extern void dap4_data_free(OCstate* state, OCdata* data);
+
+/* From dap4compile.c */
+
+
 #endif /*OCDATA_H*/

@@ -79,8 +79,10 @@ extern void  ocfree(void*);
 #define MEMGOTO(var,label) {if((var)==NULL) goto label;}
 
 #ifdef OCCATCHERROR
+
 extern OCerror ocbreakpoint(OCerror err);
 extern OCerror octhrow(OCerror err);
+
 /* Place breakpoint on ocbreakpoint to catch errors close to where they occur*/
 #define OCTHROW(e) octhrow(e)
 #define OCTHROWCHK(e) (void)octhrow(e)
