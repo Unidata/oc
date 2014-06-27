@@ -8,8 +8,8 @@ libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 package_version="2.0"
 cc="gcc"
-libs="-L${libdir} -loc  -lcurl " 
-cflags="-I${includedir}/oc "
+libs="-L${libdir} -loc @CURL_LIBS@ -lcurl " 
+cflags="-I${includedir}/oc @CURL_CFLAGS@"
 
 usage()
 {

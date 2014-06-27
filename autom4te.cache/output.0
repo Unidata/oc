@@ -625,8 +625,6 @@ ENABLE_DEVELOPER_FALSE
 ENABLE_DEVELOPER_TRUE
 ALLOCA
 LIB@&t@OBJS
-CURL_LIBS
-CURL_CFLAGS
 VALGRIND
 YFLAGS
 YACC
@@ -3028,8 +3026,8 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
-LIB_MAJOR=2
-LIB_MINOR=0
+LIB_MAJOR=1
+LIB_MINOR=1
 LIB_PATCH=0
 
 
@@ -11705,19 +11703,11 @@ $as_echo "$as_me: checking whether a location for curl-config is in PATH... no" 
   fi
 fi
 
-# These are needed for the oc-config script. jhrg 12/19/13
-CURL_CFLAGS=$curlheaders
-
-CURL_LIBS=$curllibs
-
-
 # CURLOPT_KEYPASSWD is not defined until curl version 7.16.4
 # See if defined by trying to compile a program using it
 # Save/restore CFLAGS
 SAVECFLAGS="$CFLAGS"
-# I think the following should be $curlheaders. jhrg 12/19/13
-# CFLAGS="${curl_cflags}"
-CFLAGS="${curlheaders}"
+CFLAGS="${curl_cflags}"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include "curl/curl.h"
@@ -12926,6 +12916,7 @@ else
 fi
 
 
+##################################################
 # Enable/disable distribute windows directory (off by default)
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking include win32 in the distribution (default no)" >&5
 $as_echo_n "checking include win32 in the distribution (default no)... " >&6; }
