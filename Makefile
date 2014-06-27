@@ -43,7 +43,7 @@ build_triplet = i686-pc-cygwin
 host_triplet = i686-pc-cygwin
 bin_PROGRAMS = ocprint$(EXEEXT)
 #am__append_1 = win32
-am__append_2 = XGetopt.c XGetopt.h
+#am__append_2 = XGetopt.c XGetopt.h
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -106,7 +106,7 @@ liboc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
 am__ocprint_SOURCES_DIST = ocprint.c XGetopt.c XGetopt.h
-am__objects_1 = XGetopt.$(OBJEXT)
+#am__objects_1 = XGetopt.$(OBJEXT)
 am_ocprint_OBJECTS = ocprint.$(OBJEXT) $(am__objects_1)
 ocprint_OBJECTS = $(am_ocprint_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -193,7 +193,7 @@ AUTOMAKE = ${SHELL} /cygdrive/f/git/oc/conf/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = 
+CFLAGS = -Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion 
 CPP = gcc -E
 CPPFLAGS = -I/usr/local/include 
 CURL_CFLAGS = 
@@ -217,7 +217,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/i686-pc-cygwin/bin/ld.exe
-LDFLAGS = -L/usr/local/lib -lcurl -lidn -lssh2 -lssl -lcrypto -llber -lldap -lz 
+LDFLAGS = -L/usr/local/lib -lcurl -lz 
 LIBOBJS = 
 LIBOC_VERSION = 2:0:0
 LIBS = -lcurl 
@@ -348,7 +348,7 @@ ocuri.h ocuri.c \
 ocutil.h ocutil.c \
 xxdr.h xxdr.c
 
-liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) -L/usr/local/lib -lcurl -lidn -lssh2 -lssl -lcrypto -llber -lldap -lz 
+liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) -L/usr/local/lib -lcurl -lz 
 pkginclude_HEADERS = oc.h
 
 #noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \

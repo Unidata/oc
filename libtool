@@ -2,7 +2,7 @@
 
 # libtool - Provide generalized library-building support services.
 # Generated automatically by config.status (oc) 2.0
-# Libtool was configured on host Carson:
+# Libtool was configured on host blackbird:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
 #   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005,
@@ -161,7 +161,7 @@ lock_old_archive_extraction=no
 LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS=""
+LTCFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion "
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*_\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 _\\2 \\2/p' | sed '/ __gnu_lto/d'"
@@ -279,7 +279,7 @@ finish_eval=""
 hardcode_into_libs=no
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/i686-pc-cygwin/4.8.2 /usr/lib /lib  /usr/lib/w32api"
+sys_lib_search_path_spec="/usr/lib/gcc/i686-pc-cygwin/3.4.4 /usr/lib /lib  /usr/lib/w32api"
 
 # Run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -324,7 +324,7 @@ pic_flag=" -DDLL_EXPORT -DPIC"
 wl="-Wl,"
 
 # Compiler flag to prevent dynamic linking.
-link_static_flag=""
+link_static_flag="-static"
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"

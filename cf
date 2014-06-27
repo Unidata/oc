@@ -10,7 +10,7 @@ cmds=$@
 fi
 
 CFLAGS=""
-#CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
+CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
 #CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter ${CFLAGS}"
 #CFLAGS="-Wconversion"
 

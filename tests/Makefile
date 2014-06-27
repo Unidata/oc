@@ -60,7 +60,7 @@ AUTOMAKE = ${SHELL} /cygdrive/f/git/oc/conf/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = 
+CFLAGS = -Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion 
 CPP = gcc -E
 CPPFLAGS = -I/usr/local/include 
 CURL_CFLAGS = 
@@ -84,7 +84,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/i686-pc-cygwin/bin/ld.exe
-LDFLAGS = -L/usr/local/lib -lcurl -lidn -lssh2 -lssl -lcrypto -llber -lldap -lz 
+LDFLAGS = -L/usr/local/lib -lcurl -lz 
 LIBOBJS = 
 LIBOC_VERSION = 2:0:0
 LIBS = -lcurl 

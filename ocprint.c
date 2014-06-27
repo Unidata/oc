@@ -91,7 +91,7 @@ extern char* optarg;
 /* Forward*/
 static void usage(char*);
 static int fail(char*);
-static void check_err(int stat, int dofail);
+static void check_err(OCerror stat, int dofail);
 static void dumpflags(void);
 
 static OCerror processdata(int);
@@ -459,7 +459,7 @@ static OCerror
 printdata_container(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel)
 {
     OCerror stat = OC_NOERR;
-    int i;
+    size_t i;
     OCddsnode node;
     OCtype octype;
     size_t nsubnodes;
@@ -493,7 +493,7 @@ static OCerror
 printdata_indices(OClink link, OCdatanode datanode, OCbytes* buffer, int istoplevel)
 {
     OCerror stat = OC_NOERR;
-    int i;
+    size_t i;
     OCddsnode node;
     size_t rank;
     OCtype octype;
@@ -1065,7 +1065,7 @@ totaldimsize(size_t rank, size_t* sizes)
 static char*
 indent(int n)
 {
-    int nblanks = BLANKSPERDENT * n;
+    size_t nblanks = BLANKSPERDENT * n;
     memset(blanks,' ',nblanks);
     blanks[nblanks] = '\0';
     return blanks;
