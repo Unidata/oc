@@ -95,11 +95,12 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 liboc_la_LIBADD =
-am_liboc_la_OBJECTS = oc.lo daplex.lo dapparse.lo daptab.lo ocbytes.lo \
-	occlientparams.lo occompile.lo occurlfunctions.lo ocdata.lo \
-	ocdebug.lo ocdump.lo ochttp.lo ocinternal.lo oclist.lo \
-	oclog.lo ocnode.lo ocrc.lo ocread.lo ocuri.lo ocutil.lo \
-	xxdr.lo
+am_liboc_la_OBJECTS = oc.lo ocbytes.lo occlientparams.lo \
+	occurlfunctions.lo ocdata.lo ocdebug.lo ocdump.lo ochttp.lo \
+	ocinternal.lo oclist.lo oclog.lo ocnode.lo ocrc.lo ocread.lo \
+	ocuri.lo ocutil.lo dap2lex.lo dap2parse.lo dap2tab.lo \
+	dap2compile.lo dap4lex.lo dap4parse.lo dap4tab.lo \
+	dap4_perfect.lo yax.lo xxdr.lo
 liboc_la_OBJECTS = $(am_liboc_la_OBJECTS)
 liboc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(liboc_la_LDFLAGS) \
@@ -109,8 +110,7 @@ am__ocprint_SOURCES_DIST = ocprint.c XGetopt.c XGetopt.h
 #am__objects_1 = XGetopt.$(OBJEXT)
 am_ocprint_OBJECTS = ocprint.$(OBJEXT) $(am__objects_1)
 ocprint_OBJECTS = $(am_ocprint_OBJECTS)
-am__DEPENDENCIES_1 =
-ocprint_DEPENDENCIES = $(top_builddir)/liboc.la $(am__DEPENDENCIES_1)
+ocprint_DEPENDENCIES = $(top_builddir)/liboc.la
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/conf/depcomp
@@ -196,8 +196,6 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion 
 CPP = gcc -E
 CPPFLAGS = -I/usr/local/include 
-CURL_CFLAGS = 
-CURL_LIBS = 
 CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -219,11 +217,11 @@ INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/i686-pc-cygwin/bin/ld.exe
 LDFLAGS = -L/usr/local/lib -lcurl -lz 
 LIBOBJS = 
-LIBOC_VERSION = 2:0:0
+LIBOC_VERSION = 1:1:0
 LIBS = -lcurl 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
-LIB_MAJOR = 2
-LIB_MINOR = 0
+LIB_MAJOR = 1
+LIB_MINOR = 1
 LIB_PATCH = 0
 LIPO = 
 LN_S = ln -s
@@ -327,10 +325,8 @@ SUBDIRS = . tests
 lib_LTLIBRARIES = liboc.la
 bin_SCRIPTS = oc-config
 liboc_la_SOURCES = config.h oc.h ocx.h oc.c \
-dapparselex.h daplex.c dapparse.c daptab.h daptab.c \
 ocbytes.h ocbytes.c \
 occlientparams.h occlientparams.c \
-occompile.h occompile.c \
 occonstraints.h \
 occurlfunctions.h occurlfunctions.c \
 ocdata.h ocdata.c \
@@ -346,20 +342,16 @@ ocrc.h ocrc.c \
 ocread.h ocread.c \
 ocuri.h ocuri.c \
 ocutil.h ocutil.c \
+dap2parselex.h dap2lex.c dap2parse.c dap2tab.h dap2tab.c \
+dap2compile.h dap2compile.c \
+dap4parselex.h dap4lex.c dap4parse.c dap4tab.h dap4tab.c \
+dap4_perfect.c yax.h yax.c \
 xxdr.h xxdr.c
 
 liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) -L/usr/local/lib -lcurl -lz 
 pkginclude_HEADERS = oc.h
-
-#noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \
-#		occlientparams.h occonstraints.h occontent.h \
-#		occurlfunctions.h ocdata.h ocdatatypes.h ocdebug.h \
-#		ocdrno.h ocdump.h ochttp.h ocinternal.h \
-#		oclist.h oclog.h ocnode.h ocrc.h \
-#		ocread.h ocuri.h ocutil.h xxdr.h \
-#		config.h
-EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README dap.y \
-	XGetopt.c oc.spec ocprint.1 CMakeLists.txt docs \
+EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README dap2.y \
+	dap4.y dap4.gperf XGetopt.c oc.spec CMakeLists.txt docs \
 	$(am__append_1)
 MAINTAINERCLEANFILES = Makefile.in
 ocprint_SOURCES = ocprint.c $(am__append_2)
@@ -546,13 +538,17 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/XGetopt.Po
-include ./$(DEPDIR)/daplex.Plo
-include ./$(DEPDIR)/dapparse.Plo
-include ./$(DEPDIR)/daptab.Plo
+include ./$(DEPDIR)/dap2compile.Plo
+include ./$(DEPDIR)/dap2lex.Plo
+include ./$(DEPDIR)/dap2parse.Plo
+include ./$(DEPDIR)/dap2tab.Plo
+include ./$(DEPDIR)/dap4_perfect.Plo
+include ./$(DEPDIR)/dap4lex.Plo
+include ./$(DEPDIR)/dap4parse.Plo
+include ./$(DEPDIR)/dap4tab.Plo
 include ./$(DEPDIR)/oc.Plo
 include ./$(DEPDIR)/ocbytes.Plo
 include ./$(DEPDIR)/occlientparams.Plo
-include ./$(DEPDIR)/occompile.Plo
 include ./$(DEPDIR)/occurlfunctions.Plo
 include ./$(DEPDIR)/ocdata.Plo
 include ./$(DEPDIR)/ocdebug.Plo
@@ -568,6 +564,7 @@ include ./$(DEPDIR)/ocread.Plo
 include ./$(DEPDIR)/ocuri.Plo
 include ./$(DEPDIR)/ocutil.Plo
 include ./$(DEPDIR)/xxdr.Plo
+include ./$(DEPDIR)/yax.Plo
 
 .c.o:
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1092,13 +1089,33 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 # BTW: note that renaming is essential because otherwise
 # autoconf will forcibly delete files of the name *.tab.*
 
-.PHONEY: parser
+.PHONEY: parsers parser2 parser4
 
-# Generate daptab.c and daptab.h from dap.y
-parser::
-	rm -f dap.tab.c dap.tab.h	
-	bison --debug -d -p dap dap.y
-	mv dap.tab.c daptab.c; mv dap.tab.h daptab.h
+parsers:: parser2 parser4
+
+# Generate dap2tab.c and dap2tab.h from dap2.y
+parser2::
+	rm -f dap2.tab.c dap2.tab.h	
+	bison --debug -d -p dap2 dap2.y
+	mv dap2.tab.c dap2tab.c; mv dap2.tab.h dap2tab.h
+
+# Generate dap4tab.c and dap4tab.h from dap4.y
+# Assumes bison version 3.0 or later
+parser4::
+	rm -f dap4tab.c dap4tab.h	
+	bison --debug -d -p dap4 dap4.y
+	sed -e 's/dap4.tab.c/dap4tab.c/'< dap4.tab.c >dap4tab.c
+	sed -e 's/dap4.tab.h/dap4tab.h/'< dap4.tab.h >dap4tab.h
+	rm -f dap4.tab.c dap4.tab.h	
+
+##################################################
+# These rule are used if someone wants to rebuild the perfect hash function.
+# Otherwise never invoked, but records how to do it.
+# Only invoke if gperf program is available
+# Remove the line numbers for easier debug with gdb
+perfect::
+	rm -f dap4_perfect.c 
+	gperf dap4.gperf | sed -e '/^[#]line/d' >dap4_perfect.c
 
 ###########################################################################
 

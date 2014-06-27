@@ -70,6 +70,8 @@ export LD_LIBRARY_PATH
 
 DISTCHECK_CONFIGURE_FLAGS="$FLAGS"; export DISTCHECK_CONFIGURE_FLAGS
 
+MAKE=make
+
 if test -z "$NB" ; then
 ${MAKE} -i maintainer-clean >/dev/null 2>&1
 if autoreconf -i --force ; then ok=1; else exit ; fi
