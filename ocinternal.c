@@ -218,7 +218,7 @@ ocfetch(OCstate* state, const char* constraint, OCdxd kind, OCflags flags,
 	tree->constraint = nulldup(constraint);
 
     /* Set curl properties: pwd, flags, proxies, ssl */
-    if((stat=ocset_user_password(state))!= OC_NOERR) goto fail;
+    if((stat=ocset_user_password(&state->creds,state->curl))!= OC_NOERR) goto fail;
     if((stat=ocset_curl_flags(state)) != OC_NOERR) goto fail;
     if((stat=ocset_proxy(state)) != OC_NOERR) goto fail;
     if((stat=ocset_ssl(state)) != OC_NOERR) goto fail;
@@ -269,7 +269,7 @@ ocfetch(OCstate* state, const char* constraint, OCdxd kind, OCflags flags,
     default:
 	break;
     }/*switch*/
-    /* Obtain any http code
+    /* Obtain any http code */
     state->error.httpcode = ocfetchhttpcode(state->curl);
     if(stat != OC_NOERR) {
 	if(state->error.httpcode >= 400) {
@@ -661,7 +661,7 @@ dataError(XXDR* xdrs, OCstate* state)
 {
     int depth=0;
     int errfound = 0;
-    off_t ckp=0,avail=0,i=0;
+    size_t ckp=0,avail=0,i=0;
     char* errmsg = NULL;
     char errortext[16]; /* bigger thant |ERROR_TAG|*/
     avail = xxdr_getavail(xdrs);
@@ -670,13 +670,13 @@ dataError(XXDR* xdrs, OCstate* state)
     ckp = xxdr_getpos(xdrs);
     /* Read enough characters to test for 'ERROR ' */
     errortext[0] = '\0';
-    xxdr_getbytes(xdrs,errortext,(off_t)strlen(ERROR_TAG));
+    xxdr_getbytes(xdrs,errortext,(size_t)strlen(ERROR_TAG));
     if(ocstrncmp(errortext,ERROR_TAG,strlen(ERROR_TAG)) != 0)
 	goto done; /* not an immediate error */
     /* Try to locate the whole error body */
     xxdr_setpos(xdrs,ckp);
     for(depth=0,i=0;i<avail;i++) {
-	xxdr_getbytes(xdrs,errortext,(off_t)1);
+	xxdr_getbytes(xdrs,errortext,(size_t)1);
 	if(errortext[0] == CLBRACE) depth++;
 	else if(errortext[0] == CRBRACE) {
 	    depth--;
@@ -686,7 +686,7 @@ dataError(XXDR* xdrs, OCstate* state)
     errmsg = (char*)malloc((size_t)(i+1));
     if(errmsg == NULL) {errfound = 1; goto done;}
     xxdr_setpos(xdrs,ckp);
-    xxdr_getbytes(xdrs,errmsg,(off_t)i);
+    xxdr_getbytes(xdrs,errmsg,(size_t)i);
     errmsg[i] = '\0';
     state->error.message = errmsg;
     state->error.code = strdup("?");

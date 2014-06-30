@@ -213,13 +213,12 @@ fail:
  * we may have multiple password sources.
  */
 OCerror
-ocset_user_password(OCstate* state)
+ocset_user_password(struct OCcredentials* creds, CURL* curl)
 {
     CURLcode cstat;
-    CURL* curl = state->curl;
     char* combined = NULL;
-    const char* userC = state->creds.username;
-    const char* passwordC = state->creds.password;
+    const char* userC = creds->username;
+    const char* passwordC = creds->password;
 
     if(userC == NULL || passwordC == NULL) return OC_NOERR;
 
@@ -252,3 +251,4 @@ combinecredentials(const char* user, const char* pwd)
     strcat(userPassword, pwd);
     return userPassword;
 }
+

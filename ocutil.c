@@ -465,10 +465,10 @@ ocdataddsmsg(OCstate* state, OCtree* tree)
 #define ERRCHUNK 1024
 #define ERRFILL ' '
 #define ERRTAG "Error {" 
-    unsigned int i,j,len;
+    size_t i,j,len;
     XXDR* xdrs;
     char* contents;
-    off_t ckp;
+    size_t ckp;
 
     if(tree == NULL) return;
     /* get available space */
@@ -477,10 +477,10 @@ ocdataddsmsg(OCstate* state, OCtree* tree)
     if(len < strlen(ERRTAG))
 	return; /* no room */
     ckp = xxdr_getpos(xdrs);
-    xxdr_setpos(xdrs,(off_t)0);
+    xxdr_setpos(xdrs,(size_t)0);
     /* read the whole thing */
     contents = (char*)malloc(len+1);
-    (void)xxdr_getbytes(xdrs,contents,(off_t)len);
+    (void)xxdr_getbytes(xdrs,contents,(size_t)len);
     contents[len] = '\0';
     /* Look for error tag */
     for(i=0;i<len;i++) {
@@ -736,7 +736,7 @@ ocmktmp(const char* base, char** tmpnamep, int* fdp)
     tmpname = (char*)malloc(tmpsize);
     if(tmpname == NULL) return OC_ENOMEM;
     if(!occopycat(tmpname,tmpsize,1,base)) {
-	(free)tmpname);
+	if(tmpname) free(tmpname);
 	return OC_EOVERRUN;
     }
 #ifdef HAVE_MKSTEMP

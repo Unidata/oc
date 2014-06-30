@@ -495,7 +495,7 @@ mergedas1(OCnode* dds, OCnode* das)
 static OCerror
 occorrelater(OCnode* dds, OCnode* dxd)
 {
-    int i,j;
+    size_t i,j;
     OCerror ocstat = OC_NOERR;
 
     if(dds->octype != dxd->octype) {
@@ -556,10 +556,7 @@ that are contained only in structures with rank > 0.
 void
 ocmarkcacheable(OCstate* state, OCnode* ddsroot)
 {
-    int i,j;
-#if 0
-    int ok;
-#endif
+    size_t i,j;
     OClist* treenodes = ddsroot->tree->nodes;
     OClist* path = oclistnew();
     for(i=0;i<oclistlength(treenodes);i++) {
