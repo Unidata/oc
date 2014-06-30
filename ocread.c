@@ -39,7 +39,7 @@ readDDS(OCstate* state, OCtree* tree)
     long lastmodified = -1;
 
     ocurisetconstraints(state->uri,tree->constraint);
-    ocset_user_password(state);
+    ocset_user_password(&state->creds,state->curl);
 
 #ifdef OCDEBUG
 fprintf(stderr,"readDDS:\n");
@@ -151,10 +151,13 @@ fprintf(stderr,"readDATADDS:\n");
         fileprotocol = (strcmp(url->protocol,"file")==0);
 
         if(fileprotocol && !state->curlflags.proto_file) {
+	    off_t offset;
             readurl = ocuribuild(url,NULL,NULL,0);
-            stat = readfiletofile(readurl, ".dods", tree->data.file, &tree->data.datasize);
+            stat = readfiletofile(readurl, ".dods", tree->data.file,&offset);
+	    tree->data.datasize = (size_t)offset;
         } else {
             int flags = 0;
+	    off_t offset;
             if(!fileprotocol) flags |= OCURICONSTRAINTS;
             flags |= OCURIENCODE;
 	    flags |= OCURIUSERPWD;
@@ -164,7 +167,9 @@ fprintf(stderr,"readDATADDS:\n");
             if (ocdebug > 0) 
                 {fprintf(stderr, "fetch url=%s\n", readurl);fflush(stderr);}
             stat = ocfetchurl_file(state->curl, readurl, tree->data.file,
-                                   &tree->data.datasize, &lastmod);
+				   &offset, &lastmod,
+				   &state->creds);
+	    tree->data.datasize = (size_t)offset;
             if(stat == OC_NOERR)
                 state->datalastmodified = lastmod;
             if (ocdebug > 0) 

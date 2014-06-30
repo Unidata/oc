@@ -70,7 +70,7 @@ static int xxdr_big_endian; /* what is this machine? */
 
 #ifdef XXDRTRACE
 static void
-xxdrtrace(XXDR* xdr, char* where, off_t arg)
+xxdrtrace(XXDR* xdr, char* where, size_t arg)
 {
 fprintf(stderr,"xxdr: %s: arg=%ld ; pos=%ld len=%ld\n",
         where,arg,(long)xdr->pos,(long)xdr->length);
@@ -82,7 +82,7 @@ fflush(stderr);
 
 /* Read-only operations */
 
-int xxdr_getbytes(XXDR* xdrs, char* memory, off_t count)
+int xxdr_getbytes(XXDR* xdrs, char* memory, size_t count)
 {
     if(!memory) return 0;
     if(!xdrs->getbytes(xdrs,memory,count))
@@ -96,7 +96,7 @@ xxdr_uchar(XXDR* xdr, unsigned char* ip)
 {
    unsigned int ii;
    if(!ip) return 0;
-   if(!xdr->getbytes(xdr,(char*)&ii,(off_t)sizeof(unsigned int)))
+   if(!xdr->getbytes(xdr,(char*)&ii,(size_t)sizeof(unsigned int)))
 	return 0;
     /*convert from network order*/
     if(!xxdr_network_order) {
@@ -112,7 +112,7 @@ xxdr_ushort(XXDR* xdr, unsigned short* ip)
 {
    unsigned int ii;
    if(!ip) return 0;
-   if(!xdr->getbytes(xdr,(char*)&ii,(off_t)sizeof(unsigned int)))
+   if(!xdr->getbytes(xdr,(char*)&ii,(size_t)sizeof(unsigned int)))
 	return 0;
     /*convert from network order*/
     if(!xxdr_network_order) {
@@ -127,7 +127,7 @@ int
 xxdr_uint(XXDR* xdr, unsigned int* ip)
 {
    if(!ip) return 0;
-   if(!xdr->getbytes(xdr,(char*)ip,(off_t)sizeof(*ip)))
+   if(!xdr->getbytes(xdr,(char*)ip,(size_t)sizeof(*ip)))
 	return 0;
     /*convert from network order*/
     if(!xxdr_network_order) {
@@ -142,7 +142,7 @@ xxdr_ulonglong(XXDR* xdr, unsigned long* llp)
 {
    /* Pull two units */
    if(!llp) return 0;
-   if(!xdr->getbytes(xdr,(char*)llp,(off_t)sizeof(*llp)))
+   if(!xdr->getbytes(xdr,(char*)llp,(size_t)sizeof(*llp)))
        return 0;
    /* Convert to signed/unsigned  */
    /*convert from network order*/
@@ -155,9 +155,9 @@ xxdr_ulonglong(XXDR* xdr, unsigned long* llp)
 /* get some bytes from underlying stream;
    will move xdrs pointer to next XDRUNIT boundary*/
 int
-xxdr_opaque(XXDR* xdr, char* mem, off_t count)
+xxdr_opaque(XXDR* xdr, char* mem, size_t count)
 {
-    off_t pos,rounded;
+    size_t pos,rounded;
     if(!xdr->getbytes(xdr,mem,count))
 	return 0;
     pos = xxdr_getpos(xdr);
@@ -167,14 +167,14 @@ xxdr_opaque(XXDR* xdr, char* mem, off_t count)
 
 /* get counted string from underlying stream*/
 int
-xxdr_string(XXDR* xdrs, char** sp, off_t* lenp)
+xxdr_string(XXDR* xdrs, char** sp, size_t* lenp)
 {
     char* s;
     unsigned int len;
     if(!xxdr_uint(xdrs,&len)) return 0;
     s = (char*)malloc((size_t)len+1);
     if(s == NULL) return 0;
-    if(!xxdr_opaque(xdrs,s,(off_t)len)) {
+    if(!xxdr_opaque(xdrs,s,(size_t)len)) {
 	free((void*)s);	
 	return 0;
     }
@@ -186,7 +186,7 @@ xxdr_string(XXDR* xdrs, char** sp, off_t* lenp)
 }
 
 /* returns bytes off from beginning*/
-off_t
+size_t
 xxdr_getpos(XXDR* xdr)
 {
     return xdr->getpos(xdr);
@@ -194,13 +194,13 @@ xxdr_getpos(XXDR* xdr)
 
 /* reposition the stream*/
 int
-xxdr_setpos(XXDR* xdr, off_t pos)
+xxdr_setpos(XXDR* xdr, size_t pos)
 {
     return xdr->setpos(xdr,pos);
 }
 
 /* returns total available starting at current position */
-off_t
+size_t
 xxdr_getavail(XXDR* xdr)
 {
     return xdr->getavail(xdr);
@@ -217,9 +217,9 @@ xxdr_free(XXDR* xdr)
 
 /* Skip exacly "len" bytes in the input; any rounding must be done by the caller*/
 int
-xxdr_skip(XXDR* xdrs, off_t len)
+xxdr_skip(XXDR* xdrs, size_t len)
 {
-    off_t pos;
+    size_t pos;
     pos = xxdr_getpos(xdrs);
     pos = (pos + len);
     // Removed the following; pos is unsigned. jhrg 9/30/13
@@ -229,23 +229,23 @@ xxdr_skip(XXDR* xdrs, off_t len)
 
 /* skip "n" string/bytestring instances in the input*/
 int
-xxdr_skip_strings(XXDR* xdrs, off_t n)
+xxdr_skip_strings(XXDR* xdrs, size_t n)
 {
     while(n-- > 0) {
         unsigned int slen;
-        off_t slenz;
+        size_t slenz;
 	if(!xxdr_uint(xdrs,&slen)) return 0;
-	slenz = (off_t)slen;
+	slenz = (size_t)slen;
 	slenz = RNDUP(slenz);
 	if(xxdr_skip(xdrs,slenz)) return 0;
     }
     return 1;
 }
 
-unsigned int
-xxdr_roundup(off_t n)
+size_t
+xxdr_roundup(size_t n)
 {
-    unsigned int rounded;
+    size_t rounded;
     rounded = RNDUP(n);
     return rounded;
 }
@@ -274,7 +274,7 @@ xxdr_filefree(XXDR* xdrs)
 }
 
 static int
-xxdr_filegetbytes(XXDR* xdrs, char* addr, off_t len)
+xxdr_filegetbytes(XXDR* xdrs, char* addr, size_t len)
 {
     int ok = 1;
     int count;
@@ -303,14 +303,14 @@ done:
     return ok;
 }
 
-static off_t
+static size_t
 xxdr_filegetpos(XXDR* xdrs)
 {
 xxdrtrace(xdrs,"getpos",0);
     return xdrs->pos;
 }
 
-static off_t
+static size_t
 xxdr_filegetavail(XXDR* xdrs)
 {
 xxdrtrace(xdrs,"getavail",0);
@@ -318,7 +318,7 @@ xxdrtrace(xdrs,"getavail",0);
 }
 
 static int
-xxdr_filesetpos(XXDR* xdrs, off_t pos) 
+xxdr_filesetpos(XXDR* xdrs, size_t pos) 
 { 
     int ok = 1;
 xxdrtrace(xdrs,"setpos",pos);
@@ -344,7 +344,7 @@ don't actually know the cost to doing an fseek
  * Operation flag is set to op.
  */
 XXDR*
-xxdr_filecreate(FILE* file, off_t base)
+xxdr_filecreate(FILE* file, size_t base)
 {
     XXDR* xdrs = (XXDR*)calloc(1,sizeof(XXDR));
     if(xdrs != NULL) {
@@ -353,7 +353,7 @@ xxdr_filecreate(FILE* file, off_t base)
         xdrs->pos = 0;
 	xdrs->valid = 0;
         if(fseek(file,0L,SEEK_END)) return NULL;
-	xdrs->length = (off_t)ftell(file);
+	xdrs->length = (size_t)ftell(file);
 	xdrs->length -= xdrs->base;
         xdrs->getbytes = xxdr_filegetbytes;
         xdrs->setpos = xxdr_filesetpos;
@@ -377,7 +377,7 @@ xxdr_memfree(XXDR* xdrs)
 }
 
 static int
-xxdr_memgetbytes(XXDR* xdrs, char* addr, off_t len)
+xxdr_memgetbytes(XXDR* xdrs, char* addr, size_t len)
 {
     int ok = 1;
 
@@ -392,14 +392,14 @@ done:
     return ok;
 }
 
-static off_t
+static size_t
 xxdr_memgetpos(XXDR* xdrs)
 {
 xxdrtrace(xdrs,"getpos",0);
     return xdrs->pos;
 }
 
-static off_t
+static size_t
 xxdr_memgetavail(XXDR* xdrs)
 {
 xxdrtrace(xdrs,"getavail",0);
@@ -408,7 +408,7 @@ xxdrtrace(xdrs,"getavail",0);
 
 
 static int
-xxdr_memsetpos(XXDR* xdrs, off_t pos) 
+xxdr_memsetpos(XXDR* xdrs, size_t pos) 
 { 
     int ok = 1;
 xxdrtrace(xdrs,"setpos",pos);
@@ -431,7 +431,7 @@ don't actually know the cost to doing an fseek
  * given memory starting at base offset.
  */
 XXDR*
-xxdr_memcreate(char* mem, off_t memsize, off_t base)
+xxdr_memcreate(char* mem, size_t memsize, size_t base)
 {
     XXDR* xdrs = (XXDR*)calloc(1,sizeof(XXDR));
     if(xdrs != NULL) {
@@ -473,7 +473,7 @@ xxdr_double(XXDR* xdr, double* dp)
    int status = 0;
    char data[2*XDRUNIT];
    /* Pull two units */
-   status = xxdr_opaque(xdr,data,(off_t)(2*XDRUNIT));
+   status = xxdr_opaque(xdr,data,(size_t)(2*XDRUNIT));
    if(status && dp) {
 	xxdrntohdouble(data,dp);
    }

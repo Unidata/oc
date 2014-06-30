@@ -83,7 +83,7 @@ ocextract_credentials(const char *url, char **name, char **pw, char **result_url
 		if (*result_url == NULL)
 		    return OC_ENOMEM;
 
-		strncpy(*result_url, url,(size_t(pos - url));
+		strncpy(*result_url, url,(size_t)(pos - url));
 		strncpy(*result_url + (pos - url), end + 1, url_len - (pos - url));
 
 #if 0

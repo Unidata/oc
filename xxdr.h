@@ -49,9 +49,9 @@
 
 #if 1
 /* faster version when XDRUNIT is a power of two */
-# define RNDUP(x)  ((off_t)(((x) + XDRUNIT - 1) & ~(XDRUNIT - 1)))
+# define RNDUP(x) ((size_t) ((((size_t)(x)) + (size_t)(XDRUNIT - 1)) & (size_t)~(XDRUNIT - 1)))
 #else /* old version */
-#define RNDUP(x)  ((off_t)((((x) + XDRUNIT - 1) / XDRUNIT) * XDRUNIT))
+#define RNDUP(x)  ((size_t) ((size_t)((((x) + (XDRUNIT - 1)) / XDRUNIT) * XDRUNIT))
 #endif
 
 /* signature: void swapinline16(unsigned short* sp) */
@@ -112,19 +112,19 @@ extern void xxdrntohdouble(char*,double*);
  */
 typedef struct XXDR XXDR; /* forward */
 
-/* Assume |off_t| == |void*| */
+/* Assume |size_t| == |void*| */
 struct XXDR {
   char* data;
-  off_t pos; /* relative to data;
+  size_t pos; /* relative to data;
                  may be a cache of underlying stream pos */
   int valid;         /* 1=>underlying stream pos == pos */
-  off_t base; /* beginning of data in case bod != 0*/
-  off_t length; /* total size of available data (relative to base)*/
+  size_t base; /* beginning of data in case bod != 0*/
+  size_t length; /* total size of available data (relative to base)*/
   /* Define minimum needed case specific operators */
-  int (*getbytes)(XXDR*,char*,off_t);
-  int (*setpos)(XXDR*,off_t);
-  off_t (*getpos)(XXDR*);
-  off_t (*getavail)(XXDR*);
+  int (*getbytes)(XXDR*,char*,size_t);
+  int (*setpos)(XXDR*,size_t);
+  size_t (*getpos)(XXDR*);
+  size_t (*getavail)(XXDR*);
   void (*free)(XXDR*);		  /* xdr kind specific free function */
 };
 
@@ -137,7 +137,7 @@ extern int xxdr_network_order; /* does this machine match network order? */
    stream; unlike opaque, this will
    not round up to the XDRUNIT boundary
 */
-extern int xxdr_getbytes(XXDR*,char*,off_t);
+extern int xxdr_getbytes(XXDR*,char*,size_t);
 
 /* get a single unsigned char from underlying stream*/
 extern int xxdr_uchar(XXDR* , unsigned char*);
@@ -160,34 +160,34 @@ extern int xxdr_double(XXDR* , double*);
 /* get some bytes from underlying stream;
    Warning: will read upto the next XDRUNIT boundary
 */
-extern int xxdr_opaque(XXDR*, char*, off_t);
+extern int xxdr_opaque(XXDR*, char*, size_t);
 
 /* get counted string from underlying stream*/
-extern int xxdr_string(XXDR*, char**, off_t*);
+extern int xxdr_string(XXDR*, char**, size_t*);
 
 /* returns bytes off from beginning*/
-extern off_t xxdr_getpos(XXDR*);
+extern size_t xxdr_getpos(XXDR*);
 
 /* reposition the stream*/
-extern int xxdr_setpos(XXDR*, off_t);
+extern int xxdr_setpos(XXDR*, size_t);
 
 /* get remaining data available starting at current position */
-extern off_t xxdr_getavail(XXDR*);
+extern size_t xxdr_getavail(XXDR*);
 
 /* free up XXDR  structure */
 void xxdr_free(XXDR*);
 
 /* File and memory creators */
-extern XXDR* xxdr_filecreate(FILE* file, off_t bod);
-extern XXDR* xxdr_memcreate(char* mem, off_t memsize, off_t bod);
+extern XXDR* xxdr_filecreate(FILE* file, size_t bod);
+extern XXDR* xxdr_memcreate(char* mem, size_t memsize, size_t bod);
 
 /* Misc */
-extern int xxdr_skip(XXDR* xdrs, off_t len); /* WARNING: will skip exactly len bytes;
+extern int xxdr_skip(XXDR* xdrs, size_t len); /* WARNING: will skip exactly len bytes;
                                                 any rounding must be done by caller */
 
-extern int xxdr_skip_strings(XXDR* xdrs, off_t n);
+extern int xxdr_skip_strings(XXDR* xdrs, size_t n);
 
-extern unsigned int xxdr_roundup(off_t n); /* procedural version of RNDUP macro */
+extern size_t xxdr_roundup(size_t n); /* procedural version of RNDUP macro */
 
 extern void xxdr_init();
 

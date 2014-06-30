@@ -26,7 +26,7 @@
 /*Forward*/
 static void dumpocnode1(OCnode* node, int depth);
 static void dumpdimensions(OCnode* node);
-static void dumpattvalue(OCtype nctype, char** aset, int index);
+static void dumpattvalue(OCtype nctype, const char*);
 
 static char* sindent = NULL;
 
@@ -201,7 +201,7 @@ dumpdimensions(OCnode* node)
 }
 
 static void
-dumpattvalue(OCtype nctype, char* string)
+dumpattvalue(OCtype nctype, const char* string)
 {
     if(nctype == OC_String || nctype == OC_URL) {
         fprintf(stdout,"\"%s\"",string);
@@ -357,12 +357,12 @@ typedmemorydump(char* memory, size_t len, int fromxdr)
 	    memcpy(mem,pmem,8);
 	else
 	    memcpy(mem,pmem,4);
-	dumpfield(i*sizeof(unsigned int),mem,fromxdr);
+	dumpfield((int)(i*sizeof(size_t)),mem,fromxdr);
     }
     if(rem > 0) {
 	memset(mem,0,8);
 	memcpy(mem,pmem,4);
-	dumpfield(i*sizeof(unsigned int),mem,fromxdr);
+	dumpfield((int)(i*sizeof(size_t)),mem,fromxdr);
     }
     fflush(stdout);
 }
@@ -422,7 +422,7 @@ ocdumpmemory(char* memory, size_t len, int xdrencoded, int level)
 }
 
 static int
-ocreadfile(FILE* file, off_t datastart, char** memp, size_t* lenp)
+ocreadfile(FILE* file, size_t datastart, char** memp, size_t* lenp)
 {
     char* mem;
     size_t len;
@@ -635,7 +635,7 @@ ocdumpdatapath(OCstate* state, OCdata* data, OCbytes* buffer)
 	}
 	if(template->octype == OC_Atomic) {
 	    if(template->array.rank > 0) {
-	        off_t xproduct = octotaldimsize(template->array.rank,template->array.sizes);
+	        size_t xproduct = octotaldimsize(template->array.rank,template->array.sizes);
 	        snprintf(tmp,sizeof(tmp),"[0..%lu]",(unsigned long)xproduct-1);
 	        ocbytescat(buffer,tmp);
 	    }

@@ -114,6 +114,9 @@ struct OCnode {
        between DAP2 and DAP4 */
     OClist*         attributes; /* oclist<OCattribute*>*/
 
+    /* OC_Attribute */
+    OCattinfo       att;
+
     /* OC_Dataset */
     struct OCtree*  tree;      /* !NULL iff this is a root node */
     struct OCnode*  datadds;   /* correlated datadds node, if any (DAP2)*/
@@ -135,10 +138,6 @@ struct OCnode {
     /* DAP2 and DAP4: OC_Structure, OC_Sequence, OC_Dataset, OC_Attributeset */
     /* DAP4: OtherXML */
     OClist*         subnodes; /*OClist<OCnode*>*/
-
-    /* OC_Attribute */
-    OCattinfo       att;
-    OClist* attributes; /* oclist<OCattribute*> DAP2*/
 
     /* OC_Atomic */
     OCdata*         data; /* Defined only if this node is a top-level atomic variable*/

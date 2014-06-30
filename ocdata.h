@@ -17,14 +17,14 @@ struct OCdata {
     OCnode*   template;
     OCdata*   container; /* link back to container instance */
     size_t    index;     /* WRT to the container */
-    off_t     xdroffset;	/* Of this instance wrt xxdr_getpos() */
-    off_t     xdrsize;   /* for leafs, and as defined by xdr; if known else 0*/
+    size_t     xdroffset;	/* Of this instance wrt xxdr_getpos() */
+    size_t     xdrsize;   /* for leafs, and as defined by xdr; if known else 0*/
     size_t    ninstances;/* |instances| */
     OCdata**  instances;	/* vector of instances; if rank > 0, then
                                    it captures the array elements, else
                                    it captures the field instances. */
-    off_t     nstrings;
-    off_t*    strings;
+    size_t     nstrings;
+    size_t*    strings;
 };
 
 

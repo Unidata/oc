@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include "ocinternal.h"
 #include "ocdebug.h"
+#include "occurlfunctions.h"
 #include "ochttp.h"
 #include "ocrc.h"
 
@@ -43,34 +44,21 @@ ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
 	CURLcode cstat = CURLE_OK;
 	struct Fetchdata fetchdata;
 	long httpcode = 0;
-	char tbuf[1024]
+	char tbuf[1024];
 
 	/* Set the URL */
 	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
 	if (cstat != CURLE_OK)
 		goto fail;
 
-	if(creds != NULL && creds->password != NULL
-	   && creds->username != NULL) {
-	    /* Set user and password */
-#if defined (HAVE_CURLOPT_USERNAME) && defined (HAVE_CURLOPT_PASSWORD)
-	    cstat = curl_easy_setopt(curl, CURLOPT_USERNAME, creds->username);
-	    if (cstat != CURLE_OK)
-		goto fail;
-	    cstat = curl_easy_setopt(curl, CURLOPT_PASSWORD, creds->password);
-	    if (cstat != CURLE_OK)
-		goto fail;
-#else		
-		snprintf(tbuf,1023,"%s:%s",creds->username,creds->password);	
-		cstat = curl_easy_setopt(curl, CURLOPT_USERPWD, tbuf);
-		if (cstat != CURLE_OK)
-			goto fail;
-#endif
-	}
+	/* Set user and password */
+	cstat = ocset_user_password(creds,curl);
+	if (cstat != CURLE_OK)
+	    goto fail;
 
 	/* send all data to this function  */
 	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback);
-v	if (cstat != CURLE_OK)
+	if (cstat != CURLE_OK)
 		goto fail;
 
 	/* we pass our file to the callback function */
@@ -110,7 +98,7 @@ fail:
 }
 
 int
-ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime)
+ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime, struct OCcredentials* creds)
 {
 	int stat = OC_NOERR;
 	CURLcode cstat = CURLE_OK;
@@ -120,7 +108,12 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime)
 	/* Set the URL */
 	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
 	if (cstat != CURLE_OK)
-		goto fail;
+	    goto fail;
+	
+	/* Set user and password */
+	cstat = ocset_user_password(creds,curl);
+	if (cstat != CURLE_OK)
+	    goto fail;
 
 	/* send all data to this function  */
 	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);

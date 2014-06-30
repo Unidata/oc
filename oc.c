@@ -697,7 +697,7 @@ oc_meta_dimensionsizes(OCobject link, OCobject ddsnode, size_t* dimsizes)
 
     if(node->array.rank == 0) return OCTHROW(OCTHROW(OC_ESCALAR));
     if(dimsizes != NULL) {
-	int i;
+	size_t i;
         for(i=0;i<node->array.rank;i++) {
             OCnode* dim = (OCnode*)oclistget(node->array.dimensions,i);
 	    dimsizes[i] = dim->dim.declsize;
@@ -738,7 +738,7 @@ oc_meta_attr(OCobject link, OCobject ddsnode, size_t index,
 			   char** namep, OCtype* octypep,
 			   size_t* nvaluesp, char** strings)
 {
-    int i;
+    size_t i;
     OCnode* node;
     OCnode* attr;
     OCattinfo* info;

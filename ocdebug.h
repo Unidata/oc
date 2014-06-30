@@ -85,8 +85,7 @@ extern OCerror octhrow(OCerror err);
 #define OCTHROW(e) octhrow(e)
 #define OCTHROWCHK(e) (void)octhrow(e)
 #define OCGOTO(label) {ocbreakpoint(-1); goto label;}
-extern int ocbreakpoint(int err);
-extern int octhrow(int err);
+
 #else
 #define OCTHROW(e) (e)
 #define OCTHROWCHK(e)

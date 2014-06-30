@@ -208,9 +208,9 @@ typedef struct OCtree
 	char*   memory;   /* allocated memory if OC_ONDISK is not set */
         char*   filename; /* If OC_ONDISK is set */
         FILE*   file;
-        off_t   datasize; /* xdr size on disk or in memory */
-        off_t   bod;      /* offset of the beginning of packet data */
-        off_t   ddslen;   /* length of ddslen (assert(ddslen <= bod)) */
+        size_t   datasize; /* xdr size on disk or in memory */
+        size_t   bod;      /* offset of the beginning of packet data */
+        size_t   ddslen;   /* length of ddslen (assert(ddslen <= bod)) */
         XXDR*   xdrs;		/* access either memory or file */
         OCdata* data;
     } data;

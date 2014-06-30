@@ -251,7 +251,6 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
     octype = template->octype;
     assert(octype == OC_Atomic);
     basetype = template->basetype;
-
     isscalar = (template->array.rank == 0 ? 1 : 0);
 
     /* validate memory space*/
@@ -290,7 +289,7 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
     int i;
     OCnode* template;
     OCtype basetype;
-    off_t elemsize, totalsize, xdrtotal, xdrstart;
+    size_t elemsize, totalsize, xdrtotal, xdrstart;
     int scalar;
 
     OCASSERT(data != NULL);
@@ -363,7 +362,7 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 	    unsigned short* sp = (unsigned short*)memory;
 	    for(i=0;i<count;i++,sp++) {
 	        unsigned int tmp;
-		if(!xxdr_getbytes(xdrs,(char*)&tmp,(off_t)XDRUNIT))		
+		if(!xxdr_getbytes(xdrs,(char*)&tmp,(size_t)XDRUNIT))		
 		    {OCTHROW(OC_EDATADDS); goto xdrfail;}
 		/* convert from network order if necessary */
 		if(!xxdr_network_order)
@@ -397,8 +396,8 @@ ocread(OCdata* data, XXDR* xdrs, char* memory, size_t memsize, size_t start, siz
 	if(count > data->nstrings)
 	    return OCTHROW(OC_EDATADDS);
 	for(i=0;i<count;i++,sp++) {
-	    off_t len;
-	    off_t offset = data->strings[start+i];
+	    size_t len;
+	    size_t offset = data->strings[start+i];
             xxdr_setpos(xdrs,offset);
             /* get the string */
 	    if(!xxdr_string(xdrs,sp,&len))
