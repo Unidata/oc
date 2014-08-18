@@ -54,7 +54,8 @@ oc_initialize(void)
 /*!
 This procedure opens a link to some OPeNDAP
 data server to request a specific url, possibly with constraints.
-It returns an <i>OClink</i> object.
+It returns an <i>OClink</i> object. If possible, it sets the
+protocol version.
 \param[in] url The url for the OPeNDAP server to which a connection
 is created and the request is made.
 \param[out] linkp A pointer to a location into which the link
@@ -104,19 +105,18 @@ oc_close(OCobject link)
 
 /*!
 This procedure is used to send requests to the server
-to obtain either a DAS, DDS, or DATADDS response
-and produce a corresponding tree.
-It fetchs and parses a given class of DXD the server specified
-at open time, and using a specified set of constraints
-and flags.
+to obtain either a metadata (DDS,DMR,DAS) response,
+or to obtain data response and produce a corresponding tree
+for the returned metadata.
+It fetchs and parses a given class of DXD at open time, and
+using a specified set of constraints and flags.
 
 \param[in] link The link through which the server is accessed.
 \param[in] constraint The constraint to be applied to the request.
-\param[in] dxdkind The OCdxd value indicating what to fetch (i.e.
-DAS, DDS, or DataDDS).
+\param[in] dxdkind The OCdxd value indicating what to fetch.
 \param[in] flags The 'OR' of OCflags to control the fetch:
 The OCONDISK flag is defined to cause the fetched
-xdr data to be stored on disk instead of in memory.
+data to be stored on disk instead of in memory.
 \param[out] rootp A pointer a location to store
 the root node of the tree associated with the the request.
 
@@ -126,7 +126,7 @@ the root node of the tree associated with the the request.
 
 OCerror
 oc_fetch(OCobject link, const char* constraint,
-                 OCdxd dxdkind, OCflags flags, OCobject* rootp)
+         OCdxd dxdkind, OCflags flags, OCobject* rootp)
 {
     OCstate* state;
     OCerror ocerr = OC_NOERR;
@@ -227,7 +227,7 @@ of attributes associated with this object.
 */
 
 OCerror
-oc_dds_properties(OCobject link,
+oc_meta_properties(OCobject link,
  	  OCobject ddsnode,
 	  char** namep,
 	  OCtype* octypep,
@@ -243,7 +243,7 @@ oc_dds_properties(OCobject link,
 
     if(namep) *namep = nulldup(node->name);
     if(octypep) *octypep = node->octype;
-    if(atomtypep) *atomtypep = node->etype;
+    if(atomtypep) *atomtypep = node->basetype;
     if(rankp) *rankp = node->array.rank;
     if(containerp) *containerp = (OCobject)node->container;
     if(nsubnodesp) *nsubnodesp = oclistlength(node->subnodes);
@@ -258,7 +258,7 @@ oc_dds_properties(OCobject link,
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] namep A pointer into which the node name is stored
@@ -270,7 +270,7 @@ when no longer needed.
 */
 
 OCerror
-oc_dds_name(OCobject link, OCobject ddsnode, char** namep)
+oc_meta_name(OCobject link, OCobject ddsnode, char** namep)
 {
     OCstate* state;
     OCnode* node;
@@ -285,7 +285,7 @@ oc_dds_name(OCobject link, OCobject ddsnode, char** namep)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] nsubnodesp A pointer into which the number of subnodes
@@ -296,7 +296,7 @@ is stored.
 */
 
 OCerror
-oc_dds_nsubnodes(OCobject link, OCobject ddsnode, size_t* nsubnodesp)
+oc_meta_nsubnodes(OCobject link, OCobject ddsnode, size_t* nsubnodesp)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -307,7 +307,7 @@ oc_dds_nsubnodes(OCobject link, OCobject ddsnode, size_t* nsubnodesp)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] typep A pointer into which the atomictype is stored.
@@ -317,18 +317,18 @@ Specialized accessor function as an alternative to oc_dds_properties.
 */
 
 OCerror
-oc_dds_atomictype(OCobject link, OCobject ddsnode, OCtype* typep)
+oc_meta_basetype(OCobject link, OCobject ddsnode, OCtype* typep)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
     OCDEREF(OCnode*,node,ddsnode);
 
-    if(typep) *typep = node->etype;
+    if(typep) *typep = node->basetype;
     return OCTHROW(OC_NOERR);
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] typep A pointer into which the octype is stored.
@@ -338,7 +338,7 @@ Specialized accessor function as an alternative to oc_dds_properties.
 */
 
 OCerror
-oc_dds_class(OCobject link, OCobject ddsnode, OCtype* typep)
+oc_meta_class(OCobject link, OCobject ddsnode, OCtype* typep)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -349,7 +349,7 @@ oc_dds_class(OCobject link, OCobject ddsnode, OCtype* typep)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] rankp A pointer into which the rank is stored.
@@ -359,7 +359,7 @@ Specialized accessor function as an alternative to oc_dds_properties.
 */
 
 OCerror
-oc_dds_rank(OCobject link, OCobject ddsnode, size_t* rankp)
+oc_meta_rank(OCobject link, OCobject ddsnode, size_t* rankp)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -370,7 +370,7 @@ oc_dds_rank(OCobject link, OCobject ddsnode, size_t* rankp)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] nattrp A pointer into which the number of attributes is stored.
@@ -380,7 +380,7 @@ Specialized accessor function as an alternative to oc_dds_properties.
 */
 
 OCerror
-oc_dds_attr_count(OCobject link, OCobject ddsnode, size_t* nattrp)
+oc_meta_attr_count(OCobject link, OCobject ddsnode, size_t* nattrp)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -397,7 +397,7 @@ oc_dds_attr_count(OCobject link, OCobject ddsnode, size_t* nattrp)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] rootp A pointer into which the the root of the tree containing
@@ -408,7 +408,7 @@ the node is stored.
 */
 
 OCerror
-oc_dds_root(OCobject link, OCobject ddsnode, OCobject* rootp)
+oc_meta_root(OCobject link, OCobject ddsnode, OCobject* rootp)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -419,7 +419,7 @@ oc_dds_root(OCobject link, OCobject ddsnode, OCobject* rootp)
 }
 
 /*!
-Specialized accessor function as an alternative to oc_dds_properties.
+Specialized accessor function as an alternative to oc_meta_properties.
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The node whose properties are of interest.
 \param[out] containerp A pointer into which the the immediate
@@ -430,7 +430,7 @@ container ddsnode is stored.
 */
 
 OCerror
-oc_dds_container(OCobject link, OCobject ddsnode, OCobject* containerp)
+oc_meta_container(OCobject link, OCobject ddsnode, OCobject* containerp)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -456,7 +456,7 @@ of a node that itself is a container (Dataset, Structure, Sequence, or Grid)
 */
 
 OCerror
-oc_dds_ithfield(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldnodep)
+oc_meta_ithfield(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldnodep)
 {
     OCnode* node;
     OCnode* field;
@@ -475,7 +475,7 @@ oc_dds_ithfield(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldno
 }
 
 /*!
-Alias for oc_dds_ithfield.
+Alias for oc_meta_ithfield.
 
 \param[in] link The link through which the server is accessed.
 \param[in] ddsnode The container node of interest.
@@ -489,14 +489,14 @@ Alias for oc_dds_ithfield.
 */
 
 OCerror
-oc_dds_ithsubnode(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldnodep)
+oc_meta_ithsubnode(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldnodep)
 {
-    return OCTHROW(oc_dds_ithfield(link,ddsnode,index,fieldnodep));
+    return OCTHROW(oc_meta_ithfield(link,ddsnode,index,fieldnodep));
 }
 
 /*!
 Obtain the DDS node corresponding to the array of a Grid container.
-Equivalent to oc_dds_ithfield(link,grid-container,0,arraynode).
+Equivalent to oc_meta_ithfield(link,grid-container,0,arraynode).
 
 \param[in] link The link through which the server is accessed.
 \param[in] grid The grid container node of interest.
@@ -507,14 +507,14 @@ Equivalent to oc_dds_ithfield(link,grid-container,0,arraynode).
 */
 
 OCerror
-oc_dds_gridarray(OCobject link, OCobject grid, OCobject* arraynodep)
+oc_meta_gridarray(OCobject link, OCobject grid, OCobject* arraynodep)
 {
-    return OCTHROW(oc_dds_ithfield(link,grid,0,arraynodep));
+    return OCTHROW(oc_meta_ithfield(link,grid,0,arraynodep));
 }
 
 /*!
 Obtain the DDS node corresponding to the i'th map of a Grid container.
-Equivalent to oc_dds_ithfield(link,grid-container,index+1,arraynode).
+Equivalent to oc_meta_ithfield(link,grid-container,index+1,arraynode).
 Note the map index starts at zero.
 
 \param[in] link The link through which the server is accessed.
@@ -528,9 +528,9 @@ Note the map index starts at zero.
 */
 
 OCerror
-oc_dds_gridmap(OCobject link, OCobject grid, size_t index, OCobject* mapnodep)
+oc_meta_gridmap(OCobject link, OCobject grid, size_t index, OCobject* mapnodep)
 {
-    return OCTHROW(oc_dds_ithfield(link,grid,index+1,mapnodep));
+    return OCTHROW(oc_meta_ithfield(link,grid,index+1,mapnodep));
 }
 
 
@@ -548,7 +548,7 @@ Obtain a dds node by name from a dds structure or dataset node.
 */
 
 OCerror
-oc_dds_fieldbyname(OCobject link, OCobject ddsnode, const char* name, OCobject* fieldp)
+oc_meta_fieldbyname(OCobject link, OCobject ddsnode, const char* name, OCobject* fieldp)
 {
     OCerror err = OC_NOERR;
     OCnode* node;
@@ -560,17 +560,17 @@ oc_dds_fieldbyname(OCobject link, OCobject ddsnode, const char* name, OCobject* 
 	return OCTHROW(OC_EBADTYPE);
 
     /* Search the fields to find a name match */
-    err = oc_dds_nsubnodes(link,ddsnode,&count);
+    err = oc_meta_nsubnodes(link,ddsnode,&count);
     if(err != OC_NOERR) return err;
     for(i=0;i<count;i++) {
 	OCobject field;
 	char* fieldname = NULL;
 	int match = 1;
 
-        err = oc_dds_ithfield(link,ddsnode,i,&field);
+        err = oc_meta_ithfield(link,ddsnode,i,&field);
         if(err != OC_NOERR) return err;
-	// Get the field's name
-        err = oc_dds_name(link,field,&fieldname);
+	/* Get the field's name */
+        err = oc_meta_name(link,field,&fieldname);
         if(err != OC_NOERR) return err;
 	if(fieldname != NULL) {
 	    match = strcmp(name,fieldname);
@@ -598,7 +598,7 @@ are stored. The caller must allocate based on the rank of the node.
 */
 
 OCerror
-oc_dds_dimensions(OCobject link, OCobject ddsnode, OCobject* dims)
+oc_meta_dimensions(OCobject link, OCobject ddsnode, OCobject* dims)
 {
     OCnode* node;
     size_t i;
@@ -631,7 +631,7 @@ associated with the node of interest.
 */
 
 OCerror
-oc_dds_ithdimension(OCobject link, OCobject ddsnode, size_t index, OCobject* dimidp)
+oc_meta_ithdimension(OCobject link, OCobject ddsnode, size_t index, OCobject* dimidp)
 {
     OCnode* node;
     OCobject dimid = NULL;
@@ -689,7 +689,7 @@ by the rank of the node and must be allocated and free'd by the caller.
 */
 
 OCerror
-oc_dds_dimensionsizes(OCobject link, OCobject ddsnode, size_t* dimsizes)
+oc_meta_dimensionsizes(OCobject link, OCobject ddsnode, size_t* dimsizes)
 {
     OCnode* node;
     OCVERIFY(OC_Node,ddsnode);
@@ -697,7 +697,7 @@ oc_dds_dimensionsizes(OCobject link, OCobject ddsnode, size_t* dimsizes)
 
     if(node->array.rank == 0) return OCTHROW(OCTHROW(OC_ESCALAR));
     if(dimsizes != NULL) {
-	size_t i;
+	int i;
         for(i=0;i<node->array.rank;i++) {
             OCnode* dim = (OCnode*)oclistget(node->array.dimensions,i);
 	    dimsizes[i] = dim->dim.declsize;
@@ -734,27 +734,32 @@ are stored. It must be allocated and free'd by the caller.
 */
 
 OCerror
-oc_dds_attr(OCobject link, OCobject ddsnode, size_t index,
+oc_meta_attr(OCobject link, OCobject ddsnode, size_t index,
 			   char** namep, OCtype* octypep,
 			   size_t* nvaluesp, char** strings)
 {
     int i;
     OCnode* node;
-    OCattribute* attr;
-    size_t nattrs;
+    OCnode* attr;
+    OCattinfo* info;
+    size_t nattrs,nvalues;
     OCVERIFY(OC_Node,ddsnode);
     OCDEREF(OCnode*,node,ddsnode);
 
     nattrs = oclistlength(node->attributes);
     if(index >= nattrs) return OCTHROW(OCTHROW(OC_EINDEX));
-    attr = (OCattribute*)oclistget(node->attributes,index);
+    attr = (OCnode*)oclistget(node->attributes,index);
+    info = &attr->att;
     if(namep) *namep = strdup(attr->name);
-    if(octypep) *octypep = attr->etype;
-    if(nvaluesp) *nvaluesp = attr->nvalues;
+    if(octypep) *octypep = attr->basetype;
+    nvalues = oclistlength(info->values);
+    if(nvaluesp) *nvaluesp = nvalues;
     if(strings) {
-	if(attr->nvalues > 0) {
-	    for(i=0;i<attr->nvalues;i++)
-	        strings[i] = nulldup(attr->values[i]);
+	if(nvalues > 0) {
+	    for(i=0;i<nvalues;i++) {
+		const char* value = oclistget(info->values,i);
+	        strings[i] = nulldup(value);
+	    }
 	}
     }
     return OCTHROW(OC_NOERR);
@@ -832,7 +837,7 @@ oc_das_attr(OCobject link, OCobject dasnode, size_t index, OCtype* atomtypep, ch
     if(attr->octype != OC_Attribute) return OCTHROW(OCTHROW(OC_EBADTYPE));
     nvalues = oclistlength(attr->att.values);
     if(index >= nvalues) return OCTHROW(OCTHROW(OC_EINDEX));
-    if(atomtypep) *atomtypep = attr->etype;
+    if(atomtypep) *atomtypep = attr->basetype;
     if(valuep) *valuep = nulldup((char*)oclistget(attr->att.values,index));
     return OCTHROW(OC_NOERR);
 }
@@ -846,7 +851,7 @@ oc_das_attr(OCobject link, OCobject dasnode, size_t index, OCtype* atomtypep, ch
 
 /*!
 As a rule, the attributes of an object are accessed using
-the <i>oc_dds_attr</i> procedure rather than by traversing a
+the <i>oc_meta_attr</i> procedure rather than by traversing a
 DAS.  In order to support this, the <i>oc_merge_das</i>
 procedure annotates a DDS node with attribute values taken
 from a specified DAS node.
@@ -896,7 +901,7 @@ This procedure, given the DDS tree root, gets the data tree root.
 */
 
 OCerror
-oc_dds_getdataroot(OCobject link, OCobject ddsroot, OCobject* datarootp)
+oc_meta_getdataroot(OCobject link, OCobject ddsroot, OCobject* datarootp)
 {
     OCerror ocerr = OC_NOERR;
     OCstate* state;
@@ -973,20 +978,20 @@ oc_data_fieldbyname(OCobject link, OCobject datanode, const char* name, OCobject
     OCVERIFY(OC_Data,datanode);
 
     /* Get the dds node for this datanode */
-    err = oc_data_ddsnode(link,datanode,&ddsnode);
+    err = oc_data_metanode(link,datanode,&ddsnode);
     if(err != OC_NOERR) return err;
 
     /* Search the fields to find a name match */
-    err = oc_dds_nsubnodes(link,ddsnode,&count);
+    err = oc_meta_nsubnodes(link,ddsnode,&count);
     if(err != OC_NOERR) return err;
     for(i=0;i<count;i++) {
 	int match;
 	OCobject field;
 	char* fieldname = NULL;
-        err = oc_dds_ithfield(link,ddsnode,i,&field);
+        err = oc_meta_ithfield(link,ddsnode,i,&field);
         if(err != OC_NOERR) return err;
-	// Get the field's name
-        err = oc_dds_name(link,field,&fieldname);
+	/* Get the field's name */
+        err = oc_meta_name(link,field,&fieldname);
         if(err != OC_NOERR) return err;
  	if(!fieldname)
 	  return OCTHROW(OC_EINVAL);
@@ -1080,7 +1085,7 @@ oc_data_container(OCobject link,  OCobject datanode, OCobject* containerp)
 /*!
 Obtain the data instance corresponding to the root of the tree
 of which the specified instance object is a part.
-Do not confuse this with oc_dds_getdataroot.
+Do not confuse this with oc_meta_getdataroot.
 This procedure, given any node in a data tree, get the root of that tree.
 
 \param[in] link The link through which the server is accessed.
@@ -1255,7 +1260,7 @@ for this data instance.
 */
 
 OCerror
-oc_data_ddsnode(OCobject link, OCobject datanode, OCobject* nodep)
+oc_data_metanode(OCobject link, OCobject datanode, OCobject* nodep)
 {
     OCerror ocerr = OC_NOERR;
     OCdata* data;
@@ -1533,7 +1538,7 @@ and the read request cannot be completed.
 */
 
 OCerror
-oc_dds_read(OCobject link, OCobject ddsnode,
+oc_meta_read(OCobject link, OCobject ddsnode,
                  size_t* start, size_t* edges,
 	         size_t memsize, void* memory)
 {
@@ -1576,14 +1581,14 @@ and the read request cannot be completed.
 */
 
 OCerror
-oc_dds_readscalar(OCobject link, OCobject ddsnode,
+oc_meta_readscalar(OCobject link, OCobject ddsnode,
 	         size_t memsize, void* memory)
 {
-    return OCTHROW(oc_dds_readn(link,ddsnode,NULL,0,memsize,memory));
+    return OCTHROW(oc_meta_readn(link,ddsnode,NULL,0,memsize,memory));
 }
 
 /*!
-This procedure is a variant of oc_dds_read for reading
+This procedure is a variant of oc_meta_read for reading
 nelements of values starting at a given index position.
 If the variable is a scalar, then the
 index vector and count will be ignored.
@@ -1616,7 +1621,7 @@ and the read request cannot be completed.
 */
 
 OCerror
-oc_dds_readn(OCobject link, OCobject ddsnode,
+oc_meta_readn(OCobject link, OCobject ddsnode,
                  size_t* start, size_t N,
 	         size_t memsize, void* memory)
 {
@@ -1654,7 +1659,7 @@ Non-atomic types (e.g. OC_Structure) return zero.
 size_t
 oc_typesize(OCtype etype)
 {
-    return octypesize(etype);
+    return OCTHROW(octypesize(etype));
 }
 
 /*!
@@ -1673,7 +1678,7 @@ The caller MUST NOT free the returned string.
 const char*
 oc_typetostring(OCtype octype)
 {
-    return octypetoddsstring(octype);
+    return octypetostring(octype);
 }
 
 /*!
@@ -1812,9 +1817,11 @@ The error reply contains three pieces of information.
 </ol>
 
 \param[in] link The link through which the server is accessed.
-\param[in] codep A pointer for returning the error code.
+\param[in] codep A pointer for returning the error code (DAP2 only).
 \param[in] msgp A pointer for returning the error message.
-\param[in] httpp A pointer for returning the HTTP error number.
+\param[in] contextp A pointer for returning the context message (DAP4 only).
+\param[in] otherinfo A pointer for returning other info (DAP4 only).
+\param[in] httpcodep A pointer for returning the HTTP error number.
 
 \retval OC_NOERR if an error was found and the return values are defined.
 \retval OC_EINVAL  if no error reply could be found, so the return
@@ -1822,13 +1829,14 @@ values are meaningless.
 */
 
 OCerror
-oc_svcerrordata(OCobject link, char** codep,
-                               char** msgp, long* httpp)
+oc_svcerrordata(OClink link, char** codep,
+                char** msgp, char** contextp, char** otherinfop,
+                long* httpcodep)
 {
     OCstate* state;
     OCVERIFY(OC_State,link);
     OCDEREF(OCstate*,state,link);
-    return OCTHROW(ocsvcerrordata(state,codep,msgp,httpp));
+    return ocsvcerrordata(state,codep,msgp,contextp,otherinfop,httpcodep);
 }
 
 /*!
@@ -1874,7 +1882,7 @@ oc_raw_xdrsize(OCobject link, OCobject ddsroot, off_t* xdrsizep)
     OCDEREF(OCnode*,root,ddsroot);
 
     if(root->root == NULL || root->root->tree == NULL
-	|| root->root->tree->dxdclass != OCDATADDS)
+	|| root->root->tree->dxdclass != OCDATA)
 	    return OCTHROW(OCTHROW(OC_EINVAL));
     if(xdrsizep) *xdrsizep = root->root->tree->data.datasize;
     return OCTHROW(OC_NOERR);
@@ -1990,7 +1998,7 @@ oc_dumpnode(OCobject link, OCobject ddsroot)
 
 
 OCerror
-oc_dds_dd(OCobject link, OCobject ddsroot, int level)
+oc_meta_dd(OCobject link, OCobject ddsroot, int level)
 {
     OCstate* state;
     OCnode* root;
@@ -2004,7 +2012,7 @@ oc_dds_dd(OCobject link, OCobject ddsroot, int level)
 }
 
 OCerror
-oc_dds_ddnode(OCobject link, OCobject ddsroot)
+oc_meta_ddnode(OCobject link, OCobject ddsroot)
 {
     OCnode* root;
     OCVERIFY(OC_Node,ddsroot);
@@ -2074,12 +2082,13 @@ oc_data_free(OCobject link, OCobject datanode)
    Currently does nothing
 */
 OCerror
-oc_dds_free(OCobject link, OCobject dds0)
+oc_meta_free(OCobject link, OCobject dds0)
 {
     return OCTHROW(OC_NOERR);
 }
 
 
+#ifdef CALLBACK
 OCerror
 oc_set_curl_callback(OClink link, oc_curl_callback* callback, void* userstate)
 {
@@ -2090,3 +2099,4 @@ oc_set_curl_callback(OClink link, oc_curl_callback* callback, void* userstate)
     state->usercurldata = userstate;
     return OCTHROW(OC_NOERR);
 }
+#endif

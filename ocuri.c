@@ -747,7 +747,6 @@ toHex(int b, char* hex)
     hex[1] = hexchars[(b) & 0xff];
 }
 
-
 static int
 fromHex(int c)
 {
@@ -816,11 +815,9 @@ ocuridecodeonly(char* s, char* only)
 {
     size_t slen;
     char* decoded;
-    char* outptr;
-    char* inptr;
-    unsigned int c;
+    
+    if(s == NULL) return NULL;
 
-    if (s == NULL) return NULL;
     if(only == NULL) only = "";
 
     slen = strlen(s);

@@ -84,7 +84,7 @@ typedef struct OCheader {
 #include "oclog.h"
 #include "xxdr.h"
 #include "ocdatatypes.h"
-#include "occompile.h"
+#include "dap2compile.h"
 
 #ifndef nulldup
 #define nulldup(s) (s==NULL?NULL:strdup(s))
@@ -138,12 +138,23 @@ struct OCstate {
     OClist* trees; /* list<OCNODE*> ; all root objects */
     OCURI* uri; /* base URI*/
     OCbytes* packet; /* shared by all trees during construction */
-    struct OCerrdata {/* Hold info for an error return from server */
-	char* code;
-	char* message;
+    struct OCversion {
+	int protocol; /* protocol: currently either 2 or 4 */
+	float dapversion; /* full protocol version */
+	float dmrversion; /* full dmr version */
+    } version;
+    struct OCerrdata {/* Hold info for an error return  */
+	OCerror ocerr; /* ocerror code if relevant */
 	long  httpcode;
+	char* message;
+	/* DAP2 only */
+	char* code;
 	char  curlerrorbuf[CURL_ERROR_SIZE]; /* to get curl error message */
+	/* DAP4 only */
+	char* context;
+	char* otherinfo;
     } error;
+
     CURL* curl; /* curl handle*/
     char curlerror[CURL_ERROR_SIZE];
     struct OCcurlflags {
@@ -174,8 +185,10 @@ struct OCstate {
 	char *username;
 	char *password;
     } creds;
+#ifdef CALLBACK
     oc_curl_callback* usercurl;
     void* usercurldata;
+#endif
     long ddslastmodified;
     long datalastmodified;
 };

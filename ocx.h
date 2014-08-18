@@ -24,8 +24,8 @@ typedef unsigned int OCDT;
 /* Return mode for this data */
 extern OCDT oc_data_mode(OClink, OCdatanode);
 
-extern OCerror oc_dds_dd(OClink, OCddsnode, int);
-extern OCerror oc_dds_ddnode(OClink, OCddsnode);
+extern OCerror oc_meta_dd(OClink, OCmetanode, int);
+extern OCerror oc_meta_ddnode(OClink, OCmetanode);
 extern OCerror oc_data_ddpath(OClink, OCdatanode, char**);
 extern OCerror oc_data_ddtree(OClink, OCdatanode root);
 

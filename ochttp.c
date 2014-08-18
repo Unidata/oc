@@ -27,7 +27,7 @@ ocfetchhttpcode(CURL* curl)
     CURLcode cstat = CURLE_OK;
     /* Extract the http code */
 #ifdef HAVE_CURLINFO_RESPONSE_CODE
-    cstat = curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&httpcode);
+     cstat = curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&httpcode);
 #else
     cstat = curl_easy_getinfo(curl,CURLINFO_HTTP_CODE,&httpcode);
 #endif
@@ -37,20 +37,40 @@ ocfetchhttpcode(CURL* curl)
 
 OCerror
 ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
-		off_t* sizep, long* filetime)
+		off_t* sizep, long* filetime, struct OCcredentials* creds)
 {
 	int stat = OC_NOERR;
 	CURLcode cstat = CURLE_OK;
 	struct Fetchdata fetchdata;
+	long httpcode = 0;
+	char tbuf[1024]
 
 	/* Set the URL */
 	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
 	if (cstat != CURLE_OK)
 		goto fail;
 
+	if(creds != NULL && creds->password != NULL
+	   && creds->username != NULL) {
+	    /* Set user and password */
+#if defined (HAVE_CURLOPT_USERNAME) && defined (HAVE_CURLOPT_PASSWORD)
+	    cstat = curl_easy_setopt(curl, CURLOPT_USERNAME, creds->username);
+	    if (cstat != CURLE_OK)
+		goto fail;
+	    cstat = curl_easy_setopt(curl, CURLOPT_PASSWORD, creds->password);
+	    if (cstat != CURLE_OK)
+		goto fail;
+#else		
+		snprintf(tbuf,1023,"%s:%s",creds->username,creds->password);	
+		cstat = curl_easy_setopt(curl, CURLOPT_USERPWD, tbuf);
+		if (cstat != CURLE_OK)
+			goto fail;
+#endif
+	}
+
 	/* send all data to this function  */
 	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback);
-	if (cstat != CURLE_OK)
+v	if (cstat != CURLE_OK)
 		goto fail;
 
 	/* we pass our file to the callback function */
@@ -63,10 +83,10 @@ ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
 	if (cstat != CURLE_OK)
 		goto fail;
 
+
 	fetchdata.stream = stream;
 	fetchdata.size = 0;
 	cstat = curl_easy_perform(curl);
-
 	if (cstat != CURLE_OK)
 	    goto fail;
 
@@ -90,8 +110,7 @@ fail:
 }
 
 int
-ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime,
-           struct OCcredentials* creds)
+ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime)
 {
 	int stat = OC_NOERR;
 	CURLcode cstat = CURLE_OK;
@@ -102,25 +121,6 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime,
 	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
 	if (cstat != CURLE_OK)
 		goto fail;
-	
-#if 0
-	if(creds != NULL && creds->password != NULL  && creds->username != NULL) {
-	    /* Set user and password */
-#if defined (HAVE_CURLOPT_USERNAME) && defined (HAVE_CURLOPT_PASSWORD)
-	    cstat = curl_easy_setopt(curl, CURLOPT_USERNAME, creds->username);
-	    if (cstat != CURLE_OK)
-		goto fail;
-	    cstat = curl_easy_setopt(curl, CURLOPT_PASSWORD, creds->password);
-	    if (cstat != CURLE_OK)
-		goto fail;
-#else		
-		snprintf(tbuf,1023,"%s:%s",creds->username,creds->password);	
-		cstat = curl_easy_setopt(curl, CURLOPT_USERPWD, tbuf);
-		if (cstat != CURLE_OK)
-			goto fail;
-#endif
-	}
-#endif
 
 	/* send all data to this function  */
 	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -136,16 +136,15 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime,
 	cstat = curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1);
 
 	cstat = curl_easy_perform(curl);
-
 	if(cstat == CURLE_PARTIAL_FILE) {
 	    /* Log it but otherwise ignore */
 	    oclog(OCLOGWARN, "curl error: %s; ignored",
-		   curl_easy_strerror(cstat));
+ 	    curl_easy_strerror(cstat));
 	    cstat = CURLE_OK;
 	}
-        httpcode = ocfetchhttpcode(curl);
-
 	if(cstat != CURLE_OK) goto fail;
+
+        httpcode = ocfetchhttpcode(curl);
 
         /* Get the last modified time */
 	if(filetime != NULL)

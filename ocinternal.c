@@ -19,7 +19,7 @@
 #include "occurlfunctions.h"
 #include "ochttp.h"
 #include "ocread.h"
-#include "dapparselex.h"
+#include "dap2parselex.h"
 
 /* Note: TMPPATH must end in '/' */
 #ifdef __CYGWIN__
@@ -222,8 +222,10 @@ ocfetch(OCstate* state, const char* constraint, OCdxd kind, OCflags flags,
     if((stat=ocset_curl_flags(state)) != OC_NOERR) goto fail;
     if((stat=ocset_proxy(state)) != OC_NOERR) goto fail;
     if((stat=ocset_ssl(state)) != OC_NOERR) goto fail;
+#ifdef CALLBACK
     if(state->usercurl)
 	state->usercurl((void*)state->curl,state->usercurldata);
+#endif
 
     ocbytesclear(state->packet);
 
@@ -267,7 +269,7 @@ ocfetch(OCstate* state, const char* constraint, OCdxd kind, OCflags flags,
     default:
 	break;
     }/*switch*/
-    /* Obtain any http code */
+    /* Obtain any http code
     state->error.httpcode = ocfetchhttpcode(state->curl);
     if(stat != OC_NOERR) {
 	if(state->error.httpcode >= 400) {
@@ -279,7 +281,7 @@ ocfetch(OCstate* state, const char* constraint, OCdxd kind, OCflags flags,
     }
 
     tree->nodes = NULL;
-    stat = DAPparse(state,tree,tree->text);
+    stat = DAP2parse(state,tree,tree->text);
     /* Check and report on an error return from the server */
     if(stat == OC_EDAPSVC  && state->error.code != NULL) {
 	oclog(OCLOGERR,"oc_open: server error retrieving url: code=%s message=\"%s\"",
@@ -346,7 +348,7 @@ fprintf(stderr,"ocfetch.datadds.memory: datasize=%lu bod=%lu\n",
 	}
 
 	/* Compile the data into a more accessible format */
-	stat = occompile(state,tree->root);
+	stat = dap2_compile(state,tree->root);
 	if(stat != OC_NOERR)
 	    goto fail;
     }
@@ -659,8 +661,7 @@ dataError(XXDR* xdrs, OCstate* state)
 {
     int depth=0;
     int errfound = 0;
-    off_t ckp=0,avail=0;
-    int i=0;
+    off_t ckp=0,avail=0,i=0;
     char* errmsg = NULL;
     char errortext[16]; /* bigger thant |ERROR_TAG|*/
     avail = xxdr_getavail(xdrs);
@@ -682,7 +683,7 @@ dataError(XXDR* xdrs, OCstate* state)
 	    if(depth == 0) {i++; break;}
 	}
     }    
-    errmsg = (char*)malloc((size_t)i+1);
+    errmsg = (char*)malloc((size_t)(i+1));
     if(errmsg == NULL) {errfound = 1; goto done;}
     xxdr_setpos(xdrs,ckp);
     xxdr_getbytes(xdrs,errmsg,(off_t)i);

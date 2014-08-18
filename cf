@@ -49,9 +49,9 @@ fi
 
 
 FLAGS="--prefix ${PREFIX}"
-#FLAGS="${FLAGS} --disable-shared"
+FLAGS="${FLAGS} --disable-shared"
 #FLAGS="${FLAGS} --enable-shared"
-FLAGS="${FLAGS} --enable-remote-tests"
+#FLAGS="${FLAGS} --enable-remote-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #FLAGS="${FLAGS} --enable-xgetopt"

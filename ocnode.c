@@ -3,7 +3,7 @@
 
 #include "config.h"
 #include "ocinternal.h"
-#include "occompile.h"
+#include "dap2compile.h"
 #include "ocdebug.h"
 
 static const unsigned int MAX_UINT = 0xffffffff;
@@ -28,13 +28,16 @@ occomputesemantics(OClist* ocnodes)
     }
     /* Fill in array.sizes */
     for(i=0;i<oclistlength(ocnodes);i++) {
-	OCnode* node = (OCnode*)oclistget(ocnodes,i);
+	OCnode* node = (OCnode*)oclistget(ocnodes,(size_t)i);
 	if(node->array.rank > 0) {
+	    size_t product = 1;
 	    node->array.sizes = (size_t*)malloc(node->array.rank*sizeof(size_t));
 	    for(j=0;j<node->array.rank;j++) {
-		OCnode* dim = (OCnode*)oclistget(node->array.dimensions,j);
+		OCnode* dim = (OCnode*)oclistget(node->array.dimensions,(size_t)j);
 		node->array.sizes[j] = dim->dim.declsize;		
+		product *= dim->dim.declsize;
 	    }
+	    node->array.totalsize = product;
 	}
     }
 }
@@ -122,6 +125,7 @@ ocnode_new(char* name, OCtype ptype, OCnode* root)
     return cdf;
 }
 
+#if 0
 static OCattribute*
 makeattribute(char* name, OCtype ptype, OClist* values)
 {
@@ -139,6 +143,7 @@ makeattribute(char* name, OCtype ptype, OClist* values)
     }
     return att;
 }
+#endif
 
 static void
 marklostattribute(OCnode* att)
@@ -190,38 +195,41 @@ octree_free(OCtree* tree)
 void
 ocnodes_free(OClist* nodes)
 {
-    unsigned int i,j;
+    unsigned int i;
     for(i=0;i<oclistlength(nodes);i++) {
-	OCnode* node = (OCnode*)oclistget(nodes,i);
-        ocfree(node->name);
-        ocfree(node->fullname);
-        while(oclistlength(node->att.values) > 0) {
-	    char* value = (char*)oclistpop(node->att.values);
-	    ocfree(value);
-        }
-        while(oclistlength(node->attributes) > 0) {
-            OCattribute* attr = (OCattribute*)oclistpop(node->attributes);
-	    ocfree(attr->name);
-#if 0
-	    /* If the attribute type is string, then we need to free them*/
-all values are strings now
-	    if(attr->etype == OC_String || attr->etype == OC_URL)
-#endif
-	    {
-		char** strings = (char**)attr->values;
-		for(j=0;j<attr->nvalues;j++) {ocfree(*strings); strings++;}
-	    }
-	    ocfree(attr->values);
-	    ocfree(attr);
-        }
-        if(node->array.dimensions != NULL) oclistfree(node->array.dimensions);
-        if(node->subnodes != NULL) oclistfree(node->subnodes);
-        if(node->att.values != NULL) oclistfree(node->att.values);
-        if(node->attributes != NULL) oclistfree(node->attributes);
-	if(node->array.sizes != NULL) free(node->array.sizes);
-        ocfree(node);
+	OCnode* node = (OCnode*)oclistget(nodes,(size_t)i);
+	ocnode_free(node);
     }
     oclistfree(nodes);
+}
+
+/* Singular */
+void
+ocnode_free(OCnode* node)
+{
+    ocfree(node->name);
+    ocfree(node->fullname);
+    if(node->octype == OC_Attribute) {
+        while(oclistlength(node->att.values) > 0) {
+            char* value = (char*)oclistpop(node->att.values);
+	    ocfree(value);
+        }
+        while(oclistlength(node->att.nslist) > 0) {
+            char* ns = (char*)oclistpop(node->att.nslist);
+	    ocfree(ns);
+	}
+    }
+    while(oclistlength(node->attributes) > 0) {
+	OCnode* attr = (OCnode*)oclistpop(node->attributes);
+	ocnode_free(attr);
+	ocfree(attr);
+    }
+    if(node->array.dimensions != NULL) oclistfree(node->array.dimensions);
+    if(node->subnodes != NULL) oclistfree(node->subnodes);
+    if(node->att.values != NULL) oclistfree(node->att.values);
+    if(node->attributes != NULL) oclistfree(node->attributes);
+    if(node->array.sizes != NULL) free(node->array.sizes);
+    ocfree(node);
 }
 
 /*
@@ -359,10 +367,7 @@ mergedas1(OCnode* dds, OCnode* das)
     for(i=0;i<oclistlength(das->subnodes);i++) {
 	OCnode* attnode = (OCnode*)oclistget(das->subnodes,i);
 	if(attnode->octype == OC_Attribute) {
-	    OCattribute* att = makeattribute(attnode->name,
-						attnode->etype,
-						attnode->att.values);
-            oclistpush(dds->attributes,(void*)att);
+            oclistpush(dds->attributes,attnode);
 	}
     }
     return OCTHROW(stat);
@@ -382,7 +387,7 @@ mergedods1(OCnode* dds, OCnode* dods)
     for(i=0;i<oclistlength(dods->subnodes);i++) {
 	OCnode* attnode = (OCnode*)oclistget(dods->subnodes,i);
 	if(attnode->octype == OC_Attribute) {
-	    OCattribute* att;
+	    OCnode* att;
 	    /* prefix the attribute name with the name of the attribute
                set plus "."
             */
@@ -395,10 +400,9 @@ mergedods1(OCnode* dds, OCnode* dods)
 	    strcpy(newname,dods->name);
 	    strcat(newname,".");
 	    strcat(newname,attnode->name);
-	    att = makeattribute(newname,
-						attnode->etype,
-						attnode->att.values);
-	    free(newname);
+	    if(att->name != NULL)
+		free(att->name);
+	    att->name = newname;
             oclistpush(dds->attributes,(void*)att);
 	}
     }
@@ -488,18 +492,6 @@ mergedas1(OCnode* dds, OCnode* das)
 }
 #endif
 
-static void
-ocuncorrelate(OCnode* root)
-{
-    OCtree* tree = root->tree;
-    unsigned int i;
-    if(tree == NULL) return;
-    for(i=0;i<oclistlength(tree->nodes);i++) {
-	OCnode* node = (OCnode*)oclistget(tree->nodes,i);
-	node->datadds = NULL;
-    }        
-}
-
 static OCerror
 occorrelater(OCnode* dds, OCnode* dxd)
 {
@@ -520,8 +512,6 @@ occorrelater(OCnode* dds, OCnode* dxd)
 	OCTHROWCHK((ocstat = OC_EINVAL)); goto fail;
     }
 
-    dds->datadds = dxd;
-
     switch (dds->octype) {
     case OC_Dataset:
     case OC_Structure:
@@ -529,9 +519,9 @@ occorrelater(OCnode* dds, OCnode* dxd)
     case OC_Sequence:
 	/* Remember: there may be fewer datadds fields than dds fields */
 	for(i=0;i<oclistlength(dxd->subnodes);i++) {
-	    OCnode* dxd1 = (OCnode*)oclistget(dxd->subnodes,(size_t)i);
+	    OCnode* dxd1 = (OCnode*)oclistget(dxd->subnodes,i);
 	    for(j=0;j<oclistlength(dds->subnodes);j++) {
-		OCnode* dds1 = (OCnode*)oclistget(dds->subnodes,(size_t)j);
+		OCnode* dds1 = (OCnode*)oclistget(dds->subnodes,j);
 		if(strcmp(dxd1->name,dds1->name) == 0) {
 		    ocstat = occorrelater(dds1,dxd1);
 		    if(ocstat != OC_NOERR) {OCTHROWCHK(ocstat); goto fail;}
@@ -548,8 +538,8 @@ occorrelater(OCnode* dds, OCnode* dxd)
     /* Correlate the dimensions */
     if(dds->array.rank > 0) {
 	for(i=0;i<oclistlength(dxd->subnodes);i++) {
-	    OCnode* ddsdim = (OCnode*)oclistget(dds->array.dimensions,(size_t)i);
-	    OCnode* dxddim = (OCnode*)oclistget(dxd->array.dimensions,(size_t)i);
+	    OCnode* ddsdim = (OCnode*)oclistget(dds->array.dimensions,i);
+	    OCnode* dxddim = (OCnode*)oclistget(dxd->array.dimensions,i);
 	    ocstat = occorrelater(ddsdim,dxddim);
 	    if(!ocstat) goto fail;	    
 	}	
@@ -557,15 +547,6 @@ occorrelater(OCnode* dds, OCnode* dxd)
 
 fail:
     return OCTHROW(ocstat);
-
-}
-
-OCerror
-occorrelate(OCnode* dds, OCnode* dxd)
-{
-    if(dds == NULL || dxd == NULL) return OCTHROW(OC_EINVAL);
-    ocuncorrelate(dds);
-    return occorrelater(dds,dxd);
 }
 
 /*
@@ -582,9 +563,9 @@ ocmarkcacheable(OCstate* state, OCnode* ddsroot)
     OClist* treenodes = ddsroot->tree->nodes;
     OClist* path = oclistnew();
     for(i=0;i<oclistlength(treenodes);i++) {
-        OCnode* node = (OCnode*)oclistget(treenodes,(size_t)i);
+        OCnode* node = (OCnode*)oclistget(treenodes,i);
 	if(node->octype != OC_Atomic) continue;
-	if(node->etype != OC_String && node->etype != OC_URL) continue;
+	if(node->basetype != OC_String && node->basetype != OC_URL) continue;
 	/* collect node path */
         oclistclear(path);
         occollectpathtonode(node,path);	
@@ -592,7 +573,7 @@ ocmarkcacheable(OCstate* state, OCnode* ddsroot)
         ok = 1;
 #endif
 	for(j=1;j<oclistlength(path)-1;j++) {/* skip top level dataset and node itself*/
-            OCnode* pathnode = (OCnode*)oclistget(path,(size_t)j);
+            OCnode* pathnode = (OCnode*)oclistget(path,j);
 	    if(pathnode->octype != OC_Structure
 		|| pathnode->array.rank > 0) {
 #if 0
@@ -613,7 +594,7 @@ ocmarkcacheable(OCstate* state, OCnode* ddsroot)
 
 #if 0
 void*
-oclinearize(OCtype etype, unsigned int nstrings, char** strings)
+oclinearize(OCtype basetype, unsigned int nstrings, char** strings)
 {
     int i;
     size_t typesize;
@@ -621,20 +602,20 @@ oclinearize(OCtype etype, unsigned int nstrings, char** strings)
     char* memory;
 
     if(nstrings == 0) return NULL;
-    typesize = octypesize(etype);
+    typesize = octypesize(basetype);
     memory = (char*)ocmalloc(nstrings*typesize);
     MEMCHECK(memory,NULL);
     memp = memory;
     for(i=0;i<nstrings;i++) {
 	char* value = strings[i];
-        converttype(etype,value,memp);
+        converttype(basetype,value,memp);
 	memp += typesize;
     }
     return memory;
 }
 
 static int
-converttype(OCtype etype, char* value, char* memory)
+converttype(OCtype basetype, char* value, char* memory)
 {
     long iv;
     unsigned long uiv;
@@ -646,7 +627,7 @@ converttype(OCtype etype, char* value, char* memory)
     unsigned long long ullv;
 #endif
 
-    switch (etype) {
+    switch (basetype) {
     case OC_Char:
 	if(sscanf(value,"%c",c) != 1) goto fail;
 	*((char*)memory) = c[0];
@@ -707,10 +688,10 @@ converttype(OCtype etype, char* value, char* memory)
 	goto fail;
     }
     if(outofrange)
-        oc_log(LOGWARN,"converttype range failure: %d: %s",etype,value);
+        oc_log(LOGWARN,"converttype range failure: %d: %s",basetype,value);
     return 1;
 fail:
-    oc_log(LOGERR,"converttype bad value: %d: %s",etype,value);
+    oc_log(LOGERR,"converttype bad value: %d: %s",basetype,value);
     return 0;
 }
 #endif /*0*/

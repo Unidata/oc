@@ -1,4 +1,4 @@
-Documentation for building OC with CMake
+Documentation for building oc with CMake
 ********************************************************
 
 This document describes building the oc C library and the
