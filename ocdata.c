@@ -238,7 +238,7 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
 {
     int stat = OC_NOERR;
     XXDR* xdrs;
-    OCtype etype;
+    OCtype etype, octype;
     int isscalar;
     size_t elemsize, totalsize, countsize;
     OCnode* template;
@@ -251,7 +251,8 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
     assert(memsize > 0);
 
     template = data->template;
-    assert(template->octype == OC_Atomic);
+    octype = template->octype;
+    assert(octype == OC_Atomic);
     etype = template->etype;
 
     isscalar = (template->array.rank == 0 ? 1 : 0);
