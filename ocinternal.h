@@ -51,6 +51,12 @@
 
 #define OCCACHEPOS
 
+#ifndef HAVE_STRNDUP
+/* Not all systems have strndup, so provide one*/
+#define strndup ocstrndup
+#endif
+
+
 /* Forwards */
 typedef struct OCstate OCstate;
 typedef struct OCnode OCnode;
