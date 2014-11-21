@@ -8,7 +8,7 @@
 
 #m4_define([base_url], [http://test.opendap.org:8080/dods/dts])
 #m4_define([base_url], [http://motherlode.ucar.edu:8080/dts])
-m4_define([base_url], [http://thredds-test.ucar.edu/dts])
+m4_define([base_url], [http://remotetest.unidata.ucar.edu/dts])
 
 # 
 # ------------------------------

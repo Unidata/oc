@@ -437,7 +437,10 @@ occlose(OCstate* state)
     ocfree(state->error.message);
     ocfree(state->curlflags.useragent);
     if(state->curlflags.cookiejar) {
+#if 0
+probably not a good thing to do
 	unlink(state->curlflags.cookiejar);
+#endif
 	ocfree(state->curlflags.cookiejar);
     }
     ocfree(state->ssl.certificate);

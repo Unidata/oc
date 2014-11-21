@@ -139,9 +139,7 @@ parseproxy(OCstate* state, char* v)
     /* Do not free these; they are pointers into v; free v instead */
     char *host_pos = NULL;
     char *port_pos = NULL;
-    if(v == NULL)
-      return OC_NOERR; /* nothing there */
-    if(strlen(v) == 0)
+    if(v == NULL || strlen(v) == 0)
 	return OC_NOERR; /* nothing there*/
     if (occredentials_in_url(v)) {
         char *result_url = NULL;

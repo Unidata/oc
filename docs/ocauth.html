@@ -135,6 +135,34 @@ HTTP.PROXY_SERVER
 specified the url for accessing the proxy:
 (e.g.http://[username:password@]host[:port])
 
+<h2 class="break"><a name="URLCONS"><u>URL Constrained Entries</u></a></h2> 
+Each line of the rc file can begin with
+some prefix of a url enclosed in square brackets.
+For example:
+<pre>
+[http://remotetest.unidata.ucar.edu/thredds/dodsC]HTTP.VERBOSE=1
+or
+[http://remotetest.unidata.ucar.edu]HTTP.VERBOSE=0
+</pre>
+If the url request from, say, the <i>oc_open</i> method
+starts with one of the prefixes in the rc file, then
+the corresponding entry will be used, otherwise ignored.
+So, for example, the URL
+<pre>
+http://remotetest.unidata.ucar.edu/thredds/dodsC/testdata/testData.nc
+</pre>
+will have HTTP.VERBOSE set to 1 because 
+<pre>
+http://remotetest.unidata.ucar.edu/thredds/dodsC
+</pre>
+is a prefix of our url passed to <i>oc_open</i>.
+<p>
+Similarly, 
+<pre>
+http://remotetest.unidata.ucar.edu/dts/test.01
+</pre>
+will have HTTP.VERBOSE set to 0.
+
 <h2 class="break"><a name="CLIENTCERTS"><u>Client-Side Certificates</u></a></h2> 
 Some systems, notably ESG (Earth System Grid), requires
 the use of client-side certificates.
@@ -275,6 +303,16 @@ entries should have same value, which is the file path for the
 certificate produced by MyProxyLogon.  The HTTP.SSL.CAPATH entry
 should be the path to the "certificates" directory produced by
 MyProxyLogon.
+<p>
+It is probably best to use a url prefix for these entries
+so that the client certificate is only sent to the right place.
+There is, however, one important caveat.
+ESG operates by redirection. That is, when it receives an initial
+connection from a client, it redirects to a separate authentication
+server. When that server has authenticated the client, it redirects
+back to the original url to complete the request.
+This means that you need to specify the url of the authentication
+server in your rc file.
 
 <h3><u>Script for creating Stores</u></h3>
 The following script shows in detail how to actually construct the key

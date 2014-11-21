@@ -12,6 +12,10 @@ if test $# != 0 ; then
 cmds=$@
 fi
 
+if test "x$MAKE" = x ; then
+MAKE=make
+fi
+
 CFLAGS="-g -O0"
 #CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
 #CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter ${CFLAGS}"
