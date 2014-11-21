@@ -1,6 +1,9 @@
 #!/bin/bash
 #X="-x"
 #NB=1
+
+DBG=1
+
 # Use only if default is not correct
 #M32=1
 #M64=1
@@ -9,8 +12,8 @@ if test $# != 0 ; then
 cmds=$@
 fi
 
-CFLAGS=""
-CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
+CFLAGS="-g -O0"
+#CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
 #CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter ${CFLAGS}"
 #CFLAGS="-Wconversion"
 
@@ -47,10 +50,7 @@ else
   exit 1
 fi
 
-
 FLAGS="--prefix ${PREFIX}"
-#FLAGS="${FLAGS} --disable-shared"
-#FLAGS="${FLAGS} --enable-shared"
 FLAGS="${FLAGS} --enable-remote-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
@@ -58,6 +58,12 @@ FLAGS="${FLAGS} --enable-remote-tests"
 #if test x$CURLCONFIG != x ; then
 #FLAGS="$FLAGS --with-curl-config=$CURLCONFIG"
 #fi
+
+if text "x$DBG" == x ; then
+FLAGS="${FLAGS} --enable-shared"
+else
+FLAGS="${FLAGS} --disable-shared"
+fi
 
 LIBS="$LIBS /share/ed/local/spike/lib/libcurl.a"
 

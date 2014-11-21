@@ -418,36 +418,54 @@ ocdumpmemory(char* memory, size_t len, int xdrencoded, int level)
     }
 }
 
-static int
+static OCerror
 ocreadfile(FILE* file, off_t datastart, char** memp, size_t* lenp)
 {
-    char* mem;
+    char* mem = NULL;
     size_t len;
     long red;
     struct stat stats;
     long pos;
+    OCerror stat = OC_NOERR;
 
     pos = ftell(file);
     fseek(file,0,SEEK_SET);
-    fseek(file,(long)datastart,SEEK_SET);
+    if(fseek(file,(long)datastart,SEEK_SET) < 0) {
+	fprintf(stderr,"ocreadfile: fseek error.\n");
+	stat = OC_ERCFILE;
+	goto done;
+    }
 
-    fstat(fileno(file),&stats);
+    if(fstat(fileno(file),&stats) < 0) {
+	fprintf(stderr,"ocreadfile: fstat error.\n");
+	stat = OC_ERCFILE;
+	goto done;
+    }
     len = stats.st_size;
     len -= datastart;
     
     mem = (char*)calloc(len+1,1);
-    if(mem == NULL) return 0;
+    if(mem == NULL) {stat = OC_ENOMEM; goto done;}
 
     /* Read only the data part */
     red = fread(mem,1,len,file);
     if(red < len) {
 	fprintf(stderr,"ocreadfile: short file\n");
-	return 0;
+	stat = OC_ERCFILE;
+	goto done;
     }	
-    fseek(file,pos,SEEK_SET); /* leave it as we found it*/
-    if(memp) *memp = mem;
-    if(lenp) *lenp = len;
-    return 1;
+    if(fseek(file,pos,SEEK_SET) < 0) {; /* leave it as we found it*/
+        fprintf(stderr,"ocreadfile: fseek error.\n");
+	stat = OC_ERCFILE;
+	goto done;
+    }
+    if(memp) {*memp = mem; mem = NULL;}
+    if(lenp) *lenp = len; 
+
+done:
+    if(mem != NULL)
+	free(mem);
+    return OCTHROW(stat);
 }
 
 void

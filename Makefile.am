@@ -177,16 +177,12 @@ collect-coverage-data:
 ALLDOCSED = -e 's/oc.c[ ][ ]*oc.h/*.c *.h/'
 ALLDOCSED += -e 's/OUTPUT_DIRECTORY[ ][ ]*=[ ][ ]*docs/OUTPUT_DIRECTORY = alldocs/'
 
-ocdocs: cleandocs otherdocs
+ocdocs: cleandocs
 	doxygen ${srcdir}/doxy.conf
 
-alldocs: cleandocs otherdocs
+alldocs: cleandocs
 	sed $(ALLDOCSED) < doxy.conf | doxygen -
 
 cleandocs::
-	rm -f docs/html/*
-	rm -f docs/*.html
-
-otherdocs::
-	cp ./octutorial.html ./docs
+	rm -fr docs/html/*
 

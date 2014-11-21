@@ -319,7 +319,7 @@ static void
 usage(char* msg)
 {
     if(msg) fprintf(stderr,"error: %s\n",msg);
-    fprintf(stderr,"usage: octest %s\n",optionmsg);
+    fprintf(stderr,"usage: ocprint %s\n",optionmsg);
     fail(NULL);
 }
 

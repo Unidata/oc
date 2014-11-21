@@ -1,23 +1,19 @@
 OCLOGFILE=""; PARMS="" ; CON=""; ARGS=""
 
-if test -f /cygdrive/f/svn ; then
-P=/cygdrive/f/svn
+if test -f /cygdrive/f/git ; then
+P=/cygdrive/f/git
 else
-P=/home/dmh/svn
+P=/home/dmh/git
 fi
 
-T="test.22"
-#B="$P/oc2.0/tests/baselines/$T"
-#CON=
-
-F="http://remotetest.unidata.ucar.edu/dts/${T}"
-CON="exp.ThreeD[5:1:7][5:8][1:3]"
+F="http://remotetest.unidata.ucar.edu/dts/Drifters"
 
 #ARGS="-L -T -g -p datadds"
-#ARGS="-DC -T -g -A -p dds"
-ARGS="-DD -T -g -p dds -p datadds"
+ARGS="-DC -T -g -A -p dds"
+#ARGS="-DD -T -g -p dds -p datadds"
 #ARGS="-DD -T -g -p das"
 #ARGS="-T -g -p dds"
+#ARGS="-DD -T -g -p datadds"
 
 if test "x$CON" != x ; then
 ARGS="-C '$CON' $ARGS"
