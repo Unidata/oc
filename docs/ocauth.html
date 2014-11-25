@@ -33,7 +33,13 @@ OC Version 2.0</h6>
  
 <h6 class="break"><u>Table of Contents</u></h6> 
 <ol> 
-<li><a href="#Introduction">Introduction</a> 
+<li> <a href="#Introduction">Introduction</a> 
+<li> <a href="#URL-AUTH">URL-Based Authentication</a> 
+<li> <a href="#DODSRC">RC File Authentication</a> 
+<li> <a href="#URLCONS">URL Constrained Entries</a> 
+<li> <a href="#CLIENTCERTS">Client-Side Certificates</a> 
+<li> <a href="#allkeys">Appendix A. All RC-File Keys</a>
+<li> <a href="#ESGDETAIL">Appendix B. ESG Access in Detail</a>
 </ol> 
  
 <h2 class="break"><a name="Introduction"><u>Introduction</u></a></h2> 
@@ -81,8 +87,8 @@ The currently defined set of authorization-related keys are as follows.
 The second column is the affected curl_easy_setopt option(s).
 <table>
 <tr><th>Key<th>curl_easy_setopt Option
-<tr><td>HTTP.COOKIEJAR<td>CUROPT_COOKIEJAR
-<tr><td>HTTP.COOKIE_JAR<td>CUROPT_COOKIEJAR
+<tr><td>HTTP.COOKIEJAR<td>CUROPT_COOKIEJAR, CURLOPT_COOKIEFILE
+<tr><td>HTTP.COOKIE_JAR<td>CUROPT_COOKIEJAR, CURLOPT_COOKIEFILE
 <tr><td>HTTP.PROXY_SERVER<td>CURLOPT_PROXY, CURLOPT_PROXYPORT, CURLOPT_PROXYUSERPWD
 <tr><td>HTTP.SSL.CERTIFICATE<td>CUROPT_SSLCERT
 <tr><td>HTTP.SSL.KEY<td>CUROPT_SSLKEY
@@ -108,7 +114,10 @@ The last key takes that combination directlry.
 
 <h3><u>Cookie Jar</u></h3> 
 The HTTP.COOKIEJAR key
-specified the name of file into which to store cookies.
+specified the name of file from which
+to read cookies (CURLOPT_COOKIEJAR) and also
+the file into which to store cookies (CURLOPT_COOKIEFILE).
+The same value is used for both CURLOPT values.
 It defaults to in-memory storage.
 
 <h3><u>Certificate Authentication</u></h3> 
@@ -147,7 +156,9 @@ or
 If the url request from, say, the <i>oc_open</i> method
 starts with one of the prefixes in the rc file, then
 the corresponding entry will be used, otherwise ignored.
-So, for example, the URL
+If multiple prefixes match, then the longest match will be used.
+<p>
+For example, the URL
 <pre>
 http://remotetest.unidata.ucar.edu/thredds/dodsC/testdata/testData.nc
 </pre>
@@ -311,8 +322,6 @@ ESG operates by redirection. That is, when it receives an initial
 connection from a client, it redirects to a separate authentication
 server. When that server has authenticated the client, it redirects
 back to the original url to complete the request.
-This means that you need to specify the url of the authentication
-server in your rc file.
 
 <h3><u>Script for creating Stores</u></h3>
 The following script shows in detail how to actually construct the key

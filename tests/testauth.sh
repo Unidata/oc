@@ -1,62 +1,69 @@
 #!/bin/sh
 set -x
 
+#NOLOCAL=1
+#NOHOME=1
+
 # Major parameters
 BASICUSER=tiggeUser
 BASICPWD=tigge
+BASICCOMBO="$BASICUSER:$BASICPWD"
 
-URLSERVER="https://remotetest.unidata.ucar.edu"
-URLPATH="dodsC/restrict/testdata.nc"
-URL="${URLSERVER}/thredds/$URLPATH"
+URLSERVER="remotetest.unidata.ucar.edu"
+URLPATH="thredds/dodsC/restrict/testData.nc"
+
+COOKIES=./cookies
 
 OCPRINT=../ocprint
+RC=.ocrc
+DBG="-D1"
+
 OCLOGFILE=""
 
-rm -f {HOME}/.dodsrc ./.dodsrc
-#RC=${HOME}/.dodsrc
-RC=./.dodsrc
+LOCALRC=./$RC
+HOMERC=${HOME}/$RC
+HOMERC=`echo "$HOMERC" | sed -e "s|//|/|g"`
 
-# compute the build directory
-# Do a hack to remove e.g. c: for CYGWIN
-builddir=`pwd`
-srcdir=${builddir}
+cd `pwd`
+builddir=`pwd`/..
+# Hack for CYGWIN
+cd $srcdir
+srcdir=`pwd`
+cd ${builddir}/tests
 
-# Create the .dodsrc file
+URL="http://${URLSERVER}/$URLPATH"
 
-rm -f ${RC}
-echo "HTTP.VERBOSE=1" >>${RC}
-echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICUSER}:${BASICPWD}" >> ${RC}
+function createrc {
+RCP=$1
+rm -f $RCP
+echo "CURL.VERBOSE=1" >>$RCP
+echo "CURL.COOKIEJAR=${COOKIES}" >>$RCP
+echo "HTTP.SSL.VALIDATE=1" >>$RCP
+echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICUSER}:${BASICPWD}" >>$RCP
+#echo "HTTP.SSL.CERTIFICATE=${srcdir}/${CERT}" >>$RCP
+#echo "HTTP.SSL.KEY=${srcdir}/${KEY}" >>$RCP
+#echo "HTTP.SSL.KEYPASSWORD=${PASSWD}" >>$RCP
+#echo "HTTP.SSL.CAPATH=${srcdir}/${SVCCERTS}" >>$RCP
+#echo "HTTP.SSL.VERIFYPEER=0" >>$RCP
+}
 
-# Invoke ocprint to extract a file from the server
-${OCPRINT} -p dds -g -L "$URL"
+if test "x$NOLOCAL" != x1 ; then
+# 1. Create the rc file in ./
+rm -f $HOMERC $LOCALRC $COOKIES
+createrc $LOCALRC
+# Invoke ocprint to extract a file the URL
+../ocprint $DBG -p dds -g -L "$URL"
+fi
 
-#rm -f ${builddir}/oc_cookies ${RC}
+if test "x$NOHOME" != x1 ; then
+# 1. Create the rc file in $HOME
+rm -f $HOMERC $LOCALRC $COOKIES
+createrc $HOMERC
+# Invoke ocprint to extract a file the URL
+../ocprint $DBG -p dds -g -L "$URL"
+fi
 
-exit
-##################################################
-# Create the .dodsrc file
-
-RC=./dodsrc
-
-rm -f ${RC}
-echo "CURL.VERBOSE=1" >>${RC}
-echo "CURL.COOKIEJAR=${builddir}/oc_cookies" >>${RC}
-echo "HTTP.SSL.VALIDATE=1" >>${RC}
-echo "HTTP.SSL.CERTIFICATE=${srcdir}/${CERT}" >>${RC}
-echo "HTTP.SSL.KEY=${srcdir}/${KEY}" >>${RC}
-echo "HTTP.SSL.KEYPASSWORD=${PASSWD}" >>${RC}
-#echo "HTTP.SSL.CAPATH=${srcdir}/${SVCCERTS}" >>${RC}
-echo "HTTP.SSL.VERIFYPEER=0" >>${RC}
-
-
-CERT="client.pem"
-KEY="client.key"
-CERTPWD="changeit"
-SVCCERTS="cacert.pem"
-
-# Invoke ocprint to extract a file from the server
-${OCPRINT} -p dds -g -L "$URL"
-
-#rm -f ${builddir}/oc_cookies ${RC}
-
-
+#cleanup
+rm -f $LOCALRC
+rm -f $HOMERC
+rm -f $COOKIES

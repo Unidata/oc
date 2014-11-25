@@ -79,11 +79,13 @@ Do not think this is correct
     }
 #endif
     if (flags->cookiejar) {
+	/* Assume we will read and write cookies to same place */
 	cstat = curl_easy_setopt(curl, CURLOPT_COOKIEJAR, flags->cookiejar);
 	if (cstat != CURLE_OK) goto done;
 	OCDBG1(1,"CURLOPT_COOKIEJAR=%s",flags->cookiejar);
 	cstat = curl_easy_setopt(curl, CURLOPT_COOKIEFILE, flags->cookiejar);
 	if (cstat != CURLE_OK) goto done;
+	OCDBG1(1,"CURLOPT_COOKIEFILE=%s",flags->cookiejar);
     }
     if (flags->verbose) {
 	cstat = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -104,13 +106,15 @@ Do not think this is correct
     }
 
     /* Following are always set */
-#if 0 /*Turn off since it introduces a potential security risk*/
     cstat = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     OCDBG1(1,"CURLOPT_FOLLOWLOCATION=%ld",1L);
-#endif
 
+    /*This potentially introduces a potential security risk;
+      but leave on until redirection callback is supported
+    */
     cstat = curl_easy_setopt(curl, CURLOPT_UNRESTRICTED_AUTH, 1L);
     OCDBG1(1,"CURLOPT_UNRESTRICTED_AUTH=%ld",1L);
+
     cstat = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, OC_MAX_REDIRECTS);
     OCDBG1(1,"CURLOPT_MAXREDIRS=%ld",OC_MAX_REDIRECTS);
 #if 0
