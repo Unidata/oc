@@ -68,13 +68,15 @@ The oc library supports an rc-file mechanism to allow the passing
 of a number of parameters to libcurl.
 <p>
 The file must be called one of the following names:
-".ocrc", ".dodsrc", ".daprc"
+".dodsrc", ".ocsrc"
 in order; that is, if both .ocrc and .dodsrc exist, then
-the .ocrc file will be used.
+the .dodsrc file will be used.
 <p>
 Searching for the rc file first looks in the current directory
 and then in the home directory (as defined by the HOME environment
-variable).
+variable). It is also possible to specify a direct path using
+the <i>-R</i> option to ocprint or using the <i>oc_set_rcfile</i>
+procedure (see oc.h).
 <p>
 The rc file format is a series of lines of the general form:
 <pre>
@@ -88,7 +90,7 @@ The second column is the affected curl_easy_setopt option(s).
 <table>
 <tr><th>Key<th>curl_easy_setopt Option
 <tr><td>HTTP.COOKIEJAR<td>CUROPT_COOKIEJAR, CURLOPT_COOKIEFILE
-<tr><td>HTTP.COOKIE_JAR<td>CUROPT_COOKIEJAR, CURLOPT_COOKIEFILE
+<tr><td>HTTP.COOKIE_JAR<td>same as HTTP.COOKIEJAR
 <tr><td>HTTP.PROXY_SERVER<td>CURLOPT_PROXY, CURLOPT_PROXYPORT, CURLOPT_PROXYUSERPWD
 <tr><td>HTTP.SSL.CERTIFICATE<td>CUROPT_SSLCERT
 <tr><td>HTTP.SSL.KEY<td>CUROPT_SSLKEY
@@ -315,13 +317,11 @@ certificate produced by MyProxyLogon.  The HTTP.SSL.CAPATH entry
 should be the path to the "certificates" directory produced by
 MyProxyLogon.
 <p>
-It is probably best to use a url prefix for these entries
-so that the client certificate is only sent to the right place.
-There is, however, one important caveat.
-ESG operates by redirection. That is, when it receives an initial
-connection from a client, it redirects to a separate authentication
-server. When that server has authenticated the client, it redirects
-back to the original url to complete the request.
+As an aside, note that ESG operates by redirection. That is,
+when it receives an initial connection from a client, it
+redirects to a separate authentication server. When that
+server has authenticated the client, it redirects back to
+the original url to complete the request.
 
 <h3><u>Script for creating Stores</u></h3>
 The following script shows in detail how to actually construct the key

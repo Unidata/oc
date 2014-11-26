@@ -132,8 +132,12 @@ extern struct OCGLOBALSTATE {
         int proto_file;
         int proto_https;
     } curl;
-    struct OCTriplestore* ocdodsrc; /* the .dodsrc triple store */
+    char* tempdir; /* track a usable temp dir */
     char* home; /* track $HOME for use in creating $HOME/.oc dir */
+    struct {
+        struct OCTriplestore* ocdodsrc; /* the .dodsrc triple store */
+        char* rcfile; /* specified rcfile; overrides anything else */
+    } rc;
 } ocglobalstate;
 
 /*! Specifies the OCstate = non-opaque version of OClink */
@@ -156,10 +160,10 @@ struct OCstate {
 	int compress;
 	int verbose;
 	int timeout;
-	int followlocation;
 	int maxredirs;
 	char* useragent;
 	char* cookiejar;
+	int esg;
     } curlflags;
     struct OCSSL {
 	int   validate;

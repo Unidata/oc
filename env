@@ -6,14 +6,20 @@ else
 P=/home/dmh/git
 fi
 
-F="http://remotetest.unidata.ucar.edu/dts/Drifters"
+OCUSER=tiggeUser
+OCPWD=tigge
+
+rm -f ./.netrc
+echo "machine remotetest.unidata.ucar.edu login ${OCUSER} password ${OCPWD}" >./.netrc
+
+F="http://remotetest.unidata.ucar.edu/thredds/dodsC/restrict/testData.nc"
 
 #ARGS="-L -T -g -p datadds"
-ARGS="-DC -T -g -A -p dds"
 #ARGS="-DD -T -g -p dds -p datadds"
 #ARGS="-DD -T -g -p das"
 #ARGS="-T -g -p dds"
 #ARGS="-DD -T -g -p datadds"
+ARGS="-E -DC -T -g -A -p dds"
 
 if test "x$CON" != x ; then
 ARGS="-C '$CON' $ARGS"
@@ -41,7 +47,9 @@ alias qh="$PROG -g -p dds '$U'"
 alias d0="$PROG -p dds -DX1 -DN '$U'"
 alias dd="gdb --args $PROG -p datadds -DX1 -DN '$U'"
 alias compare="diff -wBb ${B}.dods ./junk"
-alias cc="curl -L --head --location-trusted --trace - $F"
+alias wg="wget -O - ${F}.dds"
+alias ccp="curl -k -n -c ucar_cookies -b ucar_cookies --trace-ascii - -L ${F}.dds"
+alias cc0="curl --netrc --location-trusted -c ucar_cookies ${F}.dds"
 
 if test 0 = 1; then
 F="http://localhost:8080/thredds/dodsC/test/badname.nc"

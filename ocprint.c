@@ -127,7 +127,9 @@ static char* optionmsg =
 " [-A]"
 " [-C <constraint>]"
 " [-D <debugarg>]"
+" [-E]"
 " [-L]"
+" [-R <rcfile>]"
 " [-T]"
 " [-U <userparam>]"
 " [-g]"
@@ -137,10 +139,11 @@ static char* optionmsg =
 
 /* Command line arguments */
 int     showattributes;	/* -A */
+char*   constraint;	/* -C */
 int     logging;	/* -L */
+char*   rcfile ;	/* -R */
 int     octest; 	/* -T */ /* match original octest output */
 OClist* userparams;	/* -U */
-char*   constraint;	/* -C */
 int     generate;	/* -g */
 int     optdas;		/* -p */
 int     optdatadds;	/* -p */
@@ -153,10 +156,11 @@ static void
 init()
 {
     showattributes = 0;       /* -A */
+    constraint = NULL;        /* -C */
     logging = 0;              /* -L */
+    rcfile = NULL;            /* -R */
     octest = 0;               /* -T */
     userparams = oclistnew(); /* -U */
-    constraint = NULL;        /* -C */
     generate = 1;             /* -g */
     optdas = 0;               /* -p */
     optdatadds = 0;           /* -p */
@@ -178,11 +182,12 @@ main(int argc, char **argv)
 
     opterr = 1;
 
-    while ((c = getopt(argc, argv, "ABC:D:LTU:ghp:v")) != EOF) {
+    while ((c = getopt(argc, argv, "ABC:D:ELR:TU:ghp:v")) != EOF) {
         switch (c) {
 	case 'A': showattributes = 1; break;
 	case 'C': constraint = nulldup(optarg); break;
         case 'L': logging = 1; break;
+	case 'R': rcfile = nulldup(optarg); break;
         case 'T': octest = 1; break;
 	case 'U': oclistpush(userparams,(void*)nulldup(optarg)); break;
         case 'D': {
@@ -278,6 +283,9 @@ main(int argc, char **argv)
 	}
     }
     ocurifree(tmpurl);
+
+    if(rcfile != NULL)
+	oc_set_rcfile(rcfile);
 
     if (verbose)
         dumpflags();

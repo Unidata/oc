@@ -23,6 +23,10 @@
 #define HTTPPREFIXDEPRECATED "CURL."
 #define HTTPPREFIX           "HTTP."
 
+static OCerror ocdodsrc_read(const char* path);
+static OCerror ocreadrc(void);
+static OCerror rc_search(const char* prefix, char** pathp);
+
 static int parseproxy(OCstate* state, char* v);
 static int rcreadline(FILE* f, char* more, int morelen);
 static void rctrim(char* text);
@@ -30,6 +34,9 @@ static void rctrim(char* text);
 static void ocdodsrcdump(char* msg, struct OCTriple*, int ntriples);
 
 static char* curllookup(char* suffix,char* url);
+
+/* Define default rc files and aliases*/
+static char* rcfilenames[] = {".dodsrc",".ocrc",NULL};
 
 /* The Username and password are in the URL if the URL is of the form:
  * http://<name>:<passwd>@<host>/....
@@ -211,7 +218,7 @@ sorttriplestore(void)
 {
     int i, nsorted;
     struct OCTriple* sorted = NULL;
-    struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
+    struct OCTriplestore* ocdodsrc = ocglobalstate.rc.ocdodsrc;
 
     if(ocdodsrc == NULL) return; /* nothing to sort */
     if(ocdodsrc->ntriples <= 1) return; /* nothing to sort */
@@ -266,7 +273,7 @@ ocdodsrc_read(const char* path)
     char line0[MAXRCLINESIZE+1];
     FILE *in_file = NULL;
     int linecount = 0;
-    struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
+    struct OCTriplestore* ocdodsrc = ocglobalstate.rc.ocdodsrc;
 
     if(ocdodsrc == NULL) {
         ocdodsrc = (struct OCTriplestore*)malloc(sizeof(struct OCTriplestore));
@@ -274,7 +281,7 @@ ocdodsrc_read(const char* path)
             oclog(OCLOGERR,"ocdodsrc_read: out of memory");
             return 0;
         }
-        ocglobalstate.ocdodsrc = ocdodsrc;
+        ocglobalstate.rc.ocdodsrc = ocdodsrc;
     }
     ocdodsrc->ntriples = 0;
 
@@ -348,9 +355,15 @@ ocdodsrc_process(OCstate* state)
     int stat = 0;
     char* value = NULL;
     char* url = ocuribuild(state->uri,NULL,NULL,OCURIENCODE);
-    struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
+    struct  OCTriplestore* ocdodsrc;
 
+    if(ocglobalstate.rc.ocdodsrc == NULL)
+	ocreadrc();    
+    OCASSERT(ocglobalstate.rc.ocdodsrc != NULL);
+
+    ocdodsrc = ocglobalstate.rc.ocdodsrc;
     if(ocdodsrc == NULL) goto done;
+
     value = curllookup("DEFLATE",url);
     if(value != NULL) {
         if(atoi(value)) state->curlflags.compress = 1;
@@ -484,8 +497,15 @@ char*
 ocdodsrc_lookup(char* key, char* url)
 {
     int i,found;
-    struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
-    struct OCTriple* triple = ocdodsrc->triples;
+    struct OCTriplestore* ocdodsrc;
+    struct OCTriple* triple;
+
+    if(ocglobalstate.rc.ocdodsrc == NULL)
+	ocreadrc();
+    OCASSERT(ocglobalstate.rc.ocdodsrc != NULL);
+
+    ocdodsrc = ocglobalstate.rc.ocdodsrc;
+    triple = ocdodsrc->triples;
 
     if(key == NULL || ocdodsrc == NULL) return NULL;
     if(url == NULL) url = "";
@@ -514,7 +534,7 @@ static void
 ocdodsrcdump(char* msg, struct OCTriple* triples, int ntriples)
 {
     int i;
-    struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
+    struct OCTriplestore* ocdodsrc = ocglobalstate.rc.ocdodsrc;
 
     if(msg != NULL) fprintf(stderr,"%s\n",msg);
     if(ocdodsrc == NULL) {
@@ -548,4 +568,82 @@ curllookup(char* suffix, char* url)
         value = ocdodsrc_lookup(key,url);
     }
     return value;
+}
+
+/* compile the .dodsrc, if any */
+OCerror
+ocreadrc(void)
+{
+    OCerror stat = OC_NOERR;
+    char* path = NULL;
+    /* locate the configuration files: first if specified,
+       then '.',  then $HOME */
+    if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
+	path = ocglobalstate.rc.rcfile;
+    } else {
+	stat = rc_search(".",&path);
+	if(stat == OC_NOERR && path == NULL)  /* try $HOME */
+	    stat = rc_search(ocglobalstate.home,&path);
+	if(stat != OC_NOERR)
+	    goto done;
+    }
+    if(path == NULL) {
+        oclog(OCLOGDBG,"Cannot find runtime configuration file; continuing");
+    } else {
+	if(ocdebug > 0)
+	    fprintf(stderr, "DODS RC file: %s\n", path);
+        if(ocdodsrc_read(path) == 0) {
+	    oclog(OCLOGERR, "Error parsing %s\n",path);
+	    stat = OC_ERCFILE;
+	}	
+    }
+done:
+    if(path != NULL)
+	free(path);
+    return stat;
+}
+
+/**
+ * Prefix must end in '/'
+ */
+static
+OCerror
+rc_search(const char* prefix, char** pathp)
+{
+    char* path = NULL;
+    char** alias;
+    FILE* f = NULL;
+    int plen = strlen(prefix);
+    OCerror stat = OC_NOERR;
+
+    for(alias=rcfilenames;*alias;alias++) {
+	size_t pathlen = plen+strlen(*alias)+1+1; /*+1 for '/' +1 for nul*/
+	path = (char*)malloc(pathlen);
+	if(path == NULL) {
+	    stat = OC_ENOMEM;
+	    goto done;
+	}
+	if(!occopycat(path,pathlen,3,prefix,"/",*alias)) {
+	    stat = OC_EOVERRUN;
+	    goto done;
+	}
+  	/* see if file is readable */
+	f = fopen(path,"r");
+	if(f != NULL)
+	    goto done;
+	free(path);
+        path = NULL;
+    }
+
+done:
+    if(f != NULL)
+	fclose(f);
+    if(stat != OC_NOERR) {
+	if(path != NULL)
+	    free(path);
+	path = NULL;
+    }
+    if(pathp != NULL)
+	*pathp = path;
+    return OCTHROW(stat);
 }

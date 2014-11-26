@@ -1,3 +1,4 @@
+/**
 // XGetopt.cpp  Version 1.2
 //
 // Author:  Hans Dietrich
@@ -27,11 +28,11 @@
 // if you are not using precompiled headers then include these lines:
 
 ///////////////////////////////////////////////////////////////////////////////
-
+*/
 
 #include "XGetopt.h"
 
-
+/**
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  X G e t o p t . c p p
@@ -143,9 +144,10 @@
 //       }
 //
 ///////////////////////////////////////////////////////////////////////////////
+*/
 
-TCHAR	*optarg;		// global argument pointer
-int		optind = 0; 	// global argv index
+TCHAR	*optarg;		/* global argument pointer */
+int		optind = 0; 	/* global argv index */
 
 int getopt(int argc, TCHAR *argv[], TCHAR *optstring)
 {
@@ -181,7 +183,7 @@ int getopt(int argc, TCHAR *argv[], TCHAR *optstring)
 		}
 
 		next = argv[optind];
-		next++;		// skip past -
+		next++;		/* skip past - */
 		optind++;
 	}
 

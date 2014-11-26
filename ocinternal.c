@@ -36,10 +36,6 @@
 #define CLBRACE '{'
 #define CRBRACE '}'
 
-
-/* Define default rc files and aliases*/
-static char* rcfilenames[] = {".ocrc",".dodsrc",NULL};
-
 static OCerror ocextractddsinmemory(OCstate*,OCtree*,int);
 static OCerror ocextractddsinfile(OCstate*,OCtree*,int);
 static char* constraintescape(const char* url);
@@ -47,8 +43,6 @@ static OCerror createtempfile(OCstate*,OCtree*);
 static int dataError(XXDR* xdrs, OCstate*);
 
 static OCerror ocsetcurlproperties(OCstate*);
-
-static OCerror rc_search(const char* prefix, char** pathp);
 
 extern OCnode* makeunlimiteddimension(void);
 
@@ -71,11 +65,43 @@ OCerror
 ocinternalinitialize(void)
 {
     int stat = OC_NOERR;
-    char* path = NULL;
 
     if(!ocglobalstate.initialized) {
         memset((void*)&ocglobalstate,0,sizeof(ocglobalstate));
 	ocglobalstate.initialized = 1;
+    }
+
+    /* Capture temp dir*/
+    {
+	char* tempdir;
+	char* p;
+	char* q;
+	char cwd[4096];
+#if defined(_WIN32) || defined(_WIN64)
+        tempdir = getenv("TEMP");
+#else
+	tempdir = "/tmp";
+#endif
+        if(tempdir == NULL) {
+	    fprintf(stderr,"Cannot find a temp dir; using ./\n");
+	    tempdir = getcwd(cwd,sizeof(cwd));
+	    if(tempdir == NULL || *tempdir == '\0') tempdir = ".";
+	}
+        ocglobalstate.tempdir= (char*)malloc(strlen(tempdir) + 1);
+	for(p=tempdir,q=ocglobalstate.tempdir;*p;p++,q++) {
+	    if((*p == '/' && *(p+1) == '/')
+	       || (*p == '\\' && *(p+1) == '\\')) {p++;}
+	    *q = *p;
+	}
+	*q = '\0';
+#if defined(_WIN32) || defined(_WIN64)
+#else
+        /* Canonicalize */
+	for(p=ocglobalstate.tempdir;*p;p++) {
+	    if(*p == '\\') {*p = '/'; };
+	}
+	*q = '\0';
+#endif
     }
 
     /* Capture $HOME */
@@ -83,30 +109,25 @@ ocinternalinitialize(void)
 	char* p;
 	char* q;
         char* home = getenv("HOME");
-	char cwd[4096];
-        if(home == NULL) {
-#if defined(_WIN32) || defined(_WIN64)
-	    home = getenv("TEMP");
-#else
-	    home = "/tmp";
-#endif
-	}
-        if(home == NULL) {
-	    fprintf(stderr,"Cannot resolve $HOME; using ./\n");
-	    home = getcwd(cwd,sizeof(cwd));
-	    if(home == NULL || *home == '\0') home = ".";
-	}
 
+        if(home == NULL) {
+	    /* use tempdir */
+	    home = ocglobalstate.tempdir;
+	}
+        ocglobalstate.home = (char*)malloc(strlen(home) + 1);
+	for(p=home,q=ocglobalstate.home;*p;p++,q++) {
+	    if((*p == '/' && *(p+1) == '/')
+	       || (*p == '\\' && *(p+1) == '\\')) {p++;}
+	    *q = *p;
+	}
+	*q = '\0';
+#if defined(_WIN32) || defined(_WIN64)
+#else
         /* Canonicalize */
 	for(p=home;*p;p++) {
 	    if(*p == '\\') {*p = '/'; };
 	}
-        ocglobalstate.home = (char*)malloc(strlen(home) + 1);
-	for(p=home,q=ocglobalstate.home;*p;p++,q++) {
-	    if(*p == '/' && *(p+1) == '/') {p++;}
-	    *q = *p;
-	}
-	*q = '\0';
+#endif
     }
 
     /* Compute some xdr related flags */
@@ -116,74 +137,10 @@ ocinternalinitialize(void)
 
     oc_curl_protocols(&ocglobalstate); /* see what protocols are supported */
 
-    /* compile the .dodsrc, if any */
-    {
-        /* locate the configuration files: first in '.',  then $HOME */
-	stat = rc_search(".",&path);
-	if(stat == OC_NOERR && path == NULL)  /* try $HOME */
-	    stat = rc_search(ocglobalstate.home,&path);
-	if(stat != OC_NOERR)
-	    goto done;
-        if(path == NULL) {
-            oclog(OCLOGDBG,"Cannot find runtime configuration file");
-	} else {
-            if(ocdebug > 0)
-		fprintf(stderr, "DODS RC file: %s\n", path);
-            if(ocdodsrc_read(path) == 0)
-	        oclog(OCLOGERR, "Error parsing %s\n",path);
-        }
-    }
-
 done:
-    if(path != NULL)
-	free(path);
     return OCTHROW(stat);
 }
 
-/**
- * Prefix must end in '/'
- */
-static
-OCerror
-rc_search(const char* prefix, char** pathp)
-{
-    char* path = NULL;
-    char** alias;
-    FILE* f = NULL;
-    int plen = strlen(prefix);
-    OCerror stat = OC_NOERR;
-
-    for(alias=rcfilenames;*alias;alias++) {
-	size_t pathlen = plen+strlen(*alias)+1+1; //+1 for '/' +1 for nul
-	path = (char*)malloc(pathlen);
-	if(path == NULL) {
-	    stat = OC_ENOMEM;
-	    goto done;
-	}
-	if(!occopycat(path,pathlen,3,prefix,"/",*alias)) {
-	    stat = OC_EOVERRUN;
-	    goto done;
-	}
-  	/* see if file is readable */
-	f = fopen(path,"r");
-	if(f != NULL)
-	    goto done;
-	free(path);
-        path = NULL;
-    }
-
-done:
-    if(f != NULL)
-	fclose(f);
-    if(stat != OC_NOERR) {
-	if(path != NULL)
-	    free(path);
-	path = NULL;
-    }
-    if(pathp != NULL)
-	*pathp = path;
-    return OCTHROW(stat);
-}
 
 /**************************************************/
 OCerror

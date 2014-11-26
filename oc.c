@@ -2090,3 +2090,28 @@ oc_set_curl_callback(OClink link, oc_curl_callback* callback, void* userstate)
     state->usercurldata = userstate;
     return OCTHROW(OC_NOERR);
 }
+
+OCerror
+oc_set_rcfile(const char* rcfile)
+{
+    FILE* f;
+    if(!ocinitialized) oc_initialize(); /* so ocglobalstate is defined */
+    if(rcfile == NULL || strlen(rcfile) == 0)
+	return OCTHROW(OC_EINVAL);
+    f = fopen(rcfile,"r");
+    if(f == NULL)
+	return OCTHROW(OC_ERCFILE);
+    fclose(f);
+    ocglobalstate.rc.rcfile = strdup(rcfile);
+    return OCTHROW(OC_NOERR);
+}
+
+OCerror
+oc_set_esg(OClink link, int tf)
+{
+    OCstate* state;
+    OCVERIFY(OC_State,link);
+    OCDEREF(OCstate*,state,link);
+    state->curlflags.esg = tf;
+    return OCTHROW(OC_NOERR);
+}

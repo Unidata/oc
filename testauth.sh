@@ -3,9 +3,9 @@ set -x
 
 # Major parameters
 #SERVER="https://hydro2.unidata.ucar.edu:8443"
-KEYSERVER="https://localhost:8843/"
-NOKEYSERVER="https://localhost:8443/"
-FILE="thredds/dodsC/testStandardTdsScan/1day.nc.dds"
+#KEYSERVER="https://localhost:8843/"
+#NOKEYSERVER="https://localhost:8443/"
+#FILE="thredds/dodsC/testStandardTdsScan/1day.nc.dds"
 KEYURL="${KEYSERVER}/$FILE"
 NOKEYURL="${NOKEYSERVER}/$FILE"
 CERT="clientcert.pem"
