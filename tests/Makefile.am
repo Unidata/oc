@@ -1,7 +1,7 @@
 
 AUTOM4TE = autom4te
 
-EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt
+EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh testauth1.sh
 TESTSUITE = $(srcdir)/OCTest
 
 check-local: atconfig atlocal $(TESTSUITE)
