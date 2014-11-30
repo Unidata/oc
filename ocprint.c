@@ -79,6 +79,11 @@ struct OCD {
     int curl;           /* -DC - make curl be verbose */
 } debug;
 
+/* Define the -X options */
+struct OCX {
+    char* rc;
+} x;
+
 static char blanks[2048];
 #define BLANKSPERDENT 2
 
@@ -169,6 +174,7 @@ init()
     ocflags = 0;
     urlsrc = NULL;            /* <url> */
     memset(&debug,0,sizeof(debug));
+    memset(&x,0,sizeof(x));
 }
 
 int
@@ -182,7 +188,7 @@ main(int argc, char **argv)
 
     opterr = 1;
 
-    while ((c = getopt(argc, argv, "ABC:D:ELR:TU:ghp:v")) != EOF) {
+    while ((c = getopt(argc, argv, "ABC:D:ELR:TU:X:ghp:v")) != EOF) {
         switch (c) {
 	case 'A': showattributes = 1; break;
 	case 'C': constraint = nulldup(optarg); break;
@@ -206,6 +212,21 @@ main(int argc, char **argv)
 		   default: usage("unknown -D option");
 		   }
 	    } break;
+        case 'X': {
+	    int c0;
+	    int so = (optarg == NULL ? 0 : strlen(optarg));
+	    if(so == 0) usage("missing -X argument");
+	    c0 = optarg[0];
+	    switch (c0) {
+	    case 'R':
+		if(so == 1)
+		    usage("missing -XR argument");
+		x.rc = strdup(optarg+1);
+  	        break;
+	    default:
+		usage("unknown -X option");
+	    }
+	} break;
 
         case 'g': generate = 1; break;
 	case 'p':
@@ -286,6 +307,9 @@ main(int argc, char **argv)
 
     if(rcfile != NULL)
 	oc_set_rcfile(rcfile);
+
+    if(x.rc != NULL)
+	oc_set_rcsearchpath(x.rc);
 
     if (verbose)
         dumpflags();

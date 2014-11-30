@@ -25,7 +25,7 @@
 
 static OCerror ocdodsrc_read(const char* path);
 static OCerror ocreadrc(void);
-static OCerror rc_search(const char* prefix, char** pathp);
+static OCerror rc_search(const char* prefix, const char* rcfile, char** pathp);
 
 static int parseproxy(OCstate* state, char* v);
 static int rcreadline(FILE* f, char* more, int morelen);
@@ -581,11 +581,17 @@ ocreadrc(void)
     if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
 	path = ocglobalstate.rc.rcfile;
     } else {
-	stat = rc_search(".",&path);
-	if(stat == OC_NOERR && path == NULL)  /* try $HOME */
-	    stat = rc_search(ocglobalstate.home,&path);
-	if(stat != OC_NOERR)
-	    goto done;
+	char** rcname;
+	int found = 0;
+	for(rcname=rcfilenames;!found && *rcname;rcname++) {
+	    stat = rc_search(".",*rcname,&path);
+    	    if(stat == OC_NOERR && path == NULL)  /* try $HOME */
+	        stat = rc_search(ocglobalstate.home,*rcname,&path);
+	    if(stat != OC_NOERR)
+		goto done;
+	    if(path != NULL)
+		found = 1;
+	}
     }
     if(path == NULL) {
         oclog(OCLOGDBG,"Cannot find runtime configuration file; continuing");
@@ -608,41 +614,36 @@ done:
  */
 static
 OCerror
-rc_search(const char* prefix, char** pathp)
+rc_search(const char* prefix, const char* rcname, char** pathp)
 {
     char* path = NULL;
     char** alias;
     FILE* f = NULL;
     int plen = strlen(prefix);
+    int rclen = strlen(rcname);
     OCerror stat = OC_NOERR;
 
-    for(alias=rcfilenames;*alias;alias++) {
-	size_t pathlen = plen+strlen(*alias)+1+1; /*+1 for '/' +1 for nul*/
-	path = (char*)malloc(pathlen);
-	if(path == NULL) {
-	    stat = OC_ENOMEM;
-	    goto done;
-	}
-	if(!occopycat(path,pathlen,3,prefix,"/",*alias)) {
-	    stat = OC_EOVERRUN;
-	    goto done;
-	}
-  	/* see if file is readable */
-	f = fopen(path,"r");
-	if(f != NULL)
-	    goto done;
-	free(path);
-        path = NULL;
+    size_t pathlen = plen+rclen+1+1; /*+1 for '/' +1 for nul*/
+    path = (char*)malloc(pathlen);
+    if(path == NULL) {
+	stat = OC_ENOMEM;
+	goto done;
     }
+    if(!occopycat(path,pathlen,3,prefix,"/",rcname)) {
+        stat = OC_EOVERRUN;
+	goto done;
+    }
+    /* see if file is readable */
+    f = fopen(path,"r");
 
 done:
-    if(f != NULL)
-	fclose(f);
-    if(stat != OC_NOERR) {
+    if(f == NULL || stat != OC_NOERR) {
 	if(path != NULL)
 	    free(path);
 	path = NULL;
     }
+    if(f != NULL) 
+	fclose(f);
     if(pathp != NULL)
 	*pathp = path;
     return OCTHROW(stat);
