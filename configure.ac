@@ -158,6 +158,16 @@ AC_MSG_RESULT($enable_xgetopt)
 AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
 
 ##################################################
+# Control authorization testing
+AC_MSG_CHECKING([whether authorization tests should be enabled])
+AC_ARG_ENABLE([auth-tests],
+              [AS_HELP_STRING([--enable-auth-tests],
+                                 [enable authorization tests])])
+test "x$enable_auth_tests" = xyes || enable_auth_tests=no
+AC_MSG_RESULT($enable_auth_tests)
+AM_CONDITIONAL(ENABLE_AUTH_TESTS, [test "x$enable_auth_tests" = "xyes"])
+
+##################################################
 dnl autoheader macros; tack some text at the top and bottom of config_dap.h.in
 
 #AH_TOP([#ifndef _config_h

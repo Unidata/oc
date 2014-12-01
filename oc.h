@@ -53,6 +53,7 @@ Cause oc_fetch to store the retrieved data on disk.
 */
 
 #define OCONDISK 1
+
 /**************************************************/
 /* OCtype */
 
