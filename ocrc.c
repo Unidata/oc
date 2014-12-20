@@ -571,7 +571,7 @@ curllookup(char* suffix, char* url)
 }
 
 /* compile the .dodsrc, if any */
-OCerror
+static OCerror
 ocreadrc(void)
 {
     OCerror stat = OC_NOERR;

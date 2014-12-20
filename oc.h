@@ -539,6 +539,12 @@ extern OCerror oc_svcerrordata(OClink link, char** codep,
  */
 extern int oc_httpcode(OClink);
 
+/*
+(Re-)initialize the oc library as if nothing had been called.
+This is primarily for debugging of rc files.
+*/
+extern OCerror oc_initialize(void);
+
 /**************************************************/
 /* Experimental/Undocumented */
 

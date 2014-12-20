@@ -137,7 +137,6 @@ extern struct OCGLOBALSTATE {
     struct {
         struct OCTriplestore* ocdodsrc; /* the .dodsrc triple store */
         char* rcfile; /* specified rcfile; overrides anything else */
-	char** searchpath; /* Where to search */
     } rc;
 } ocglobalstate;
 

@@ -109,12 +109,11 @@ Do not think this is correct
     cstat = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     OCDBG1(1,"CURLOPT_FOLLOWLOCATION=%ld",1L);
 
-#if 0
-    /*This potentially introduces a potential security risk;
-    */
+    if(flags->esg) {
+        /*This potentially introduces a potential security risk;*/
         cstat = curl_easy_setopt(curl, CURLOPT_UNRESTRICTED_AUTH, 1L);
         OCDBG1(1,"CURLOPT_UNRESTRICTED_AUTH=%ld",1L);
-#endif
+    }
 
     cstat = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, OC_MAX_REDIRECTS);
     OCDBG1(1,"CURLOPT_MAXREDIRS=%ld",OC_MAX_REDIRECTS);

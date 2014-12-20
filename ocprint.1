@@ -8,12 +8,14 @@ ocprint
 \%[-A]
 \%[-C \fIconstraint-string\fP]
 \%[-D \fIdebug-argument\fP]
-\%[-g]
-\%[-h]
+\%[-G]
 \%[-L]
+\%[-D \fI\fP]
+\%[-N \fInetrcfile\fP]
+\%[-R \fIrcfile\fP]
+\%[-S]
+\%[-h]
 \%[-p \fIall|das|dds|data|datadds\fP]
-\%[-U \fIuser-parameters\fP]
-\%[-v]
 \%[[-f] \fIOPeNDAP-URL\fP]
 .hy
 .ft
@@ -33,15 +35,39 @@ Print attributes along with the DDS if \fI-g\fP is specified.
 Specify the constraint to be used when the DATADDS is read.
 .IP "\fB-D \fRdebug-arg\fP"
 Set a variety of debug options; this flag may be repeated multiple times.
-See \fIocprint.c\fP for a detailed description.
-.IP "\fB-g\fP"
+The current set of values is as follows.
+.RS
+.IP "\fB-Dn\]fP"
+Set the debug level to \fIn\fP.
+.IP "\fB-DC\]fP"
+Set the debug level to \fIn\fP.
+.IP "\fB-DD\]fP"
+Set the debug level to \fIn\fP.
+.IP "\fB-DV\]fP"
+Set verbose output.
+.RE
+.IP "\fB-G\fP"
 Force \fI-p\fP flag to generate the DAS and/or DDS
 from the internal parse tree instead of just
-dumping the text sent by the server.
-.IP "\fB-h\fP"
-Output usage information, including command line options.
+dumping the text sent by the server. Defaults to on.
 .IP "\fB-L\fP"
 Turn on logging output.
+.IP "\fB-N\fP"
+Specify the path to use to find the netrc file.
+This should be to the netrc file, not the containing directory.
+.IP "\fB-R\fP"
+Specify the path to use to find the rc file.
+This should be to the rc file, not the containing directory.
+If not specified, then the search order is
+./.ocrc ~/.ocrc,
+./.dodsrc ~/.dodsrc.
+.IP "\fB-S\fP"
+Specify that the server certificate is not checked
+when using https protocol.
+This is mostly intended to be used when the server
+is using a self-signed certificate.
+.IP "\fB-h\fP"
+Output usage information, including command line options.
 .IP "\fB-p \fRall|das|dds|data|datadds\fP"
 Cause the DAS, the DDS, or the DATADDS to be printed.
 The argument \fIdata\fP is a synonym for \fIdatadds\fP.

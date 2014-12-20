@@ -79,9 +79,9 @@ struct OCD {
     int curl;           /* -DC - make curl be verbose */
 } debug;
 
-/* Define the -X options */
+/* Define the -X options; currently unused*/
 struct OCX {
-    char* rc;
+    int ignore;
 } x;
 
 static char blanks[2048];
@@ -218,11 +218,6 @@ main(int argc, char **argv)
 	    if(so == 0) usage("missing -X argument");
 	    c0 = optarg[0];
 	    switch (c0) {
-	    case 'R':
-		if(so == 1)
-		    usage("missing -XR argument");
-		x.rc = strdup(optarg+1);
-  	        break;
 	    default:
 		usage("unknown -X option");
 	    }
@@ -307,9 +302,6 @@ main(int argc, char **argv)
 
     if(rcfile != NULL)
 	oc_set_rcfile(rcfile);
-
-    if(x.rc != NULL)
-	oc_set_rcsearchpath(x.rc);
 
     if (verbose)
         dumpflags();
