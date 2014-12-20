@@ -100,8 +100,7 @@ ocuriparse(const char* uri0, OCURI** durip)
     char* host = NULL;
     char* port = NULL;
     char* constraint = NULL;
-    char* user = NULL;
-    char* pwd = NULL;
+    char* userpwd = NULL;
     char* file = NULL;
     char* prefixparams = NULL;
     char* suffixparams = NULL;
@@ -221,14 +220,9 @@ ocuriparse(const char* uri0, OCURI** durip)
         if(p) {
 	    if(p == host)
 		{THROW(9); goto fail; /* we have proto://@ */}
-	    user = host;
+	    userpwd = host;
 	    terminate(p); /* overwrite '@' */
 	    host = p+1; /* start of host ip name */
-	    p = strchr(user,':');
- 	    if(p == NULL)
-		{THROW(10); goto fail; /* malformed */}
-	    terminate(p); /*overwrite colon */
-	    pwd = p+1;
 	}
 
         /* extract host and port */
@@ -317,8 +311,7 @@ ocuriparse(const char* uri0, OCURI** durip)
 
     /* do last minute empty check */
     if(protocol != NULL && *protocol == EOFCHAR) protocol = NULL;
-    if(user != NULL && *user == EOFCHAR) user = NULL;
-    if(pwd != NULL && *pwd == EOFCHAR) pwd = NULL;
+    if(userpwd != NULL && *userpwd == EOFCHAR) userpwd = NULL;
     if(host != NULL && *host == EOFCHAR) host = NULL;
     if(port != NULL && *port == EOFCHAR) port = NULL;
     if(file != NULL && *file == EOFCHAR) file = NULL;
@@ -326,8 +319,7 @@ ocuriparse(const char* uri0, OCURI** durip)
 
     /* assemble the component pieces */
     duri->protocol = protocol;
-    duri->user = user;
-    duri->password = pwd;
+    duri->userpwd = userpwd;
     duri->host = host;
     duri->port = port;
     duri->file = file;
@@ -455,7 +447,7 @@ ocuribuild(OCURI* duri, const char* prefix, const char* suffix, int flags)
     int withprefixparams = ((flags&OCURIPREFIXPARAMS)!=0
 				&& duri->params != NULL);
     int withuserpwd = ((flags&OCURIUSERPWD)!=0
-	               && duri->user != NULL && duri->password != NULL);
+	               && duri->userpwd != NULL);
     int withconstraints = ((flags&OCURICONSTRAINTS)!=0
 	                   && duri->constraint != NULL);
 #ifdef NEWESCAPE
@@ -466,9 +458,8 @@ ocuribuild(OCURI* duri, const char* prefix, const char* suffix, int flags)
 
     if(prefix != NULL) len += NILLEN(prefix);
     len += (NILLEN(duri->protocol)+NILLEN("://"));
-    if(withuserpwd) {
-	len += (NILLEN(duri->user)+NILLEN(duri->password)+NILLEN(":@"));
-    }
+    if(withuserpwd)
+	len += (NILLEN(duri->userpwd)+NILLEN("@"));
     len += (NILLEN(duri->host));
     if(duri->port != NULL) {
 	len += (NILLEN(":")+NILLEN(duri->port));
@@ -525,9 +516,7 @@ ocuribuild(OCURI* duri, const char* prefix, const char* suffix, int flags)
 	strcat(newuri,duri->protocol);
     strcat(newuri,"://");
     if(withuserpwd) {
-        strcat(newuri,duri->user);
-        strcat(newuri,":");
-        strcat(newuri,duri->password);
+        strcat(newuri,duri->userpwd);
         strcat(newuri,"@");
     }
     if(duri->host != NULL) { /* may be null if using file: protocol */

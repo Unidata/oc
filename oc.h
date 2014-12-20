@@ -540,13 +540,25 @@ extern OCerror oc_svcerrordata(OClink link, char** codep,
 extern int oc_httpcode(OClink);
 
 /**************************************************/
-/* Experimental/Undocumented */
-
-/*
-Cause the curl library
-to be verbose
+/* Curl options */
+/* This is here because trial and error shows that
+   libcurl shows thru too much. So bow to the inevitable.
 */
+
+/*Cause the curl library to be verbose and save error messages*/
 extern OCerror oc_trace_curl(OClink link);
+
+/* Allow specification of the rc file */
+extern OCerror oc_set_rcfile(const char* filepath);
+
+/* Allow specification of the netrc file */
+extern OCerror oc_set_netrc(OClink*, const char* filepath);
+
+/* Set arbitrary curl option */
+extern OCerror oc_set_curlopt(OClink link, const char* option, void* value);
+
+/**************************************************/
+/* Experimental/Undocumented */
 
 /* Given an arbitrary OCnode, return the connection of which it is a part */
 extern OCerror oc_get_connection(OCobject ocnode, OCobject* linkp);
@@ -560,9 +572,6 @@ extern long oc_get_lastmodified_data(OClink);
 /* Test if a given url responds to a DAP protocol request */
 extern OCerror oc_ping(const char* url);
 
-/* Allow the setting of the user agent */
-extern OCerror oc_set_useragent(OClink, const char* agent);
-
 /* Return the size of the in-memory or on-disk
    data chunk returned by the server for a given tree.
    Zero implies it is not defined.
@@ -572,24 +581,8 @@ extern OCerror oc_set_useragent(OClink, const char* agent);
 extern OCerror oc_raw_xdrsize(OClink,OCddsnode,off_t*);
 #endif
 
-/*
-Define a callback function type
-*/
-
-typedef void oc_curl_callback(void*,void*);
-
-extern OCerror oc_set_curl_callback(OClink,oc_curl_callback*,void* state);
-
 #ifdef __cplusplus
 }
 #endif
-
-/**************************************************/
-/* Experimental methods to deal with rc file
-   and with ESG style authorization redirection.
-*/
-
-/* Allow specification of the rc file */
-extern OCerror oc_set_rcfile(const char* rcfilepath);
 
 #endif /*OC_H*/

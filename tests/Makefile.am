@@ -45,13 +45,15 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 # Add some extra specialized tests
 if ENABLE_AUTH_TESTS
 TESTS_ENVIRONMENT=TOPSRCDIR=${abs_top_srcdir}
-t_auth_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
-t_auth_SOURCES = t_auth.c
-check_PROGRAMS += t_auth
 TESTS += testauth.sh
-TESTS += t_auth
-t_auth1_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
-t_auth1_SOURCES = t_auth1.c
+
+#t_auth_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+#t_auth_SOURCES = t_auth.c
+#check_PROGRAMS += t_auth
+#TESTS += t_auth
+
+#t_auth1_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+#t_auth1_SOURCES = t_auth1.c
 #check_PROGRAMS += t_auth1
 #TESTS += t_auth1
 endif

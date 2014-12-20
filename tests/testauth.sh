@@ -6,22 +6,73 @@
 #NOHOME=1
 #NOSPEC=1
 
-#DBG="-D1"
+SHOW=1
+#DBG=1
+#GDB=1
+
+NETRCFILE=./netrc
+# This is the control variable
+NETRC=$NETRCFILE
+
+if test "x$DBG" = x1 ; then SHOW=1; fi
+
+WD=`pwd`
 
 # Major parameters
-BASICUSER=tiggeUser
-BASICPWD=tigge
-BASICCOMBO="$BASICUSER:$BASICPWD"
 
-#https://54.172.97.47/opendap/data/nc/fnoc1.nc
-#URLSERVER="54.172.97.47"
-#URLPATH="opendap/data/nc/fnoc1.nc"
+BASICCOMBO="tiggeUser:tigge"
 URLSERVER="remotetest.unidata.ucar.edu"
 URLPATH="thredds/dodsC/restrict/testData.nc"
 
-COOKIES=./cookies
+COOKIES="${WD}/cookies"
 
-OCPRINT=../ocprint.exe
+# See if we need to override
+if test "x$UAT" != "x" ; then
+#https://54.86.135.31/opendap/data/nc/fnoc1.nc.dds
+URLSERVER="54.86.135.31"
+URLPATH="opendap/data/nc/fnoc1.nc"
+BASICCOMBO="$UAT"
+NOEMBED=1
+NETRC=$NETRCFILE
+else
+NETRC=
+fi
+
+# Split the combo
+BASICUSER=`echo $BASICCOMBO | cut -d: -f1`
+BASICPWD=`echo $BASICCOMBO | cut -d: -f2`
+
+OCPRINT=
+for o in ../ocprint.exe ./ocprint.exe ../ocprint ./ocprint ; do
+  if test -f $o ; then
+  OCPRINT=$o
+  break;
+  fi
+done
+if test "x$OCPRINT" = x ; then
+echo "no ocprint"
+exit 1
+fi
+
+if test "x$DBG" = x1; then
+OCPRINT="$OCPRINT -D1"
+export OCLOGFILE=""
+fi
+
+if test "x$GDB" = x1 ; then
+OCPRINT="gdb --args $OCPRINT -D1"
+fi
+
+if test "x$NETRC" != x ; then
+OCPRINT="$OCPRINT -N $NETRC"
+fi
+
+if test "x$SHOW" = x ; then
+OUTPUT="-o /dev/null"
+else
+OUTPUT=
+fi
+
 RC=.ocrc
 
 OCLOGFILE=""
@@ -44,56 +95,84 @@ srcdir=`pwd`
 cd ${builddir}
 
 function createrc {
+if test "x$1" != x ; then
 RCP=$1
-rm -f $RCP
+rm -f $RCP ~/.netrc
+echo "Creating rc file $RCP"
 if test "x${DBG}" != x ; then
 echo "HTTP.VERBOSE=1" >>$RCP
 fi	
 echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
-echo "HTTP.SSL.VALIDATE=1" >>$RCP
-echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICUSER}:${BASICPWD}" >>$RCP
+if test "x${UAT}" == x ; then
+echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
+fi
+fi
+}
+
+function createnetrc {
+if test "x$1" != x ; then
+rm -f $1
+echo "Creating netrc file $1"
+echo "machine uat.urs.earthdata.nasa.gov login $BASICUSER password $BASICPWD" >>$1
+echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
+fi
+}
+
+function reset {
+rm -f ./.ocrc ./.dodsrc $HOME/.ocrc $HOME/.dodsrc $SPECRC $COOKIES $NETRC
 }
 
 # Initialize
-rm -f ./.ocrc ./.dodsrc $HOME/.ocrc $HOME/.dodsrc $SPECRC $COOKIES
+reset
 
-if test "x$NOEMBED" = x ; then
+if test "x$NOEMBED" != x1 ; then
 echo "***Testing rc file with embedded user:pwd"
 URL="https://${BASICCOMBO}@${URLSERVER}/$URLPATH"
 # Invoke ocprint to extract a file the URL
-${OCPRINT} $DBG -p dds "$URL"
+echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
+${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
 
 
 URL="https://${URLSERVER}/$URLPATH"
 if test "x$NOLOCAL" != x1 ; then
 echo "***Testing rc file in local directory"
-# 1. Create the rc file in ./
+# Create the rc file and (optional) netrc fil in ./
+reset
 createrc $LOCALRC
+createnetrc $NETRC
+
 # Invoke ocprint to extract a file the URL
-${OCPRINT} $DBG -p dds "$URL"
+echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
+${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
 
 if test "x$NOHOME" != x1 ; then
 echo "***Testing rc file in home directory"
-# 1. Create the rc file in $HOME
-rm -f $HOMERC $LOCALRC $SPECRC $COOKIES
+# Create the rc file and (optional) netrc fil in ./
+reset
 createrc $HOMERC
+createnetrc $NETRC
+
 # Invoke ocprint to extract a file the URL
-${OCPRINT} $DBG -p dds -g -L "$URL"
+echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
+${OCPRINT} -p dds -L ${OUTPUT} "$URL"
 fi
 
 if test "x$NOSPEC" != x1 ; then
 echo "*** Testing rc file in specified directory"
-# 1. Create the rc file in $SPECRC
-rm -f $SPECRC $HOMERC $LOCALRC $COOKIES
+# Create the rc file and (optional) netrc fil in ./
+reset
 createrc $SPECRC
+createnetrc $NETRC
+
 # Invoke ocprint to extract a file the URL
-${OCPRINT} $DBG -p dds -g -L -R $SPECRC "$URL"
+echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
+${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
 #cleanup
-#rm -f $LOCALRC $HOMERC $SPECRC $COOKIES
+#reset
 
 #
 # URS

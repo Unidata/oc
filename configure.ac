@@ -96,7 +96,7 @@ AC_FUNC_ALLOCA
 ;;
 esac
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([memset strcasecmp strchr strrchr strdup strerror strtol access unlink mkstemp getpid])
+AC_CHECK_FUNCS([memset memmove strcasecmp strchr strrchr strdup strerror strtol access unlink mkstemp getpid strndup strncpy])
 
 ##################################################
 # Checks for header files.

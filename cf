@@ -2,6 +2,8 @@
 #X="-x"
 #NB=1
 
+export PATH="/machine/dmh/bin:${PATH}"
+
 DBG=1
 
 # Use only if default is not correct
@@ -18,7 +20,7 @@ fi
 
 CFLAGS="-g -O0"
 #CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
-#CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter ${CFLAGS}"
+CFLAGS="-Wall -Wunused-variable ${CFLAGS}"
 #CFLAGS="-Wconversion"
 
 stddir="/usr/local"
@@ -56,7 +58,7 @@ fi
 
 FLAGS="--prefix ${PREFIX}"
 FLAGS="${FLAGS} --enable-remote-tests"
-FLAGS="${FLAGS} --enable-auth-tests"
+#FLAGS="${FLAGS} --enable-auth-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #FLAGS="${FLAGS} --enable-xgetopt"
@@ -68,9 +70,8 @@ if test "x$DBG" == x ; then
 FLAGS="${FLAGS} --enable-shared"
 else
 FLAGS="${FLAGS} --disable-shared"
+FLAGS="${FLAGS} --enable-static"
 fi
-
-LIBS="$LIBS /share/ed/local/spike/lib/libcurl.a"
 
 export PATH
 export CC

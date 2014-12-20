@@ -16,8 +16,7 @@ typedef struct OCURI {
     char* strings;    /* first char of strings is always '\0' */
     /* Following all point into the strings field */
     char* protocol;
-    char* user; /* from user:password@ */
-    char* password; /* from user:password@ */
+    char* userpwd; /* from user:password@ */
     char* host;	      /*!< host*/
     char* port;	      /*!< host */
     char* file;	      /*!< file */

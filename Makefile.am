@@ -49,10 +49,11 @@ ocinternal.h ocinternal.c \
 oclist.h oclist.c \
 oclog.h oclog.c \
 ocnode.h ocnode.c \
-ocrc.h ocrc.c \
+ocrc.c \
 ocread.h ocread.c \
 ocuri.h ocuri.c \
 ocutil.h ocutil.c \
+occurlflags.c \
 xxdr.h xxdr.c
 
 liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@
@@ -73,6 +74,8 @@ EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
 EXTRA_DIST += ocprint.1
 EXTRA_DIST += CMakeLists.txt
+EXTRA_DIST += occurlflags.c.in
+EXTRA_DIST += makeflags.sh
 
 EXTRA_DIST += docs
 
@@ -186,3 +189,10 @@ alldocs: cleandocs
 cleandocs::
 	rm -fr docs/html/*
 
+
+# This rule is used when someone wants to rebuild occurlflags.c,
+# typically when a new version of curl adds curl_easy_setopt flags.
+# Otherwise it is never invoked, but records how to do it.
+
+makeflags::
+	bash makeflags.sh

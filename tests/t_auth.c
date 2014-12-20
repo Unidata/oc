@@ -1,3 +1,4 @@
+
 #include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,14 +9,21 @@
 
 #define DEBUG
 
+/* pick one */
+#if 1
+#define SHOW(x) show(x)
+#else
+#define SHOW(x) 
+#endif
+
 #include "oc.h"
 
 #undef NOEMBED
 #undef NOLOCAL
 #undef NOHOME
-#define NOREDIR
+#undef NOREDIR
 
-#define KEEPRC
+#undef KEEPRC
 
 #define RC ".ocrc"
 #define SPECRC "./ocrc"
@@ -40,6 +48,7 @@ static char url3[1024];
 static int testrc(const char* prefix, const char* url);
 static void fillrc(const char* path);
 static void killrc();
+static void show(OCddsnode root);
 
 #ifdef DEBUG
 static void
@@ -47,7 +56,7 @@ CHECK(int e, const char* msg)
 {
     if(e == OC_NOERR) return;
     if(msg == NULL) msg = "Error";
-    fprintf(stderr,"%s: %s\n", msg, oc_strerror(e));
+    fprintf(stderr,"%s: %s\n", msg, oc_errstring(e));
     exit(1);
 }
 #endif
@@ -88,6 +97,7 @@ fflush(stderr);
             pass = 0;
             fprintf(stderr,"*** FAIL: Testing embedded user:pwd\n");
         } else {
+	    SHOW(root);
             fprintf(stderr,"*** PASS: Testing embedded user:pwd\n");
 	}
 	if(link != NULL)
@@ -99,7 +109,7 @@ fflush(stderr);
 #ifndef NOLOCAL
     {
         /* Test 1: RC in ./ */
-        fprintf(stderr,"Testing: user:pwd in %s/%s: %s\n",".",RC);
+        fprintf(stderr,"Testing: user:pwd in %s/%s: %s\n",".",RC,USERPWD);
 	if(!testrc(".",url2)) {
 	    fprintf(stderr,"user:pwd in %s/%s failed\n",".",RC);
 	    exit(1);
@@ -111,7 +121,7 @@ fflush(stderr);
     {
         /* Test 1: RC in HOME  */
 	home = getenv("HOME");
-        fprintf(stderr,"user:pwd in %s/%s: %s\n",home,RC);
+        fprintf(stderr,"user:pwd in %s/%s: %s\n",home,RC,USERPWD);
 	if(!testrc(home,url2)) {
 	    fprintf(stderr,"user:pwd in %s/%s failed\n",home,RC);
 	    exit(1);
@@ -124,12 +134,15 @@ fflush(stderr);
         fprintf(stderr,"Testing: Http Basic Redirect\n\n");
 	snprintf(url3,sizeof(url3),URL3,USERPWD);
         fprintf(stderr,"Basic redirect: %s\n",url3);
-        retval = nc_open(url3, 0, &ncid);
+        retval = oc_open(url3, &link);
+	if(retval == OC_NOERR)
+	    retval = oc_fetch(link,NULL,OCDDS,0,&root);
         if(retval != OC_NOERR) {
             fprintf(stderr,"*** XFAIL: Basic redirect\n");
         } else {
+	    SHOW(root);
             fprintf(stderr,"*** PASS: Basic redirect\n");
-	    retval = nc_close(ncid);
+	    retval = oc_close(link);
 	}
         fflush(stderr);
     }
@@ -164,7 +177,8 @@ testrc(const char* prefix, const char* url)
         pass = 0;
         fprintf(stderr,"*** FAIL: Testing: user:pwd in %s\n",rcpath);
     } else {
-	retval = nc_close(ncid);
+        SHOW(root);
+	retval = oc_close(link);
         fprintf(stderr,"*** PASS: Testing: user:pwd in %s\n",rcpath);
     }
     if(link != NULL)
@@ -189,9 +203,9 @@ fillrc(const char* path)
     }
 #ifdef DEBUG
     fprintf(rc,"HTTP.VERBOSE=1\n");
+    fprintf(rc,"HTTP.VALIDATE=1\n");
 #endif
     fprintf(rc,"HTTP.COOKIEJAR=%s\n",COOKIEFILE);
-    fprintf(rc,"HTTP.VALIDATE=1\n");
     fprintf(rc,"HTTP.CREDENTIALS.USERPASSWORD=%s\n",USERPWD);
     fclose(rc);
 }
@@ -214,4 +228,10 @@ killrc()
     snprintf(path,sizeof(path),"%s/%s",home,RC);
     unlink(path);
 #endif
+}
+
+static void
+show(OCddsnode root)
+{
+    ocdumpnode(root);
 }

@@ -42,7 +42,7 @@ extern void ocfreeprojectionclause(OCprojectionclause* clause);
 
 /* Misc. */
 
-extern int ocmktmp(const char* base, char** tmpnamep, int* fdp);
+extern int ocmktmp(const char* base, char** tmpnamep);
 
 extern void ocdataddsmsg(struct OCstate*, struct OCtree*);
 

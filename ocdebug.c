@@ -67,3 +67,16 @@ ocpanic(const char* fmt, ...)
     fflush(stderr);
     return 0;
 }
+
+CURLcode
+ocreportcurlerror(OCstate* state, CURLcode cstat)
+{
+    if(cstat != CURLE_OK) {
+        fprintf(stderr,"CURL Error: %s",curl_easy_strerror(cstat));
+	if(state != NULL)
+            fprintf(stderr," ; %s",state->error.curlerrorbuf);
+        fprintf(stderr,"\n");
+    }
+    fflush(stderr);
+    return cstat;
+}

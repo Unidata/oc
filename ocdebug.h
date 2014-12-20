@@ -4,17 +4,20 @@
 #ifndef OCOCDBG_H
 #define OCOCDBG_H
 
+#ifndef OCDEBUG
+#define OCDEBUG
+#endif
+
 #include "config.h"
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
 
+#include <curl/curl.h>
+
 #include "oc.h"
 
-#ifndef OCDEBUG
-#undef OCDEBUG
-#endif
 
 /* OCCATCHERROR is used to detect errors as close
    to their point of origin as possible. When
@@ -33,18 +36,18 @@
 
 /* Need some syntactic trickery to make these macros work*/
 #ifdef OCDEBUG
-#define OCDBG(l,msg) {oclog(OCLOGDBG,msg);}
-#define OCDBG1(l,msg,arg) {oclog(OCLOGDBG,msg,arg);}
-#define OCDBG2(l,msg,arg1,arg2) {oclog(OCLOGDBG,msg,arg1,arg2);}
-#define OCDBGTEXT(l,text) {oclogtext(OCLOGNOTE,text);} else {}
-#define OCDBGCODE(l,code) {code;}
+#define OCDBG(msg) {oclog(OCLOGDBG,msg);}
+#define OCDBG1(msg,arg) {oclog(OCLOGDBG,msg,arg);}
+#define OCDBG2(msg,arg1,arg2) {oclog(OCLOGDBG,msg,arg1,arg2);}
+#define OCDBGTEXT(text) {oclogtext(OCLOGNOTE,text);} else {}
+#define OCDBGCODE(code) {code;}
 
 #else
-#define OCDBG(l,msg)
-#define OCDBG1(l,msg,arg)
-#define OCDBG2(l,msg,arg1,arg2)
-#define OCDBGTEXT(l,text)
-#define OCDBGCODE(l,code)
+#define OCDBG(msg)
+#define OCDBG1(msg,arg)
+#define OCDBG2(msg,arg1,arg2)
+#define OCDBGTEXT(text)
+#define OCDBGCODE(code)
 #endif
 
 
@@ -81,16 +84,21 @@ extern void  ocfree(void*);
 #ifdef OCCATCHERROR
 extern OCerror ocbreakpoint(OCerror err);
 extern OCerror octhrow(OCerror err);
+extern CURLcode ocreportcurlerror(OCstate* state, CURLcode cstat);
 /* Place breakpoint on ocbreakpoint to catch errors close to where they occur*/
 #define OCTHROW(e) octhrow(e)
 #define OCTHROWCHK(e) (void)octhrow(e)
 #define OCGOTO(label) {ocbreakpoint(-1); goto label;}
+#define OCCURLERR(s,e) ocreportcurlerror(s,e)
+#define CURLERR(e) ocreportcurlerror(NULL,e)
 #else
 #define OCTHROW(e) (e)
 #define OCTHROWCHK(e)
 #define OCGOTO(label) goto label
+#define CURLERR(s,e) (e)
+#define OCCURLERR(s,e) (e)
+#define CURLERR(e) (e)
 #endif
-
 
 #endif /*OCOCDBG_H*/
 

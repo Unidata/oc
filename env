@@ -1,5 +1,7 @@
 OCLOGFILE=""; PARMS="" ; CON=""; ARGS=""
 
+WD=`pwd`
+
 if test -f /cygdrive/f/git ; then
 P=/cygdrive/f/git
 else
@@ -12,14 +14,15 @@ OCPWD=tigge
 rm -f ./.netrc
 echo "machine remotetest.unidata.ucar.edu login ${OCUSER} password ${OCPWD}" >./.netrc
 
-F="http://remotetest.unidata.ucar.edu/thredds/dodsC/restrict/testData.nc"
+F="file://${WD}/tests/testdata/Drifters"
+#F="http://remotetest.unidata.ucar.edu/thredds/dodsC/restrict/testData.nc"
 
 #ARGS="-L -T -g -p datadds"
 #ARGS="-DD -T -g -p dds -p datadds"
 #ARGS="-DD -T -g -p das"
 #ARGS="-T -g -p dds"
 #ARGS="-DD -T -g -p datadds"
-ARGS="-E -DC -T -g -A -p dds"
+ARGS="-DC -D1 -T -g -A -p dds"
 
 if test "x$CON" != x ; then
 ARGS="-C '$CON' $ARGS"
