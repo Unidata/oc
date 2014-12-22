@@ -16,7 +16,7 @@ OCerror
 ocbreakpoint(OCerror err) {return err;}
 
 OCerror
-octhrow(OCerror err)
+occatch(OCerror err)
 {
     if(err == 0) return err;
     return ocbreakpoint(err);
@@ -27,7 +27,7 @@ int
 xxdrerror(void)
 {
     oclog(OCLOGERR,"xdr failure");
-    return OCTHROW(OC_EDATADDS);
+    return OCCATCH(OC_EDATADDS);
 }
 
 

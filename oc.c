@@ -30,18 +30,6 @@
 #define OCDEREF(T,s,x) (s)=(T)(x)
 
 /**************************************************/
-static OCerror
-oc_initialize(void)
-{
-    OCerror status = OC_NOERR;
-    if(!ocglobalstate.initialized) {
-        status = ocinternalinitialize();
-    }
-    return status;
-}
-
-
-/**************************************************/
 /*!\file oc.c
 */
 
@@ -2139,16 +2127,22 @@ call in order for this to take effect.
 OCerror
 oc_set_rcfile(const char* rcfile)
 {
+    OCerror stat = OC_NOERR;
     FILE* f;
-    if(!ocglobalstate.initialized) oc_initialize(); /* so ocglobalstate is defined */
     if(rcfile == NULL || strlen(rcfile) == 0)
-	return OCTHROW(OC_EINVAL);
+	{stat = (OC_EINVAL); goto done;}
     f = fopen(rcfile,"r");
     if(f == NULL)
-	return OCTHROW(OC_ERCFILE);
+	{stat = (OC_ERCFILE); goto done;}
     fclose(f);
+    if(!ocglobalstate.initialized) {
+	ocinternalinitialize(); /* so ocglobalstate is defined, but not triplestore */
+    }
     ocglobalstate.rc.rcfile = strdup(rcfile);
-    return OCTHROW(OC_NOERR);
+    /* (re) load the rcfile and esp the triplestore*/
+    stat = ocrc_load();    
+done:
+    return OCTHROW(stat);
 }
 
 /*!
@@ -2167,6 +2161,23 @@ oc_trace_curl(OCobject link)
     OCDEREF(OCstate*,state,link);
     oc_curl_debug(state);
     return OCTHROW(OC_NOERR);
+}
+
+OCerror
+oc_initialize(void)
+{
+    OCerror status = OC_NOERR;
+    if(!ocglobalstate.initialized) {
+        /* Clean up before re-initializing */
+	if(ocglobalstate.tempdir != NULL) free(ocglobalstate.tempdir);
+	if(ocglobalstate.home != NULL) free(ocglobalstate.home);
+	if(ocglobalstate.rc.rcfile != NULL) free(ocglobalstate.rc.rcfile);
+    }
+    ocglobalstate.initialized = 0;
+    status = ocinternalinitialize();
+    /* (re) load the rcfile */
+    status =  ocrc_load();    
+    return OCTHROW(status);
 }
 
 /**@}*/

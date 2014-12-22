@@ -19,14 +19,20 @@
 #include "oc.h"
 
 #undef NOEMBED
+<<<<<<< HEAD
 #undef NOLOCAL
 #undef NOHOME
 #undef NOREDIR
+=======
+#define NOLOCAL
+#define NOHOME
+#define NOSPEC
+#define NOREDIR
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 
 #undef KEEPRC
 
 #define RC ".ocrc"
-#define SPECRC "./ocrc"
 
 #define URLSERVER "remotetest.unidata.ucar.edu"
 #define USERPWD "tiggeUser:tigge"
@@ -45,8 +51,9 @@ static char url2[1024];
 /* Test redirect from different machine*/
 static char url3[1024];
 
-static int testrc(const char* prefix, const char* url);
-static void fillrc(const char* path);
+
+static OCerror createrc(const char*);
+static OCerror testrc(const char* url);
 static void killrc();
 static void show(OCddsnode root);
 
@@ -71,7 +78,8 @@ main(int argc, char** argv)
     OClink link = NULL;
     OCddsnode root;
     int pass = 0;
-
+    char rcpath[1024];
+    
     fprintf(stderr,"Testing: Authorization\n");
 
     snprintf(url1,sizeof(url1),URL1,USERPWD,URLSERVER); /* embedded */
@@ -84,18 +92,21 @@ fflush(stderr);
 #endif
 
     pass = 1; /* assume success */
-    killrc();
 
     fprintf(stderr,"Testing: Http Basic Authorization\n\n");
 #ifndef NOEMBED
     {
+	oc_initialize(); /* reset liboc */
+        killrc();
         fprintf(stderr,"Testing: Embedded user:pwd: %s\n",url1);
         retval = oc_open(url1, &link);
 	if(retval == OC_NOERR)
 	    retval = oc_fetch(link,NULL,OCDDS,0,&root);
+	if(retval == OC_NOERR)
+	    ocdumpnode(root);
         if(retval != OC_NOERR) {
-            pass = 0;
             fprintf(stderr,"*** FAIL: Testing embedded user:pwd\n");
+            pass = 0;
         } else {
 	    SHOW(root);
             fprintf(stderr,"*** PASS: Testing embedded user:pwd\n");
@@ -108,42 +119,108 @@ fflush(stderr);
 
 #ifndef NOLOCAL
     {
+	oc_initialize(); /* reset liboc */
+        killrc();
         /* Test 1: RC in ./ */
+<<<<<<< HEAD
         fprintf(stderr,"Testing: user:pwd in %s/%s: %s\n",".",RC,USERPWD);
 	if(!testrc(".",url2)) {
 	    fprintf(stderr,"user:pwd in %s/%s failed\n",".",RC);
+=======
+        snprintf(rcpath,sizeof(rcpath),"%s/%s",".",RC);
+        fprintf(stderr,"Testing: user:pwd in %s\n",rcpath);
+	if(createrc(rcpath) != OC_NOERR) {
+	    fprintf(stderr,"user:pwd in %s; could not create\n",rcpath);
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 	    exit(1);
+	}
+	if(testrc(url2) != OC_NOERR) {
+            fprintf(stderr,"*** FAIL: Testing: user:pwd in %s\n",rcpath);
+	    pass = 0;
+        } else {
+            fprintf(stderr,"*** PASS: Testing: user:pwd in %s\n",rcpath);
         }
     }
 #endif
 
 #ifndef NOHOME
     {
-        /* Test 1: RC in HOME  */
+	oc_initialize(); /* reset liboc */
+        /* Test 1: RC in $HOME */
 	home = getenv("HOME");
+<<<<<<< HEAD
         fprintf(stderr,"user:pwd in %s/%s: %s\n",home,RC,USERPWD);
 	if(!testrc(home,url2)) {
 	    fprintf(stderr,"user:pwd in %s/%s failed\n",home,RC);
+=======
+        snprintf(rcpath,sizeof(rcpath),"%s/%s",home,RC);
+        fprintf(stderr,"Testing: user:pwd in %s\n",rcpath);
+        killrc();
+	if(createrc(rcpath) != OC_NOERR) {
+	    fprintf(stderr,"user:pwd in %s; could not create\n",rcpath);
 	    exit(1);
+	}
+	if(testrc(url2) != OC_NOERR) {
+            fprintf(stderr,"*** FAIL: Testing: user:pwd in %s\n",rcpath);
+	    pass = 0;
+        } else {
+            fprintf(stderr,"*** PASS: Testing: user:pwd in %s\n",rcpath);
+        }
+    }
+#endif
+
+#ifndef NOSPEC
+    {
+	const char* tmp = getenv("TEMP");
+	if(tmp == NULL)
+	    tmp = "/tmp";
+	oc_initialize(); /* reset liboc */
+        snprintf(rcpath,sizeof(rcpath),"%s/%s",tmp,RC);
+	fprintf(stderr,"Testing rc file in specified directory %s\n",rcpath);
+        /* Test: Create the rc file in specified dir */
+        fprintf(stderr,"Testing: user:pwd in %s\n",rcpath);
+        killrc();
+	if(createrc(rcpath) != OC_NOERR) {
+	    fprintf(stderr,"user:pwd in %s; could not create\n",rcpath);
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
+	    exit(1);
+	}
+	if(testrc(url2) != OC_NOERR) {
+            fprintf(stderr,"*** FAIL: Testing: user:pwd in %s\n",rcpath);
+	    pass = 0;
+        } else {
+            fprintf(stderr,"*** PASS: Testing: user:pwd in %s\n",rcpath);
         }
     }
 #endif
 
 #ifndef NOREDIR
    {
+	oc_initialize(); /* reset liboc */
+	link = NULL;
         fprintf(stderr,"Testing: Http Basic Redirect\n\n");
 	snprintf(url3,sizeof(url3),URL3,USERPWD);
         fprintf(stderr,"Basic redirect: %s\n",url3);
         retval = oc_open(url3, &link);
 	if(retval == OC_NOERR)
 	    retval = oc_fetch(link,NULL,OCDDS,0,&root);
+<<<<<<< HEAD
+=======
+	if(retval == OC_NOERR)
+	    ocdumpnode(root);
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
         if(retval != OC_NOERR) {
             fprintf(stderr,"*** XFAIL: Basic redirect\n");
         } else {
 	    SHOW(root);
             fprintf(stderr,"*** PASS: Basic redirect\n");
+<<<<<<< HEAD
 	    retval = oc_close(link);
+=======
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 	}
+	if(link != NULL)
+	    retval = oc_close(link);
         fflush(stderr);
     }
 #endif
@@ -152,27 +229,37 @@ fflush(stderr);
 }
 
 static OCerror
-testrc(const char* prefix, const char* url)
+createrc(const char* rcpath)
 {
-    int pass = 1;
-    OCerror retval;
-    int ncid;
-    char rcpath[8192];
     FILE* rc;
-    OClink link = NULL;
-    OCddsnode root;
 
-    snprintf(rcpath,sizeof(rcpath),"%s/%s",prefix,RC);
+    killrc();
     rc = fopen(rcpath,"w");
     if(rc == NULL) {
-        fprintf(stderr,"Cannot create ./%s\n",RC);
+        fprintf(stderr,"Cannot create %s\n",rcpath);
         exit(1);
     }    
+#ifdef DEBUG
+    fprintf(rc,"HTTP.VERBOSE=1\n");
+#endif
+    fprintf(rc,"HTTP.COOKIEJAR=%s\n",COOKIEFILE);
+    fprintf(rc,"HTTP.VALIDATE=1\n");
+    fprintf(rc,"HTTP.CREDENTIALS.USERPASSWORD=%s\n",USERPWD);
     fclose(rc);
-    fillrc(rcpath);
-    retval = oc_open(url1, &link);
+    return OC_NOERR;
+}
+
+static OCerror
+testrc(const char* url)
+{
+    OCerror retval = OC_NOERR;
+    OClink link = NULL;
+    OCddsnode root = NULL;
+
+    retval = oc_open(url, &link);
     if(retval == OC_NOERR)
 	retval = oc_fetch(link,NULL,OCDDS,0,&root);
+<<<<<<< HEAD
     if(retval != OC_NOERR) {
         pass = 0;
         fprintf(stderr,"*** FAIL: Testing: user:pwd in %s\n",rcpath);
@@ -181,12 +268,17 @@ testrc(const char* prefix, const char* url)
 	retval = oc_close(link);
         fprintf(stderr,"*** PASS: Testing: user:pwd in %s\n",rcpath);
     }
+=======
+    if(retval == OC_NOERR && root != NULL)
+	ocdumpnode(root);
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
     if(link != NULL)
 	retval = oc_close(link);
     fflush(stderr);
 #ifndef KEEPRC
     unlink(rcpath); /* delete the file */
 #endif
+<<<<<<< HEAD
     return pass;
 }
 
@@ -208,26 +300,28 @@ fillrc(const char* path)
     fprintf(rc,"HTTP.COOKIEJAR=%s\n",COOKIEFILE);
     fprintf(rc,"HTTP.CREDENTIALS.USERPASSWORD=%s\n",USERPWD);
     fclose(rc);
+=======
+    return retval;
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 }
 
 static void
 killrc()
 {
     const char* home;
+    const char* tmp;
     char path[1024];
-#ifdef KEEPRC
-    fprintf(stderr,"kill: ./%s\n",RC);
-#else
     snprintf(path,sizeof(path),"%s/%s",".",RC);
     unlink(path); /* delete the file */
-#endif
     home = getenv("HOME");
-#ifdef KEEPRC
-    fprintf(stderr,"kill: %s/%s\n",home,RC);
-#else
     snprintf(path,sizeof(path),"%s/%s",home,RC);
     unlink(path);
-#endif
+    tmp = getenv("TEMP");
+    if(tmp == NULL)
+	tmp = "/tmp";
+    snprintf(path,sizeof(path),"%s/%s",tmp,RC);
+    unlink(path);
+    
 }
 
 static void

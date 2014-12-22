@@ -238,7 +238,7 @@ sorttriplestore(struct OCTriplestore* store)
     memcpy((void*)store->triples,(void*)sorted,sizeof(struct OCTriple)*nsorted);
     free(sorted);
 
-    if(ocdebug > 0)
+    if(ocdebug > 1)
         storedump("final .rc order:",store->triples,store->ntriples);
 }
 
@@ -592,7 +592,50 @@ ocrc_lookup(char* suffix, char* url)
 	if(value != NULL)
 	    return value;
     }
+<<<<<<< HEAD
     return NULL;
+=======
+    return value;
+}
+
+/* compile the .dodsrc, if any */
+static OCerror
+ocreadrc(void)
+{
+    OCerror stat = OC_NOERR;
+    char* path = NULL;
+    /* locate the configuration files: first if specified,
+       then '.',  then $HOME */
+    if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
+	path = ocglobalstate.rc.rcfile;
+    } else {
+	char** rcname;
+	int found = 0;
+	for(rcname=rcfilenames;!found && *rcname;rcname++) {
+	    stat = rc_search(".",*rcname,&path);
+    	    if(stat == OC_NOERR && path == NULL)  /* try $HOME */
+	        stat = rc_search(ocglobalstate.home,*rcname,&path);
+	    if(stat != OC_NOERR)
+		goto done;
+	    if(path != NULL)
+		found = 1;
+	}
+    }
+    if(path == NULL) {
+        oclog(OCLOGDBG,"Cannot find runtime configuration file; continuing");
+    } else {
+	if(ocdebug > 0)
+	    fprintf(stderr, "DODS RC file: %s\n", path);
+        if(ocdodsrc_read(path) == 0) {
+	    oclog(OCLOGERR, "Error parsing %s\n",path);
+	    stat = OC_ERCFILE;
+	}	
+    }
+done:
+    if(path != NULL)
+	free(path);
+    return stat;
+>>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 }
 #endif
 
@@ -656,4 +699,3 @@ ocrc_triple_iterate(char* key, char* url, struct OCTriple* prev)
     }
     return next;
 }
-

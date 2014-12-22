@@ -78,27 +78,29 @@ extern void* ocmalloc(size_t size);
 extern void  ocfree(void*);
 
 #define MEMCHECK(var,throw) {if((var)==NULL) return (throw);}
-#define MEMFAIL(var) MEMCHECK(var,OCTHROW(OC_ENOMEM))
+#define MEMFAIL(var) MEMCHECK(var,OCCATCH(OC_ENOMEM))
 #define MEMGOTO(var,stat,label) {if((var)==NULL) {stat=OC_ENOMEM;goto label;}}
 
 #ifdef OCCATCHERROR
 extern OCerror ocbreakpoint(OCerror err);
-extern OCerror octhrow(OCerror err);
+extern OCerror occatch(OCerror err);
 extern CURLcode ocreportcurlerror(OCstate* state, CURLcode cstat);
 /* Place breakpoint on ocbreakpoint to catch errors close to where they occur*/
-#define OCTHROW(e) octhrow(e)
-#define OCTHROWCHK(e) (void)octhrow(e)
+#define OCCATCH(e) occatch(e)
+#define OCCATCHCHK(e) (void)occatch(e)
 #define OCGOTO(label) {ocbreakpoint(-1); goto label;}
 #define OCCURLERR(s,e) ocreportcurlerror(s,e)
 #define CURLERR(e) ocreportcurlerror(NULL,e)
 #else
-#define OCTHROW(e) (e)
-#define OCTHROWCHK(e)
+#define OCCATCH(e) (e)
+#define OCCATCHCHK(e)
 #define OCGOTO(label) goto label
 #define CURLERR(s,e) (e)
 #define OCCURLERR(s,e) (e)
 #define CURLERR(e) (e)
 #endif
+#define OCTHROW(e) OCCATCH(e)
+#define OCTHROWCHK(e) OCCATCHCHK(e)
 
 #endif /*OCOCDBG_H*/
 

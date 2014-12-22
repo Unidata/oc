@@ -80,9 +80,9 @@ struct OCD {
     int verbose;        /* -DV - produce more verbose output */
 } debug;
 
-/* Define the -X options */
+/* Define the -X options; currently unused*/
 struct OCX {
-    char* rc;
+    int ignore;
 } x;
 
 /* Define the other options */
@@ -229,11 +229,6 @@ main(int argc, char **argv)
 	    if(so == 0) usage("missing -X argument");
 	    c0 = optarg[0];
 	    switch (c0) {
-	    case 'R':
-		if(so == 1)
-		    usage("missing -XR argument");
-		ocopt.x.rc = strdup(optarg+1);
-  	        break;
 	    default:
 		usage("unknown -X option");
 	    }
@@ -326,11 +321,6 @@ main(int argc, char **argv)
 
     if(ocopt.rcfile != NULL)
 	oc_set_rcfile(ocopt.rcfile);
-
-#if 0
-    if(ocopt.x.rc != NULL)
-	oc_set_rcsearchpath(ocopt.x.rc);
-#endif
 
     if (ocopt.debug.verbose)
         dumpflags();

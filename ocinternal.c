@@ -145,14 +145,6 @@ ocinternalinitialize(void)
 
     oc_curl_protocols(&ocglobalstate); /* see what protocols are supported */
 
-    /* read and compile the rc file, if any */
-    if(!ocglobalstate.rc.loaded) {
-	if(ocrc_load() != OC_NOERR) {
-	    oclog(OCLOGERR,"Malformed rc configuration file");
-	    goto done;
-	}
-    }
-done:
     return OCTHROW(stat);
 }
 

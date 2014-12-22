@@ -45,6 +45,7 @@ check(OCstate* state, int flag, void* value)
     return stat;
 }
 
+#if 0
 static void
 showopt(int flag, void* value)
 {
@@ -67,6 +68,7 @@ showopt(int flag, void* value)
 	    break;
     }
 }
+#endif
 
 /*
 Set a specific curl flag; primary wrapper for curl_easy_setopt
@@ -196,8 +198,6 @@ done:
 
 
 /* Set various general curl flags per fetch  */
-/* Temporary: only do per link */
-
 OCerror
 ocset_flags_perfetch(OCstate* state)
 {
