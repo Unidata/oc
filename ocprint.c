@@ -195,7 +195,7 @@ main(int argc, char **argv)
 
     opterr = 1;
 
-    while ((c = getopt(argc, argv, "ABC:D:EGLN:R:STU:X:ho:p:")) != EOF) {
+    while ((c = getopt(argc, argv, "AC:D:GLN:R:STU:X:ho:p:")) != EOF) {
         switch (c) {
 	case 'A': ocopt.showattributes = 1; break;
 	case 'C': ocopt.constraint = nulldup(optarg); break;
@@ -213,12 +213,12 @@ main(int argc, char **argv)
 	    if(c0 >= '0' && c0 <= '9') {/* debug level */
 		ocopt.debug.debuglevel = atoi(optarg); break;
 	    } else switch (c0) {
+	           case 'C': ocopt.debug.curl = 1; break;
 	           case 'D': ocopt.debug.dumpdatatree = 1; break;
 	           case 'N': ocopt.debug.dumpdds = 1; break;
 	           case 'X': ocopt.debug.dumpdatadds = 1;
 			     ocopt.debug.dumplevel = atoi(optarg+1);
 			     break;
-	           case 'C': ocopt.debug.curl = 1; break;
 	           case 'V': ocopt.debug.verbose = 1; break;
 		   default: usage("unknown -D option");
 		   }

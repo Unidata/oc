@@ -10,13 +10,14 @@ ocprint
 \%[-D \fIdebug-argument\fP]
 \%[-G]
 \%[-L]
-\%[-D \fI\fP]
 \%[-N \fInetrcfile\fP]
 \%[-R \fIrcfile\fP]
 \%[-S]
+\%[-U \fIuserparm\fP]
 \%[-h]
+\%[-o \fIoutputfile\fP]
 \%[-p \fIall|das|dds|data|datadds\fP]
-\%[[-f] \fIOPeNDAP-URL\fP]
+\%[\fIOPeNDAP-URL\fP]
 .hy
 .ft
 .SH DESCRIPTION
@@ -40,9 +41,13 @@ The current set of values is as follows.
 .IP "\fB-Dn\]fP"
 Set the debug level to \fIn\fP.
 .IP "\fB-DC\]fP"
-Set the debug level to \fIn\fP.
+Set curl library debugging.
 .IP "\fB-DD\]fP"
-Set the debug level to \fIn\fP.
+Dump the datadds tree.
+.IP "\fB-DN\]fP"
+Dump the dds tree.
+.IP "\fB-DXn\]fP"
+Equivalent to -DD and settin the dump level to n.
 .IP "\fB-DV\]fP"
 Set verbose output.
 .RE
@@ -59,27 +64,28 @@ This should be to the netrc file, not the containing directory.
 Specify the path to use to find the rc file.
 This should be to the rc file, not the containing directory.
 If not specified, then the search order is
-./.ocrc ~/.ocrc,
-./.dodsrc ~/.dodsrc.
+\fI./.ocrc\fP \fI~/.ocrc\fP,
+\fI./.dodsrc\fP \fI~/.dodsrc\fP.
 .IP "\fB-S\fP"
 Specify that the server certificate is not checked
 when using https protocol.
 This is mostly intended to be used when the server
 is using a self-signed certificate.
+.IP "\fB-U \fRuser-parameters\fP"
+Prefix the given parameters to the end of the OPeNDAP URL
+(in the fragment section) before accessing it.
+The general form is param=value.
 .IP "\fB-h\fP"
-Output usage information, including command line options.
+Output usage information, including a list of command line options.
 .IP "\fB-p \fRall|das|dds|data|datadds\fP"
 Cause the DAS, the DDS, or the DATADDS to be printed.
 The argument \fIdata\fP is a synonym for \fIdatadds\fP.
 The  \fIall\fP case causes all three to be printed.
 This option may be used multiple times.
-.IP "\fB-U \fRuser-parameters\fP"
-Prefix the given parameters to the front of the OPeNDAP URL
-before accessing it. The general form is param=value.
 .IP "\fB-v\fP"
 Output verbose information about processing.
-.IP "\fB-f \fROPeNDAP-URL\fP"
-Specify the url source from which to read. The -f is optional.
+.IP "\fBOPeNDAP-URL\fP"
+Specify the url source from which to read.
 .SH EXAMPLES
 .LP
 Extract everything from a specific URL (note: URL is fake).
@@ -90,5 +96,4 @@ ocprint -p all http://test.opendap.org/test1
 
 .SH BUGS
 .LP
-Probably many; but currently none known.
-
+Probably many; but currently fixed as detected.
