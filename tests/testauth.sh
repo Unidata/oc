@@ -32,11 +32,11 @@ URLPATH="thredds/dodsC/restrict/testData.nc"
 COOKIES="${WD}/cookies"
 
 # See if we need to override
-if test "x$UAT" != "x" ; then
+if test "x$URS" != "x" ; then
 #https://54.86.135.31/opendap/data/nc/fnoc1.nc.dds
 URLSERVER="54.86.135.31"
 URLPATH="opendap/data/nc/fnoc1.nc"
-BASICCOMBO="$UAT"
+BASICCOMBO="$URS"
 NOEMBED=1
 NETRC=$NETRCFILE
 else
@@ -93,7 +93,7 @@ if test "x${DBG}" != x ; then
 echo "HTTP.VERBOSE=1" >>$RCP
 fi	
 echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
-if test "x${UAT}" = x ; then
+if test "x${URS}" = x ; then
 echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
 fi
 if test "x${NETRC}" != x && test "x$NFL" = x ; then
