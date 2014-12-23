@@ -10,13 +10,18 @@ SHOW=1
 #DBG=1
 #GDB=1
 
-NETRCFILE=./netrc
+NFL=1
+
+WD=`pwd`
+
+NETRCFILE=$WD/netrc
 # This is the control variable
 NETRC=$NETRCFILE
 
-if test "x$DBG" = x1 ; then SHOW=1; fi
-
-WD=`pwd`
+OCLOGFILE=stderr
+if test "x$DBG" = x1 ; then
+SHOW=1
+fi
 
 # Major parameters
 
@@ -54,19 +59,6 @@ echo "no ocprint"
 exit 1
 fi
 
-if test "x$DBG" = x1; then
-OCPRINT="$OCPRINT -D1"
-export OCLOGFILE=""
-fi
-
-if test "x$GDB" = x1 ; then
-OCPRINT="gdb --args $OCPRINT -D1"
-fi
-
-if test "x$NETRC" != x ; then
-OCPRINT="$OCPRINT -N $NETRC"
-fi
-
 if test "x$SHOW" = x ; then
 OUTPUT="-o /dev/null"
 else
@@ -74,8 +66,6 @@ OUTPUT=
 fi
 
 RC=.ocrc
-
-OCLOGFILE=""
 
 LOCALRC=./$RC
 HOMERC=${HOME}/$RC
@@ -97,14 +87,17 @@ cd ${builddir}
 function createrc {
 if test "x$1" != x ; then
 RCP=$1
-rm -f $RCP ~/.netrc
+rm -f $RCP
 echo "Creating rc file $RCP"
 if test "x${DBG}" != x ; then
 echo "HTTP.VERBOSE=1" >>$RCP
 fi	
 echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
-if test "x${UAT}" == x ; then
+if test "x${UAT}" = x ; then
 echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
+fi
+if test "x${NETRC}" != x && test "x$NFL" = x ; then
+echo "HTTP.NETRC=${NETRC}" >>$RCP
 fi
 fi
 }
@@ -114,13 +107,31 @@ if test "x$1" != x ; then
 rm -f $1
 echo "Creating netrc file $1"
 echo "machine uat.urs.earthdata.nasa.gov login $BASICUSER password $BASICPWD" >>$1
-echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
+#echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
 fi
 }
 
 function reset {
 rm -f ./.ocrc ./.dodsrc $HOME/.ocrc $HOME/.dodsrc $SPECRC $COOKIES $NETRC
 }
+
+# Assemble the ocprint command
+if test "x$DBG" = x1; then
+OCPRINT="$OCPRINT -D1"
+fi
+
+if test "x$NETRC" != x ; then
+if test "x$NFL" = x1 ; then
+OCPRINT="$OCPRINT -N $NETRC"
+fi
+fi
+
+
+
+if test "x$GDB" = x1 ; then
+OCPRINT="gdb --args $OCPRINT -D1"
+fi
+
 
 # Initialize
 reset
@@ -139,8 +150,8 @@ if test "x$NOLOCAL" != x1 ; then
 echo "***Testing rc file in local directory"
 # Create the rc file and (optional) netrc fil in ./
 reset
-createrc $LOCALRC
 createnetrc $NETRC
+createrc $LOCALRC
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
@@ -151,8 +162,8 @@ if test "x$NOHOME" != x1 ; then
 echo "***Testing rc file in home directory"
 # Create the rc file and (optional) netrc fil in ./
 reset
-createrc $HOMERC
 createnetrc $NETRC
+createrc $HOMERC
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
@@ -161,10 +172,10 @@ fi
 
 if test "x$NOSPEC" != x1 ; then
 echo "*** Testing rc file in specified directory"
-# Create the rc file and (optional) netrc fil in ./
+# Create the rc file and (optional) netrc file
 reset
-createrc $SPECRC
 createnetrc $NETRC
+createrc $SPECRC
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
