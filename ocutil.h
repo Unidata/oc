@@ -42,6 +42,9 @@ extern void ocfreeprojectionclause(OCprojectionclause* clause);
 
 /* Misc. */
 
+/* merge two envv style lists */
+extern char** ocmerge(const char** list1, const char** list2);
+
 extern int ocmktmp(const char* base, char** tmpnamep);
 
 extern void ocdataddsmsg(struct OCstate*, struct OCtree*);

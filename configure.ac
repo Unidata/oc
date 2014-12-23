@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT(oc, 2.0, support@opendap.org)
+AC_INIT(oc, 2.1, support@opendap.org)
 AC_CONFIG_SRCDIR([oclog.c])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR(conf)

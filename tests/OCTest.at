@@ -85,7 +85,7 @@ m4_define([_AT_CONSTRAINT_TEST],
 [AT_BANNER([ConstraintTest $1.$4])
 AT_SETUP([CONSTRAINT $1.$4])
 AT_KEYWORDS([constraint])
-AT_CHECK([$abs_top_builddir/ocprint -T -C '$3' -G -p dds -p datadds $1], [], [stdout], [ignore])
+AT_CHECK([$abs_top_builddir/ocprint -T -G -p dds -p datadds "$1?$3"], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore])
 AT_CLEANUP])
 

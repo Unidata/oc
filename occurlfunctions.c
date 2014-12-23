@@ -145,7 +145,7 @@ ocset_curlflag(OCstate* state, int flag)
 
     case CURLOPT_ENCODING:
 #ifdef CURLOPT_ENCODING
-	if(flags->compress) {
+	if(state->curlflags.compress) {
 	    CHECK(state, CURLOPT_ENCODING,"deflate, gzip");
         }
 #endif
@@ -244,24 +244,24 @@ oc_set_curl_options(OCstate* state)
     struct OCTriplestore* store;
     struct OCTriple* triple;
     int i;
-    char* url;
+    char* hostport;
     struct OCCURLFLAG* ocflag;
 
-    url = state->uri->uri;
+    hostport = occombinehostport(state->uri);
+    if(hostport == NULL) hostport = "";
 
-    if(url == NULL) url = "";
     store = &ocglobalstate.rc.ocrc;
     triple = store->triples;
 
     /* Assume that the triple store has been properly sorted */
     for(i=0;i<store->ntriples;i++,triple++) {
-        size_t urllen = strlen(triple->url);
+        size_t hostlen = strlen(triple->host);
 	const char* flagname;
 
         if(ocstrncmp("CURL.",triple->key,5) != 0) continue; /* not a curl flag */
-        /* do url prefix comparison */
-	if(urllen > 0) {
-            int t = ocstrncmp(url,triple->url,urllen);
+        /* do hostport prefix comparison */
+	if(hostlen > 0) {
+            int t = ocstrncmp(hostport,triple->host,hostlen);
             if(t !=  0) continue;
 	}
 	flagname = triple->key+5; /* 5 == strlen("CURL."); */

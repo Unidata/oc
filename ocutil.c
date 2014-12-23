@@ -732,3 +732,21 @@ ocmktmp(const char* base, char** tmpnamep)
     if(tmpnamep) *tmpnamep = strdup(tmpname);
     return OC_NOERR;
 }
+
+/* merge two envv style lists */
+char**
+ocmerge(const char** list1, const char** list2)
+{
+    int l1, l2;
+    char** merge;
+    const char** p;
+    for(l1=0,p=list1;*p;p++) {l1++;}
+    for(l2=0,p=list2;*p;p++) {l2++;}
+    merge = (char**)malloc(sizeof(char*)*(l1+l2+1));
+    if(merge == NULL)
+	return NULL;
+    memcpy(merge,list1,sizeof(char*)*l1);
+    memcpy(merge+l1,list2,sizeof(char*)*l2);
+    merge[l1+l2] = NULL;
+    return merge;    
+}

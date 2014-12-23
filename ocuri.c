@@ -1,6 +1,6 @@
 /*********************************************************************
  *   Copyright 2010, UCAR/Unidata
- *   See netcdf/COPYRIGHT file for copying and redistribution conditions.
+ *   See netcdf/COPYRIGHT file for copying and redistribuution conditions.
  *   $Header$
  *********************************************************************/
 
@@ -563,42 +563,59 @@ ocappendparams(char* newuri, char** p)
 /*
 In the original url, client parameters are assumed to be one
 or more instances of bracketed pairs: e.g "[...][...]...".
-They may occur either at the front, or suffixed after
-a trailing # character After processing, the list is
-converted to a semicolon separated list of the combination
-of prefix and suffix parameters.
+prefixed to the url. This model has been extended to support
+specification of the parameters as semicolon separated key=value
+pairs in the fragment part of the url.  The fragment part
+starts with a '#' and is the last part of the url.
 
 After the url is parsed, the parameter list
 is converted to a semicolon separated list with all
 whitespace removed.
 In any case, each parameter in turn is assumed to be a
-of the form <name>=<value> or [<name>].
-e.g. [x=y][z][a=b][w].  If the same parameter is specified more
-than once, then the first occurrence is used; this is so
+of the form <name>=<value> or <name>.
+e.g. x=y,z,a=b,w.  If the same parameter is specified more
+than once, then the last occurrence is used; this is so
 that is possible to forcibly override user specified
-parameters by prefixing.  IMPORTANT: client parameter string
+parameters by suffixing.  IMPORTANT: client parameter string
 is assumed to have blanks compressed out.  Returns 1 if parse
 suceeded, 0 otherwise; */
 
 int
 ocuridecodeparams(OCURI* ocuri)
 {
-    char* cp = NULL;
+    char* p;
+    char* q;
     int i,c;
     int nparams;
     char* params = NULL;
     char** plist;
+    size_t len;
 
     if(ocuri == NULL) return 0;
     if(ocuri->params == NULL) return 1;
 
-    params = strdup(ocuri->params); /* so we can modify */
+    len = strlen(ocuri->params);
+    params = (char*)malloc(len+1);
+    if(params == NULL)
+	return 0; /* no memory */
 
-    /* Pass 1 to break string into pieces at the semicolons
+    /* Pass 1: convert prefix form to suffix form by converting
+       '][' to ';' and otherwise removing '[' and ']' occurrences.
+    */
+    for(p=ocuri->params,q=params;*p;p++) {
+	switch (*p) {
+	case ',': *q++ = ';'; break;
+	case '[': break;
+	case ']': if(p[1] == '[') p++; break;
+	default: *q++ = *p; break;
+	}
+    }
+
+    /* Pass 2 to break string into pieces at the semicolons
        and count # of pairs */
     nparams=0;
-    for(cp=params;(c=*cp);cp++) {
-	if(c == ';') {*cp = EOFCHAR; nparams++;}
+    for(p=params;(c=*p);p++) {
+	if(c == ';') {*p = EOFCHAR; nparams++;}
     }
     nparams++; /* for last one */
 
@@ -612,15 +629,15 @@ ocuridecodeparams(OCURI* ocuri)
     /* Break up each param into a (name,value) pair*/
     /* and insert into the param list */
     /* parameters of the form name name= are converted to name=""*/
-    for(cp=params,i=0;i<nparams;i++) {
-      char* next = cp+strlen(cp)+1; /* save ptr to next pair*/
+    for(p=params,i=0;i<nparams;i++) {
+      char* next = p+strlen(p)+1; /* save ptr to next pair*/
       char* vp;
       /*break up the ith param*/
-      vp = strchr(cp,'=');
+      vp = strchr(p,'=');
       if(vp != NULL) {*vp = EOFCHAR; vp++;} else {vp = "";}
-      plist[2*i] = nulldup(cp);
+      plist[2*i] = nulldup(p);
       plist[2*i+1] = nulldup(vp);
-      cp = next;
+      p = next;
     }
     plist[2*nparams] = NULL;
     free(params);

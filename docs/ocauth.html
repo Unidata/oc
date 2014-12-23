@@ -1,4 +1,4 @@
-<!- Copyright 2009, UCAR/Unidata and OPeNDAP, Inc. --> 
+<!- Copyright 2014, UCAR/Unidata and OPeNDAP, Inc. --> 
 <!- See the COPYRIGHT file for more information. --> 
 <html> 
 <style> 
@@ -25,10 +25,11 @@ h6 {font-size: 16pt; } /* For Subtitles */
  
 <center> 
 <h1>OC Authorization Support</h1> 
-<h6>Author: Dennis Heimbigner (dmh at ucar dot edu)</h6>
+<h6>Author: Dennis Heimbigner<br>
+dmh at ucar dot edu</h6>
 <h6>Draft: 11/21/2014<br> 
-Last Revised: 11/21/2014<br> 
-OC Version 2.0</h6> 
+Last Revised: 12/23/2014<br> 
+OC Version 2.1</h6> 
 </center> 
  
 <h6 class="break"><u>Table of Contents</u></h6> 
@@ -36,7 +37,8 @@ OC Version 2.0</h6>
 <li> <a href="#Introduction">Introduction</a> 
 <li> <a href="#URL-AUTH">URL-Based Authentication</a> 
 <li> <a href="#DODSRC">RC File Authentication</a> 
-<li> <a href="#URLCONS">URL Constrained Entries</a> 
+<li> <a href="#REDIR">Redirection-Based Authentication</a> 
+<li> <a href="#URLCONS">URL Constrained RC File Entries</a> 
 <li> <a href="#CLIENTCERTS">Client-Side Certificates</a> 
 <li> <a href="#allkeys">Appendix A. All RC-File Keys</a>
 <li> <a href="#ESGDETAIL">Appendix B. ESG Access in Detail</a>
@@ -47,10 +49,12 @@ OC can support user authorization using those provided by the curl
 library. This includes basic password authentication as well as
 certificate-based authorization.
 <p>
+With some exceptions (e.g. see the section on <a href="#REDIR">redirection</a>)
 The libcurl authorization mechanisms can be accessed in two ways
 <ol>
 <li> Inserting the username and password into the url, or
-<li> Accessing information from a <i>.dodsrc</i> file.
+<li> Accessing information from a so-called <i>rc</i> file named either
+<i>.ocrc</i> or <i>.dodsrc</i>
 </ol>
 
 <h2 class="break"><a name="URL-AUTH"><u>URL-Based Authentication</u></a></h2> 
@@ -62,61 +66,58 @@ directly insert the username and the password into a url in this form.
 This username and password will be used if the server asks for
 authentication. Note that only simple password authentication
 is supported in this format.
+Specifically note that <a href="#REDIR">redirection</a> based
+authorization will not work with this.
 
 <h2 class="break"><a name="DODSRC"><u>RC File Authentication</u></a></h2> 
-The oc library supports an rc-file mechanism to allow the passing
-of a number of parameters to libcurl.
+The oc library supports an <i>rc</i> file mechanism to allow the passing
+of a number of parameters to liboc and libcurl.
 <p>
 The file must be called one of the following names:
-".dodsrc", ".ocsrc"
-in order; that is, if both .ocrc and .dodsrc exist, then
-the .dodsrc file will be used.
+".ocrc", ".dodsrc"
+If both .ocrc and .dodsrc exist, then
+the .ocrc file will take precedence.
 <p>
 Searching for the rc file first looks in the current directory
 and then in the home directory (as defined by the HOME environment
 variable). It is also possible to specify a direct path using
 the <i>-R</i> option to ocprint or using the <i>oc_set_rcfile</i>
-procedure (see oc.h).
+procedure (see oc.h). Note that for these latter cases, the path
+must be to the file itself, not to the containing directory.
 <p>
 The rc file format is a series of lines of the general form:
 <pre>
-[<url>]<key>=<value>
+[&lt;host:port&gt;]&lt;key&gt;=&lt;value&gt;
 </pre>
-where the bracket-enclosed url is optional and will be discussed 
+where the bracket-enclosed host:port is optional and will be discussed 
 subsequently.
 <p>
 The currently defined set of authorization-related keys are as follows.
 The second column is the affected curl_easy_setopt option(s).
 <table>
 <tr><th>Key<th>curl_easy_setopt Option
-<tr><td>HTTP.COOKIEJAR<td>CUROPT_COOKIEJAR, CURLOPT_COOKIEFILE
-<tr><td>HTTP.COOKIE_JAR<td>same as HTTP.COOKIEJAR
+<tr><td>HTTP.COOKIEJAR<td>CURLOPT_COOKIEJAR, CURLOPT_COOKIEFILE
 <tr><td>HTTP.PROXY_SERVER<td>CURLOPT_PROXY, CURLOPT_PROXYPORT, CURLOPT_PROXYUSERPWD
-<tr><td>HTTP.SSL.CERTIFICATE<td>CUROPT_SSLCERT
-<tr><td>HTTP.SSL.KEY<td>CUROPT_SSLKEY
-<tr><td>HTTP.SSL.KEYPASSWORD<td>CUROPT_KEYPASSWORD
-<tr><td>HTTP.SSL.CAINFO<td>CUROPT_SSLCAINFO
-<tr><td>HTTP.SSL.CAPATH<td>CUROPT_SSLCAPATH
-<tr><td>HTTP.SSL.VERIFYPEER<td>CUROPT_SSL_VERIFYPEER
-<tr><td>HTTP.CREDENTIALS.USER<td>CUROPT_USERPASSWORD
-<tr><td>HTTP.CREDENTIALS.PASSWORD<td>CUROPT_USERPASSWORD
-<tr><td>HTTP.CREDENTIALS.USERPASSWORD<td>CUROPT_USERPASSWORD
+<tr><td>HTTP.SSL.CERTIFICATE<td>CURLOPT_SSLCERT
+<tr><td>HTTP.SSL.KEY<td>CURLOPT_SSLKEY
+<tr><td>HTTP.SSL.KEYPASSWORD<td>CURLOPT_KEYPASSWORD
+<tr><td>HTTP.SSL.CAINFO<td>CURLOPT_SSLCAINFO
+<tr><td>HTTP.SSL.CAPATH<td>CURLOPT_SSLCAPATH
+<tr><td>HTTP.SSL.VERIFYPEER<td>CURLOPT_SSL_VERIFYPEER
+<tr><td>HTTP.CREDENTIALS.USERPASSWORD<td>CURLOPT_USERPASSWORD
+</table>
 </ul>
 
 <h3><u>Password Authentication</u></h3> 
-The three keys, 
-HTTP.CREDENTIALS.USER,
-HTTP.CREDENTIALS.PASSWORD.
-and
+The key
 HTTP.CREDENTIALS.USERPASSWORD
 can be used to set the simple password authentication.
-The first two will be combined internally to produce
-a combined authentication of the form "username:password".
-The last key takes that combination directlry.
+This is an alternative to setting it in the url. 
+The value must be of the form "username:password".
 
 <h3><u>Cookie Jar</u></h3> 
 The HTTP.COOKIEJAR key
-specified the name of file from which
+specifies the name of file from which
 to read cookies (CURLOPT_COOKIEJAR) and also
 the file into which to store cookies (CURLOPT_COOKIEFILE).
 The same value is used for both CURLOPT values.
@@ -146,40 +147,84 @@ HTTP.PROXY_SERVER
 specified the url for accessing the proxy:
 (e.g.http://[username:password@]host[:port])
 
-<h2 class="break"><a name="URLCONS"><u>URL Constrained Entries</u></a></h2> 
-Each line of the rc file can begin with
-some prefix of a url enclosed in square brackets.
-For example:
+<h2 class="break"><a name="REDIR"><u>Redirection-Based Authentication</u></a> </h2>
+Some sites provide authentication by using a third party site
+to to the authentication. One example is
+<a href="https://uat.urs.earthdata.nasa.gov">URS</a>,
+the EOSDIS User Registration System.
+<p>
+The process is usually as follows.
+<ol>
+<li>The client contacts the server of interest (SOI), the actual data provider.
+<li>The SOI sends a redirect to the client to connect to the URS system.
+<li>The client authenticates with URS.
+<li>URS sends a redirect (with authorization information) to send
+the client back to the SOI to actually obtain the data.
+</ol>
+<p>
+In order for this to work with libcurl, the client will usually need
+to provide a .netrc file so that the redirection will work correctly.
+The format of this .netrc file will contain content that
+typically look like this.
 <pre>
-[http://remotetest.unidata.ucar.edu/thredds/dodsC]HTTP.VERBOSE=1
+machine uat.urs.earthdata.nasa.gov login xxxxxx password yyyyyy
+</pre>
+where the machine is the one to which the client is redirected
+for authorization, and the login and password are those
+needed to authenticate.
+<p>
+The .netrc file can be specified in two ways.
+<ol>
+<li> Specify the netrc file to liboc using the procedure in oc.h:
+<pre>
+oc_set_netrc(OClink* link, const char* file)
+</pre>
+(This is equivalent to the -N flag to ocprint). 
+<p>
+<li> Put the following line in your .ocrc/.dodsrc file.
+<pre>
+HTTP.NETRC=&lt;path to netrc file&gt;
+</pre>
+</ol>
+<p>
+One final note. In using this, it is probable that you will
+need to specify a cookie jar (HTTP.COOKIEJAR) so that the
+redirect site can pass back authorization information.
+
+<h2 class="break"><a name="URLCONS"><u>URL Constrained RC File Entries</u></a></h2> 
+Each line of the rc file can begin with
+a host+port enclosed in square brackets.
+The form is "host:port". If the port is not specified
+then the form is just "host".
+The reason that more of the url is not used is that
+libcurl's authorization grain is not any finer than host level.
+<p>
+Examples.
+<pre>
+[remotetest.unidata.ucar.edu]HTTP.VERBOSE=1
 or
-[http://remotetest.unidata.ucar.edu]HTTP.VERBOSE=0
+[fake.ucar.edu:9090]HTTP.VERBOSE=0
 </pre>
 If the url request from, say, the <i>oc_open</i> method
-starts with one of the prefixes in the rc file, then
+has a host+port matchine one of the prefixes in the rc file, then
 the corresponding entry will be used, otherwise ignored.
-If multiple prefixes match, then the longest match will be used.
 <p>
 For example, the URL
 <pre>
 http://remotetest.unidata.ucar.edu/thredds/dodsC/testdata/testData.nc
 </pre>
-will have HTTP.VERBOSE set to 1 because 
-<pre>
-http://remotetest.unidata.ucar.edu/thredds/dodsC
-</pre>
-is a prefix of our url passed to <i>oc_open</i>.
+will have HTTP.VERBOSE set to 1.
 <p>
 Similarly, 
 <pre>
-http://remotetest.unidata.ucar.edu/dts/test.01
+http://fake.ucar.edu:9090/dts/test.01
 </pre>
 will have HTTP.VERBOSE set to 0.
 
 <h2 class="break"><a name="CLIENTCERTS"><u>Client-Side Certificates</u></a></h2> 
 Some systems, notably ESG (Earth System Grid), requires
 the use of client-side certificates.
-This reqires setting the following entries:
+This requires setting the following entries:
 <pre>
     HTTP.SSL.VALIDATE
     HTTP.COOKIEJAR
@@ -196,22 +241,21 @@ be the path to a "certificates" directory.
 For completeness, this is the list of all rc-file keys.
 <table>
 <tr><th>Key<th>curl_easy_setopt Option
-<tr><td>HTTP.DEFLATE<td>CUROPT_DEFLATE with value "deflate,gzip"
+<tr valign="top"><td>HTTP.DEFLATE<td>CUROPT_DEFLATE<br>with value "deflate,gzip"
 <tr><td>HTTP.VERBOSE <td>CUROPT_VERBOSE 
 <tr><td>HTTP.TIMEOUT<td>CUROPT_TIMEOUT
 <tr><td>HTTP.USERAGENT<td>CUROPT_USERAGENT
 <tr><td>HTTP.COOKIEJAR<td>CUROPT_COOKIEJAR
 <tr><td>HTTP.COOKIE_JAR<td>CUROPT_COOKIEJAR
-<tr><td>HTTP.PROXY_SERVER<td>CURLOPT_PROXY, CURLOPT_PROXYPORT, CURLOPT_PROXYUSERPWD
+<tr valign="top"><td>HTTP.PROXY_SERVER<td>CURLOPT_PROXY,<br>CURLOPT_PROXYPORT,<br>CURLOPT_PROXYUSERPWD
 <tr><td>HTTP.SSL.CERTIFICATE<td>CUROPT_SSLCERT
 <tr><td>HTTP.SSL.KEY<td>CUROPT_SSLKEY
 <tr><td>HTTP.SSL.KEYPASSWORD<td>CUROPT_KEYPASSWORD
 <tr><td>HTTP.SSL.CAINFO<td>CUROPT_SSLCAINFO
 <tr><td>HTTP.SSL.CAPATH<td>CUROPT_SSLCAPATH
 <tr><td>HTTP.SSL.VERIFYPEER<td>CUROPT_SSL_VERIFYPEER
-<tr><td>HTTP.CREDENTIALS.USER<td>CUROPT_USERPASSWORD
-<tr><td>HTTP.CREDENTIALS.PASSWORD<td>CUROPT_USERPASSWORD
 <tr><td>HTTP.CREDENTIALS.USERPASSWORD<td>CUROPT_USERPASSWORD
+</table>
 </ul>
 
 <h5 class="break"><a name="ESGDETAIL"><u>Appendix B. ESG Access in Detail</u></a></h5> 

@@ -1,11 +1,11 @@
-/* Copyright 2009, UCAR/Unidata and OPeNDAP, Inc.
+/* Copyright 2014, UCAR/Unidata and OPeNDAP, Inc.
    See the COPYRIGHT dap for more information. */
 
 /*
 OC External Interface
 Created: 4/4/2009
-Last Revised: 6/7/2012
-Version: 2.0
+Last Revised: 12/23/2014
+Version: 2.1
 */
 
 #ifndef OC_H
@@ -213,7 +213,7 @@ extern OCerror oc_close(OClink);
 /* Tree Management */
 
 extern OCerror oc_fetch(OClink,
-			const char* constraints,
+			const char* constraint,
 			OCdxd,
 			OCflags,
 			OCddsnode*);

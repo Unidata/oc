@@ -87,21 +87,24 @@ struct OCX {
 
 /* Define the other options */
 static struct OCOPT {
+    char*   surl; /* full url string */
+    OCURI*  url;
     struct OCD debug;
     struct OCX x;
     int     showattributes; /* -A */
-    char*   constraint;	    /* -C */
     int     logging;	    /* -L */
     char*   netrc ;	    /* -N */
     char*   rcfile ;	    /* -R */
     int     selfsigned ;    /* -S */
     int     octest; 	    /* -T */ /* match original octest output */
-    OClist* userparams;	    /* -U */
     int     generate;	    /* -g|-G */
     int     optdas;	    /* -p */
     int     optdatadds;	    /* -p */
     int     optdds;	    /* -p */
     FILE*   output;         /* -o */
+    /* Deprecated */
+    char*   constraint;	    /* -C */
+    OCbytes* userparams;    /* -U */
 } ocopt;
 
 static char blanks[2048];
@@ -151,7 +154,6 @@ static void printstack(char* msg);
 
 static char* optionmsg =
 " [-A]"
-" [-C <constraint>]"
 " [-D <debugarg>]"
 " [-G]"
 " [-L]"
@@ -159,27 +161,25 @@ static char* optionmsg =
 " [-S]"
 " [-R <rcfile>]"
 " [-T]"
-" [-U <userparam>]"
+" [-h]"
 " [-o <file|->]"
 " [-p das|dds|datadds]"
 " <url>";
 
 static OCflags ocflags;
-static char*   urlsrc;  	/* <url> */
 
 static void
 init()
 {
     memset(&ocopt,0,sizeof(ocopt));
     ocopt.generate = 1;             /* -G|-g */
-    ocopt.userparams = oclistnew(); /* -U */
+    ocopt.userparams = ocbytesnew(); /* -U */
 }
 
 int
 main(int argc, char **argv)
 {
     int c;
-    OCURI* tmpurl;
     char* suffix;
 
 #ifdef OCDEBUG
@@ -195,7 +195,7 @@ main(int argc, char **argv)
 
     opterr = 1;
 
-    while ((c = getopt(argc, argv, "AC:D:GLN:R:STU:X:ho:p:")) != EOF) {
+    while ((c = getopt(argc, argv, "AC:D:GLN:R:STU:X:ho:u:f:p:")) != EOF) {
         switch (c) {
 	case 'A': ocopt.showattributes = 1; break;
 	case 'C': ocopt.constraint = nulldup(optarg); break;
@@ -205,7 +205,12 @@ main(int argc, char **argv)
 	case 'R': ocopt.rcfile = nulldup(optarg); break;
         case 'S': ocopt.selfsigned = 1; break;
         case 'T': ocopt.octest = 1; break;
-	case 'U': oclistpush(ocopt.userparams,(void*)nulldup(optarg)); break;
+	case 'U':
+	    if(optarg != NULL) {
+		ocbytesappend(ocopt.userparams,';');
+		ocbytescat(ocopt.userparams,optarg);
+	    }
+	    break;
         case 'D': {
 	    int c0;
 	    if(strlen(optarg) == 0) usage("missing -D argument");
@@ -241,6 +246,10 @@ main(int argc, char **argv)
 		usage("-o file not writeable");
 	    break;	    
 
+	case 'u': case 'f':
+	    ocopt.surl = optarg;
+	    break;	    
+
 	case 'p':
 	    if(strcasecmp(optarg,"das")==0) ocopt.optdas=1;
 	    else if(strcasecmp(optarg,"dds")==0) ocopt.optdds=1;
@@ -273,25 +282,28 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    if (argc > 0 && urlsrc == NULL) {
-        urlsrc = nulldup(argv[argc - 1]);
+    if (argc > 0 && ocopt.surl== NULL) {
+        ocopt.surl = nulldup(argv[argc - 1]);
+    } else
+        usage("Multiple urls specified");
+
+    if (ocopt.surl == NULL)
+        ocopt.surl = getenv("URLSRC");
+
+    if (ocopt.surl == NULL) {
+        usage("no source url specified\n");
     }
 
-    if (urlsrc == NULL)
-        urlsrc = getenv("URLSRC");
-
-    if (urlsrc == NULL) {
-        usage("no source url specified\n");
+    /* Compile the url */
+    if(!ocuriparse(ocopt.surl,&ocopt.url)) {
+	fprintf(stderr,"malformed source url: %s\n",ocopt.surl);
+	exit(1);
     }
 
     /* For convenience, see if the url has a trailing .dds, .das, or .dods
        and if so, use it
     */
-    if(!ocuriparse(urlsrc,&tmpurl)) {
-	fprintf(stderr,"malformed source url: %s\n",urlsrc);
-	exit(1);
-    }
-    suffix = strrchr(tmpurl->file,'.');
+    suffix = strrchr(ocopt.url->file,'.');
     if(suffix != NULL) {
 	int match = 0;
 	if(strcmp(suffix,".das")==0) {
@@ -310,14 +322,35 @@ main(int argc, char **argv)
 	    ocopt.optdatadds = 1;
 	    match = 1;
 	}
-	/* Reassemble minus the suffix */
-	if(match) {
+	/* Remove the suffix */
+	if(match)
 	    *suffix = '\0';
-	    urlsrc = ocuribuild(tmpurl,NULL,NULL,
-					OCURICONSTRAINTS|OCURIUSERPWD|OCURIENCODE);
-	}
     }
-    ocurifree(tmpurl);
+
+    /* If -C was specified, then it has precedence */
+    if(ocopt.constraint != NULL) {
+	ocopt.url->constraint = ocopt.constraint;
+	ocopt.constraint = NULL;
+    }        
+    /* If -U was used, then it added to anything in the URL */
+    if(ocbyteslength(ocopt.userparams) > 0) {
+	OCbytes* buf = ocbytesnew();
+	if(ocopt.url->params != NULL) {
+	    ocbytescat(buf,ocopt.url->params);
+	    if(ocbyteslength(ocopt.userparams) > 0)
+	        ocbytescat(buf,ocbytescontents(ocopt.userparams));
+	}
+	ocopt.url->params = ocbytesdup(buf);
+    }
+    /* Rebuild the url string */
+    if(ocopt.surl != NULL) free(ocopt.surl);
+    ocopt.surl = ocuribuild(ocopt.url,NULL,NULL,OCURIALL);
+
+    /* Reparse */
+    if(!ocuriparse(ocopt.surl,&ocopt.url)) {
+	fprintf(stderr,"malformed source url: %s\n",ocopt.surl);
+	exit(1);
+    }
 
     if(ocopt.rcfile != NULL)
 	oc_set_rcfile(ocopt.rcfile);
@@ -333,8 +366,8 @@ main(int argc, char **argv)
 static void
 dumpflags(void)
 {
+    char* tmp;
     if(ocopt.showattributes) fprintf(stderr," -A");
-    if(ocopt.constraint) fprintf(stderr," -C %s",ocopt.constraint);
     if(ocopt.debug.debug) fprintf(stderr," -D%d",ocopt.debug.debuglevel);
     if(ocopt.debug.dumpdds) fprintf(stderr," -DN");
     if(ocopt.debug.dumpdatatree) fprintf(stderr," -DD");
@@ -344,20 +377,15 @@ dumpflags(void)
     if(ocopt.logging) fprintf(stderr," -L");
     if(ocopt.logging) fprintf(stderr," -N %s",ocopt.netrc);
     if(ocopt.logging) fprintf(stderr," -R %s",ocopt.rcfile);
-    if(oclistlength(ocopt.userparams) > 0) {
-	unsigned int i;
-	fprintf(stderr," -U");
-	for(i=0;i<oclistlength(ocopt.userparams);i++) {
-	    fprintf(stderr," %s",(char*)oclistget(ocopt.userparams,i));
-	}
-    }
     if(ocopt.optdas || ocopt.optdds || ocopt.optdatadds) {
 	fprintf(stderr," -p");
 	if(ocopt.optdas) fprintf(stderr," das");
 	if(ocopt.optdds) fprintf(stderr," dds");
 	if(ocopt.optdatadds) fprintf(stderr," datadds");
     }
-    fprintf(stderr,"-f %s\n",urlsrc);
+    tmp = ocuribuild(ocopt.url,NULL,NULL,OCURIALL);
+    fprintf(stderr,"%s\n",tmp);
+    free(tmp);
 }
 
 static void
@@ -393,8 +421,7 @@ processdata(OCflags flags)
     OCddsnode dasroot, ddsroot, dataddsroot;
     OCdatanode rootdatanode;
 
-    totalurl = nulldup(urlsrc);
-
+    totalurl = ocuribuild(ocopt.url,NULL,NULL,OCURIALL);
     FAIL(oc_open(totalurl,&link));
     free(totalurl);
     glink = link;
@@ -409,7 +436,7 @@ processdata(OCflags flags)
 	oc_set_curlopt(link,"CURLOPT_VERIFYPEER", (void*)0L);
 
     if(ocopt.optdas) {
-        ocstat = oc_fetch(link,ocopt.constraint,OCDAS,0,&dasroot);
+        ocstat = oc_fetch(link,ocopt.url->constraint,OCDAS,0,&dasroot);
         if(ocstat != OC_NOERR) {
             fprintf(stderr,"error status returned: (%d) %s\n",ocstat,oc_errstring(ocstat));
             fprintf(stderr,"Could not read DAS; continuing.\n");
@@ -427,14 +454,14 @@ processdata(OCflags flags)
     fflush(ocopt.output);
 
     if(ocopt.optdds) {
-        ocstat = oc_fetch(link,ocopt.constraint,OCDDS,flags,&ddsroot);
+        ocstat = oc_fetch(link,ocopt.url->constraint,OCDDS,flags,&ddsroot);
         if(ocstat != OC_NOERR) {
             fprintf(stderr,"error status returned: (%d) %s\n",ocstat,oc_errstring(ocstat));
             fprintf(stderr,"Could not read DDS; continuing.\n");
             ocopt.optdds = 0;
         } else {
             if(ocopt.showattributes && !ocopt.optdas) {
-                FAIL(oc_fetch(link,ocopt.constraint,OCDAS,flags,&dasroot));
+                FAIL(oc_fetch(link,ocopt.url->constraint,OCDAS,flags,&dasroot));
             }
             if(ocopt.showattributes || ocopt.optdas) {
                 FAIL(oc_merge_das(link,dasroot,ddsroot));
@@ -455,12 +482,12 @@ processdata(OCflags flags)
     fflush(ocopt.output);
 
     if(ocopt.optdatadds) {
-        ocstat = oc_fetch(link,ocopt.constraint,OCDATADDS,flags,&dataddsroot);
+        ocstat = oc_fetch(link,ocopt.url->constraint,OCDATADDS,flags,&dataddsroot);
         if(ocstat) {
-            if(ocopt.constraint)
-                fprintf(stderr,"Cannot read DATADDS: %s?%s\n",urlsrc,ocopt.constraint);
+            if(ocopt.url->constraint)
+                fprintf(stderr,"Cannot read DATADDS: %s\n",ocopt.surl);
             else
-                fprintf(stderr,"Cannot read DATADDS: %s\n",urlsrc);
+                fprintf(stderr,"Cannot read DATADDS: %s\n",ocopt.surl);
             exit(1);
         }
         if(ocopt.debug.dumpdds)

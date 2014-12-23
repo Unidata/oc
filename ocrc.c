@@ -59,6 +59,27 @@ ocextract_credentials(const char *url, char **userpwd, char **result_url)
     return OC_NOERR;
 }
 
+char*
+occombinehostport(const OCURI* uri)
+{
+    char* hp;
+    int len;
+
+    if(uri->host == NULL)
+	return NULL;
+    else
+	len += strlen(uri->host);
+    if(uri->port != NULL)
+	len += strlen(uri->port);
+    hp = (char*)malloc(len+1);
+    if(hp == NULL)
+	return NULL;
+    if(uri->port == NULL)
+        occopycat(hp,len+1,1,uri->host);
+    else
+        occopycat(hp,len+1,3,uri->host,":",uri->port);
+    return hp;  
+}
 
 static char*
 combinecredentials(const char* user, const char* pwd)
@@ -217,9 +238,9 @@ sorttriplestore(struct OCTriplestore* store)
         OCASSERT(store->triples[largest].key[0] != '\0');
         for(i=0;i<store->ntriples;i++) {
             if(store->triples[i].key[0] != '\0') { /* avoid empty slots */
-                int lexorder = strcmp(store->triples[i].url,store->triples[largest].url);
-                int leni = strlen(store->triples[i].url);
-                int lenlarge = strlen(store->triples[largest].url);
+                int lexorder = strcmp(store->triples[i].host,store->triples[largest].host);
+                int leni = strlen(store->triples[i].host);
+                int lenlarge = strlen(store->triples[largest].host);
                 /* this defines the ordering */
                 if(leni == 0 && lenlarge == 0) continue; /* if no urls, then leave in order */
                 if(leni != 0 && lenlarge == 0) largest = i;
@@ -279,10 +300,11 @@ ocrc_compile(const char* path)
             return 0;
         }               
         /* setup */
-        ocrc->triples[ocrc->ntriples].url[0] = '\0';
+        ocrc->triples[ocrc->ntriples].host[0] = '\0';
         ocrc->triples[ocrc->ntriples].key[0] = '\0';
         ocrc->triples[ocrc->ntriples].value[0] = '\0';
         if(line[0] == LTAG) {
+	    OCURI* uri;
             char* url = ++line;
             char* rtag = strchr(line,RTAG);
             if(rtag == NULL) {
@@ -291,9 +313,17 @@ ocrc_compile(const char* path)
             }       
             line = rtag + 1;
             *rtag = '\0';
-            /* save the url */
-            strncpy(ocrc->triples[ocrc->ntriples].url,url,MAXRCLINESIZE);
-            rctrim(ocrc->triples[ocrc->ntriples].url);
+            /* compile the url and pull out the host */
+	    if(!ocuriparse(url,&uri)) {
+                oclog(OCLOGERR, "Malformed [url] in %s entry: %s",path,line);
+		continue;
+	    }	    	    
+            strncpy(ocrc->triples[ocrc->ntriples].host,uri->host,MAXRCLINESIZE-1);
+	    if(uri->port != NULL) {
+                strncat(ocrc->triples[ocrc->ntriples].host,":",MAXRCLINESIZE-1);		
+                strncat(ocrc->triples[ocrc->ntriples].host,uri->port,MAXRCLINESIZE-1);
+	    }
+	    ocurifree(uri);
         }
         /* split off key and value */
         key=line;
@@ -369,34 +399,37 @@ ocrc_process(OCstate* state)
 {
     int stat = 0;
     char* value = NULL;
-    char* url;
+    OCURI* uri = state->uri;
     char* url_userpwd = NULL;
+    char* url_hostport = NULL;
 
     if(!ocglobalstate.initialized)
 	ocinternalinitialize();    
     if(!ocglobalstate.rc.loaded)
 	ocrc_load();    
 
-    url_userpwd = state->uri->userpwd;
-    url = ocuribuild(state->uri,NULL,NULL,OCURIENCODE);
+    url_userpwd = uri->userpwd;
+    url_hostport = occombinehostport(uri);
+    if(url_hostport == NULL)
+	return OC_ENOMEM;
 
-    value = ocrc_lookup("HTTP.DEFLATE",url);
+    value = ocrc_lookup("HTTP.DEFLATE",url_hostport);
     if(value != NULL) {
         if(atoi(value)) state->curlflags.compress = 1;
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.DEFLATE: %ld", state->curlflags.compress);
     }
-    if((value = ocrc_lookup("HTTP.VERBOSE",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.VERBOSE",url_hostport)) != NULL) {
         if(atoi(value)) state->curlflags.verbose = 1;
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.VERBOSE: %ld", state->curlflags.verbose);
     }
-    if((value = ocrc_lookup("HTTP.TIMEOUT",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.TIMEOUT",url_hostport)) != NULL) {
         if(atoi(value)) state->curlflags.timeout = atoi(value);
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.TIMEOUT: %ld", state->curlflags.timeout);
     }
-    if((value = ocrc_lookup("HTTP.USERAGENT",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.USERAGENT",url_hostport)) != NULL) {
         if(atoi(value)) state->curlflags.useragent = strdup(value);
         if(state->curlflags.useragent == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
@@ -404,10 +437,10 @@ ocrc_process(OCstate* state)
     }
 
     if(
-          (value = ocrc_lookup("HTTP.COOKIEFILE",url))
-       || (value = ocrc_lookup("HTTP.COOKIE_FILE",url))
-       || (value = ocrc_lookup("HTTP.COOKIEJAR",url))
-       || (value = ocrc_lookup("HTTP.COOKIE_JAR",url))
+          (value = ocrc_lookup("HTTP.COOKIEFILE",url_hostport))
+       || (value = ocrc_lookup("HTTP.COOKIE_FILE",url_hostport))
+       || (value = ocrc_lookup("HTTP.COOKIEJAR",url_hostport))
+       || (value = ocrc_lookup("HTTP.COOKIE_JAR",url_hostport))
       ) {
         state->curlflags.cookiejar = strdup(value);
         if(state->curlflags.cookiejar == NULL) {stat = OC_ENOMEM; goto done;}
@@ -415,14 +448,14 @@ ocrc_process(OCstate* state)
             oclog(OCLOGNOTE,"HTTP.COOKIEJAR: %s", state->curlflags.cookiejar);
     }
 
-    if((value = ocrc_lookup("HTTP.PROXY_SERVER",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.PROXY_SERVER",url_hostport)) != NULL) {
         stat = ocparseproxy(state,value);
         if(stat != OC_NOERR) goto done;
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.PROXY_SERVER: %s", value);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.VALIDATE",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.VALIDATE",url_hostport)) != NULL) {
         if(atoi(value)) {
 	    state->ssl.verifypeer = 1;
 	    state->ssl.verifyhost = 1;
@@ -431,42 +464,42 @@ ocrc_process(OCstate* state)
 	}
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.CERTIFICATE",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.CERTIFICATE",url_hostport)) != NULL) {
         state->ssl.certificate = strdup(value);
         if(state->ssl.certificate == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.SSL.CERTIFICATE: %s", state->ssl.certificate);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.KEY",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.KEY",url_hostport)) != NULL) {
         state->ssl.key = strdup(value);
         if(state->ssl.key == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.SSL.KEY: %s", state->ssl.key);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.KEYPASSWORD",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.KEYPASSWORD",url_hostport)) != NULL) {
         state->ssl.keypasswd = strdup(value);
         if(state->ssl.keypasswd == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.SSL.KEYPASSWORD: %s", state->ssl.keypasswd);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.CAINFO",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.CAINFO",url_hostport)) != NULL) {
         state->ssl.cainfo = strdup(value);
         if(state->ssl.cainfo == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.SSL.CAINFO: %s", state->ssl.cainfo);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.CAPATH",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.CAPATH",url_hostport)) != NULL) {
         state->ssl.capath = strdup(value);
         if(state->ssl.capath == NULL) {stat = OC_ENOMEM; goto done;}
         if(ocdebug > 0)
             oclog(OCLOGNOTE,"HTTP.SSL.CAPATH: %s", state->ssl.capath);
     }
 
-    if((value = ocrc_lookup("HTTP.SSL.VERIFYPEER",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.SSL.VERIFYPEER",url_hostport)) != NULL) {
         char* s = strdup(value);
         int tf = 0;
         if(s == NULL || strcmp(s,"0")==0 || strcasecmp(s,"false")==0)
@@ -481,7 +514,7 @@ ocrc_process(OCstate* state)
 	free(s);
     }
 
-    if((value = ocrc_lookup("HTTP.NETRC",url)) != NULL) {
+    if((value = ocrc_lookup("HTTP.NETRC",url_hostport)) != NULL) {
         if(state->curlflags.netrc != NULL)
 	    free(state->curlflags.netrc);
         state->curlflags.netrc = strdup(value);
@@ -498,9 +531,9 @@ ocrc_process(OCstate* state)
 	if(url_userpwd != NULL)
 	    userpwd = url_userpwd;
 	else { 	
-   	    user = ocrc_lookup("HTTP.CREDENTIALS.USER",url);
-	    pwd = ocrc_lookup("HTTP.CREDENTIALS.PASSWORD",url);
-	    userpwd = ocrc_lookup("HTTP.CREDENTIALS.USERPASSWORD",url);
+   	    user = ocrc_lookup("HTTP.CREDENTIALS.USER",url_hostport);
+	    pwd = ocrc_lookup("HTTP.CREDENTIALS.PASSWORD",url_hostport);
+	    userpwd = ocrc_lookup("HTTP.CREDENTIALS.USERPASSWORD",url_hostport);
 	}
 	if(userpwd == NULL && user != NULL && pwd != NULL) {
 	    userpwd = combinecredentials(user,pwd);			
@@ -510,12 +543,12 @@ ocrc_process(OCstate* state)
     }
 
 done:
-    if(url != NULL) free(url);
+    if(url_hostport != NULL) free(url_hostport);
     return stat;
 }
 
 static struct OCTriple*
-ocrc_locate(char* key, char* url)
+ocrc_locate(char* key, char* hostport)
 {
     int i,found;
     struct OCTriplestore* ocrc = &ocglobalstate.rc.ocrc;
@@ -527,27 +560,28 @@ ocrc_locate(char* key, char* url)
     triple = ocrc->triples;
 
     if(key == NULL || ocrc == NULL) return NULL;
-    if(url == NULL) url = "";
+    if(hostport == NULL) hostport = "";
     /* Assume that the triple store has been properly sorted */
     for(found=0,i=0;i<ocrc->ntriples;i++,triple++) {
-        size_t urllen = strlen(triple->url);
+        size_t hplen = strlen(triple->host);
         int t;
         if(strcmp(key,triple->key) != 0) continue; /* keys do not match */
-        /* If the triple entry has no url, then use it (because we have checked all other cases)*/
-        if(urllen == 0) {found=1;break;}
-        /* do url prefix comparison */
-        t = ocstrncmp(url,triple->url,urllen);
+        /* If the triple entry has no url, then use it
+           (because we have checked all other cases)*/
+        if(hplen == 0) {found=1;break;}
+        /* do hostport match */
+        t = strcmp(hostport,triple->host);
         if(t ==  0) {found=1; break;}
     }
     return (found?triple:NULL);
 }
 
 char*
-ocrc_lookup(char* key, char* url)
+ocrc_lookup(char* key, char* hostport)
 {
-    struct OCTriple* triple = ocrc_locate(key,url);
+    struct OCTriple* triple = ocrc_locate(key,hostport);
     if(triple != NULL && ocdebug > 2) {
-	fprintf(stderr,"lookup %s: [%s]%s = %s\n",url,triple->url,triple->key,triple->value);
+	fprintf(stderr,"lookup %s: [%s]%s = %s\n",hostport,triple->host,triple->key,triple->value);
     }    
     return (triple == NULL ? NULL : triple->value);
 }
@@ -568,7 +602,7 @@ storedump(char* msg, struct OCTriple* triples, int ntriples)
     if(ntriples < 0 ) ntriples= ocrc->ntriples;
     for(i=0;i<ntriples;i++) {
         fprintf(stderr,"\t%s\t%s\t%s\n",
-                (strlen(triples[i].url)==0?"--":triples[i].url),
+                (strlen(triples[i].host)==0?"--":triples[i].host),
                 triples[i].key,
                 triples[i].value);
     }
@@ -694,7 +728,7 @@ ocrc_triple_iterate(char* key, char* url, struct OCTriple* prev)
 	int cmp = strcmp(key,next->key);
 	if(cmp != 0) {next = NULL; break;} /* key mismatch */
 	/* compare url */
-        cmp = ocstrncmp(url,next->url,strlen(next->url));
+        cmp = ocstrncmp(url,next->host,strlen(next->host));
         if(cmp ==  0) break; 
     }
     return next;

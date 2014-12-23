@@ -147,7 +147,7 @@ struct OCCURLFLAG {
 struct OCTriplestore {
     int ntriples;
     struct OCTriple {
-        char url[MAXRCLINESIZE];
+        char host[MAXRCLINESIZE]; /* includes port if specified */
         char key[MAXRCLINESIZE];
         char value[MAXRCLINESIZE];
    } triples[MAXRCLINES];

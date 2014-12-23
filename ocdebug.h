@@ -5,7 +5,7 @@
 #define OCOCDBG_H
 
 #ifndef OCDEBUG
-#define OCDEBUG
+#undef OCDEBUG
 #endif
 
 #include "config.h"
