@@ -448,7 +448,7 @@ oc_dds_ithfield(OCobject link, OCobject ddsnode, size_t index, OCobject* fieldno
     OCVERIFY(OC_Node,ddsnode);
     OCDEREF(OCnode*,node,ddsnode);
 
-    if(!iscontainer(node->octype))
+    if(!ociscontainer(node->octype))
 	return OCTHROW(OC_EBADTYPE);
 
     if(index >= oclistlength(node->subnodes))
@@ -541,7 +541,7 @@ oc_dds_fieldbyname(OCobject link, OCobject ddsnode, const char* name, OCobject* 
     OCVERIFY(OC_Node,ddsnode);
     OCDEREF(OCnode*,node,ddsnode);
 
-    if(!iscontainer(node->octype))
+    if(!ociscontainer(node->octype))
 	return OCTHROW(OC_EBADTYPE);
 
     /* Search the fields to find a name match */

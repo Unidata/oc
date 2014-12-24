@@ -4,7 +4,8 @@
 #include "config.h"
 #include "ocinternal.h"
 #include "ocdebug.h"
-#include "occurlfunctions.h"
+#include "occurlfunctions."h
+#include "occurlfunctions."h
 
 #define OC_MAX_REDIRECTS 20L
 

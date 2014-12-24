@@ -17,6 +17,7 @@
 #include <curl/curl.h>
 
 #include "oc.h"
+#include "ocinternal.h"
 
 
 /* OCCATCHERROR is used to detect errors as close
@@ -84,7 +85,7 @@ extern void  ocfree(void*);
 #ifdef OCCATCHERROR
 extern OCerror ocbreakpoint(OCerror err);
 extern OCerror occatch(OCerror err);
-extern CURLcode ocreportcurlerror(OCstate* state, CURLcode cstat);
+extern CURLcode ocreportcurlerror(struct OCstate* state, CURLcode cstat);
 /* Place breakpoint on ocbreakpoint to catch errors close to where they occur*/
 #define OCCATCH(e) occatch(e)
 #define OCCATCHCHK(e) (void)occatch(e)

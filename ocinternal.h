@@ -58,7 +58,9 @@
 
 #define OCPATHMAX 8192
 
+#ifndef nullfree
 #define nullfree(x) {if((x)!=NULL) free(x);}
+#endif
 
 /* Forwards */
 typedef struct OCstate OCstate;
