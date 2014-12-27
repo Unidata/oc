@@ -530,7 +530,7 @@ ENABLE_MAKEDIST(
 ##################################################
 ##################################################
 
-SET(liboc_SOURCES oc.c daplex.c dapparse.c daptab.c ocbytes.c occlientparams.c occompile.c occurlfunctions.c ocdata.c ocdebug.c ocdump.c ochttp.c ocinternal.c oclist.c oclog.c ocnode.c ocrc.c ocread.c ocuri.c ocutil.c xxdr.c)
+SET(liboc_SOURCES oc.c daplex.c dapparse.c daptab.c ocbytes.c occlientparams.c occompile.c occurlfunctions.c ocdata.c ocdebug.c ocdump.c ochttp.c ocinternal.c oclist.c oclog.c ocnode.c ocrc.c ocread.c ocuri.c ocutil.c occurlflags.c xxdr.c)
 
 add_library(oc ${LIB_TYPE} ${liboc_SOURCES}) 
 IF(MOD_OC_NAME)

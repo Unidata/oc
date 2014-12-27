@@ -609,7 +609,7 @@ ocset_curlproperties(OCstate* state)
 	stat = ocmktmp(tmp,&state->curlflags.cookiejar);
 	state->curlflags.createdflags |= COOKIECREATED;
     }
-    OCASSERT(state->curlflags.cookiejar == NULL || *state->curlflags.cookiejar == '\0');
+    OCASSERT(state->curlflags.cookiejar != NULL && *state->curlflags.cookiejar != '\0');
     
     /* Make sure the cookie jar exists and can be read and written */
     {

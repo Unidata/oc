@@ -148,3 +148,8 @@ at_dods_url_test(test.67)
 at_dods_url_test(test.68)
 at_dods_url_test(test.69)
 
+# Add .c tests
+ADD_EXECUTABLE(testurl testurl.c)
+TARGET_LINK_LIBRARIES(testurl oc)
+ADD_TEST(testurl ${EXECUTABLE_OUTPUT_PATH}/testurl)
+

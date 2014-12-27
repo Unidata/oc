@@ -63,7 +63,7 @@ char*
 occombinehostport(const OCURI* uri)
 {
     char* hp;
-    int len;
+    int len = 0;
 
     if(uri->host == NULL)
 	return NULL;

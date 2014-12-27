@@ -41,6 +41,10 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
 	} >'$(srcdir)/package.m4'
 
+testurl_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+testurl_SOURCES = testurl.c
+check_PROGRAMS += testurl
+TESTS += testurl
 
 # Add some extra specialized tests
 if ENABLE_AUTH_TESTS
