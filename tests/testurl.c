@@ -60,7 +60,6 @@ static int test(char* surl, Case which);
 int
 main(int argc, char** argv)
 {
-    int i;
     int pass = 1;
     size_t ulen;    
     Test* t;
