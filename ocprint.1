@@ -60,7 +60,9 @@ This should be a path to the netrc file, not the containing directory.
 .IP "\fB-R\fP"
 Specify the path to use to find the rc file.
 This should be a path to the rc file, not the containing directory.
-If not specified, then the search order is
+If the argument is "" (the empty string) or the string "NONE",
+then no rc file will be used.
+If not specified at all, then the search order is
 \fI./.ocrc\fP \fI~/.ocrc\fP,
 \fI./.dodsrc\fP \fI~/.dodsrc\fP.
 .IP "\fB-S\fP"

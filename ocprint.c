@@ -44,6 +44,8 @@
 
 #define isatomic(t) ((t) == OC_Atomic)
 
+#define NORC "NONE"
+
 #define LBRACE "{"
 #define RBRACE "}"
 
@@ -352,8 +354,11 @@ main(int argc, char **argv)
 	exit(1);
     }
 
-    if(ocopt.rcfile != NULL)
+    if(ocopt.rcfile != NULL) {
+        if(strlen(ocopt.rcfile) == 0 || strcmp(NORC,ocopt.rcfile)==0)
+	    {free(ocopt.rcfile); ocopt.rcfile = NULL;}
 	oc_set_rcfile(ocopt.rcfile);
+    }
 
     if (ocopt.debug.verbose)
         dumpflags();

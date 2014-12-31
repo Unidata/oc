@@ -14,9 +14,13 @@ NFL=1
 
 WD=`pwd`
 
-NETRCFILE=$WD/netrc
+NETRCFILE=$WD/test_auth_netrc
 # This is the control variable
 NETRC=$NETRCFILE
+
+COOKIES="${WD}/test_auth_cookies"
+
+RC=.ocrc
 
 OCLOGFILE=stderr
 if test "x$DBG" = x1 ; then
@@ -28,8 +32,6 @@ fi
 BASICCOMBO="tiggeUser:tigge"
 URLSERVER="remotetest.unidata.ucar.edu"
 URLPATH="thredds/dodsC/restrict/testData.nc"
-
-COOKIES="${WD}/cookies"
 
 # See if we need to override
 if test "x$URS" != "x" ; then
@@ -64,8 +66,6 @@ OUTPUT="-o /dev/null"
 else
 OUTPUT=
 fi
-
-RC=.ocrc
 
 LOCALRC=./$RC
 HOMERC=${HOME}/$RC
@@ -112,7 +112,7 @@ fi
 }
 
 function reset {
-rm -f ./.ocrc ./.dodsrc $HOME/.ocrc $HOME/.dodsrc $SPECRC $COOKIES $NETRC
+rm -f ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC
 }
 
 # Assemble the ocprint command
@@ -140,8 +140,8 @@ if test "x$NOEMBED" != x1 ; then
 echo "***Testing rc file with embedded user:pwd"
 URL="https://${BASICCOMBO}@${URLSERVER}/$URLPATH"
 # Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
-${OCPRINT} -p dds ${OUTPUT} "$URL"
+echo "command: ${OCPRINT} -R NONE -p dds ${OUTPUT} $URL"
+${OCPRINT} -R NONE -p dds ${OUTPUT} "$URL"
 fi
 
 
