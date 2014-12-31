@@ -68,14 +68,12 @@ pkginclude_HEADERS = oc.h
 		ocread.h ocuri.h ocutil.h xxdr.h \
 		config.h
 
-EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README
+EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README.md
 EXTRA_DIST += dap.y
 EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
 EXTRA_DIST += ocprint.1
 EXTRA_DIST += CMakeLists.txt
-EXTRA_DIST += occurlflags.c.in
-EXTRA_DIST += makeflags.sh
 
 EXTRA_DIST += docs
 
@@ -188,11 +186,3 @@ alldocs: cleandocs
 
 cleandocs::
 	rm -fr docs/html/*
-
-
-# This rule is used when someone wants to rebuild occurlflags.c,
-# typically when a new version of curl adds curl_easy_setopt flags.
-# Otherwise it is never invoked, but records how to do it.
-
-makeflags::
-	bash makeflags.sh

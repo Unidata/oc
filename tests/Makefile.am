@@ -1,10 +1,13 @@
+# Put together AM_CPPFLAGS and AM_LDFLAGS.
 
-AUTOM4TE = autom4te
+AM_CPPFLAGS = -I$(top_srcdir)
+AM_LDFLAGS = 
 
 check_PROGRAMS =
 TESTS =
 
 EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh testauth1.sh
+
 TESTSUITE = $(srcdir)/OCTest
 
 check-local: atconfig atlocal $(TESTSUITE)

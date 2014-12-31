@@ -183,8 +183,4 @@ ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
 #cleanup
-#reset
-
-#
-# URS
-#[https://uat.urs.earthdata.nasa.gov]HTTP.CREDENTIALS.USER=ndp_opendap
+reset

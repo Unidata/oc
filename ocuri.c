@@ -13,7 +13,7 @@
 #include "oc.h"
 #include "ocuri.h"
 
-#define OCURIDEBUG
+#undef OCURIDEBUG
 
 #ifdef OCURIDEBUG
 static int failpoint = 0;
