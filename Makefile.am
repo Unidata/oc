@@ -74,6 +74,7 @@ EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
 EXTRA_DIST += ocprint.1
 EXTRA_DIST += CMakeLists.txt
+EXTRA_DIST += makeparser.sh
 
 EXTRA_DIST += docs
 
@@ -105,9 +106,7 @@ ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 
 # Generate daptab.c and daptab.h from dap.y
 parser::
-	rm -f dap.tab.c dap.tab.h	
-	bison --debug -d -p dap dap.y
-	mv dap.tab.c daptab.c; mv dap.tab.h daptab.h
+	sh ./makeparser.sh
 
 ###########################################################################
 
