@@ -666,7 +666,6 @@ done:
     if(path != NULL)
 	free(path);
     return stat;
->>>>>>> 4bcf90c7c8e9263453b469cc358b3f5a7af84d3a
 }
 #endif
 
