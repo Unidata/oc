@@ -87,6 +87,7 @@ cd ${builddir}
 function createrc {
 if test "x$1" != x ; then
 RCP=$1
+
 rm -f $RCP
 echo "Creating rc file $RCP"
 if test "x${DBG}" != x ; then
@@ -112,7 +113,26 @@ fi
 }
 
 function reset {
-rm -f ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+    rm -f ${f}
+    if test -f ${f}.save ; then
+      echo "restoring old ${f}"
+      cp ${f}.save ${f}
+    fi      
+  done      
+}
+
+function save {
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+    if test -f $f ; then
+      if test -f ${f}.save ; then
+        ignore=1
+      else
+        echo "saving $f"
+        cp ${f} ${f}.save
+      fi
+    fi      
+  done      
 }
 
 # Assemble the ocprint command
@@ -134,6 +154,7 @@ fi
 
 
 # Initialize
+save
 reset
 
 if test "x$NOEMBED" != x1 ; then
