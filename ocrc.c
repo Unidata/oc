@@ -626,9 +626,6 @@ ocrc_lookup(char* suffix, char* url)
 	if(value != NULL)
 	    return value;
     }
-<<<<<<< HEAD
-    return NULL;
-=======
     return value;
 }
 
