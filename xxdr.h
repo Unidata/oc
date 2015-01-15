@@ -116,17 +116,17 @@ typedef struct XXDR XXDR; /* forward */
 /* Assume |off_t| == |void*| */
 struct XXDR {
   char* data;
-  off_t pos; /* relative to data;
-                 may be a cache of underlying stream pos */
-  int valid;         /* 1=>underlying stream pos == pos */
-  off_t base; /* beginning of data in case bod != 0*/
+  off_t pos;    /* relative to data;
+                   may be a cache of underlying stream pos */
+  int valid;    /* 1=>underlying stream pos == pos */
+  off_t base;   /* beginning of data in case bod != 0*/
   off_t length; /* total size of available data (relative to base)*/
   /* Define minimum needed case specific operators */
   int (*getbytes)(XXDR*,char*,off_t);
   int (*setpos)(XXDR*,off_t);
   off_t (*getpos)(XXDR*);
   off_t (*getavail)(XXDR*);
-  void (*free)(XXDR*);		  /* xdr kind specific free function */
+  void (*free)(XXDR*); /* xdr kind specific free function */
 };
 
 /* Track network order */
@@ -150,7 +150,7 @@ extern int xxdr_ushort(XXDR* , unsigned short*);
 extern int xxdr_uint(XXDR* , unsigned int*);
 
 /* get an int from underlying stream*/
-extern int xxdr_ulonglong(XXDR* , unsigned long*);
+extern int xxdr_ulonglong(XXDR* , unsigned long long*);
 
 /* get a float from underlying stream*/
 extern int xxdr_float(XXDR* , float*);

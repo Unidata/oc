@@ -146,12 +146,9 @@ OCPRINT="$OCPRINT -N $NETRC"
 fi
 fi
 
-
-
 if test "x$GDB" = x1 ; then
 OCPRINT="gdb --args $OCPRINT -D1"
 fi
-
 
 # Initialize
 save

@@ -69,9 +69,9 @@ ocinternalinitialize(void)
 {
     int stat = OC_NOERR;
 
-    if(sizeof(long) != sizeof(void*)) {
-	fprintf(stderr,"OC depends on the assumption that sizeof(long) == sizeof(void*)\n");
-	OCASSERT(sizeof(long) == sizeof(void*));
+    if(sizeof(off_t) != sizeof(void*)) {
+	fprintf(stderr,"OC xxdr depends on the assumption that sizeof(off_t) == sizeof(void*)\n");
+	OCASSERT(sizeof(off_t) == sizeof(void*));
     }
 
     if(!ocglobalstate.initialized) {
@@ -605,7 +605,11 @@ ocset_curlproperties(OCstate* state)
 	char tmp[OCPATHMAX+1];
         int stat;
 	snprintf(tmp,sizeof(tmp)-1,"%s/%s/",ocglobalstate.tempdir,OCDIR);
+#ifdef _MSC_VER
+	stat = mkdir(tmp);
+#else
 	stat = mkdir(tmp,S_IRUSR | S_IWUSR | S_IXUSR);
+#endif
 	if(stat != 0 && errno != EEXIST) {
 	    fprintf(stderr,"Cannot create cookie directory\n");
 	    goto fail;
