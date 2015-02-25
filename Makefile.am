@@ -56,7 +56,8 @@ ocutil.h ocutil.c \
 occurlflags.c \
 xxdr.h xxdr.c
 
-liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@
+# The -no-undefined is required to actually generate a .dll(.a) file
+liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@ -no-undefined
 
 pkginclude_HEADERS = oc.h
 

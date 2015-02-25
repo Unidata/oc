@@ -1,10 +1,9 @@
 #!/bin/bash
 #X="-x"
 #NB=1
+#DBG=1
 
 export PATH="/machine/dmh/bin:${PATH}"
-
-DBG=1
 
 # Use only if default is not correct
 #M32=1
