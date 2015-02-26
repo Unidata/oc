@@ -14,11 +14,11 @@ This has some similarities to OCNODE.
 struct OCdata {
     OCheader  header;
     OCDT      datamode;
-    OCnode*   template;
+    OCnode*   pattern;
     OCdata*   container; /* link back to container instance */
     size_t    index;     /* WRT to the container */
-    off_t     xdroffset;	/* Of this instance wrt xxdr_getpos() */
-    off_t     xdrsize;   /* for leafs, and as defined by xdr; if known else 0*/
+    off_t  xdroffset;	/* Of this instance wrt xxdr_getpos() */
+    off_t  xdrsize;   /* for leafs, and as defined by xdr; if known else 0*/
     size_t    ninstances;/* |instances| */
     OCdata**  instances;	/* vector of instances; if rank > 0, then
                                    it captures the array elements, else

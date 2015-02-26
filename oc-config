@@ -2,7 +2,7 @@
 #
 # Borrowed the idea for this script (and some code) from libcurl.
 #
-prefix="/usr/local"
+prefix="/tmp/blackbird"
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

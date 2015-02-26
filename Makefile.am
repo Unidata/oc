@@ -69,7 +69,7 @@ pkginclude_HEADERS = oc.h
 		ocread.h ocuri.h ocutil.h xxdr.h \
 		config.h
 
-EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README
+EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README.md
 EXTRA_DIST += dap.y
 EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
@@ -77,6 +77,7 @@ EXTRA_DIST += ocprint.1
 EXTRA_DIST += CMakeLists.txt
 EXTRA_DIST += occurlflags.c.in
 EXTRA_DIST += makeflags.sh
+EXTRA_DIST += makeparser.sh
 
 EXTRA_DIST += docs
 
@@ -108,9 +109,7 @@ ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 
 # Generate daptab.c and daptab.h from dap.y
 parser::
-	rm -f dap.tab.c dap.tab.h	
-	bison --debug -d -p dap dap.y
-	mv dap.tab.c daptab.c; mv dap.tab.h daptab.h
+	bash makeparser.sh
 
 ###########################################################################
 
