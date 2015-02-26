@@ -14,9 +14,13 @@ NFL=1
 
 WD=`pwd`
 
-NETRCFILE=$WD/netrc
+NETRCFILE=$WD/test_auth_netrc
 # This is the control variable
 NETRC=$NETRCFILE
+
+COOKIES="${WD}/test_auth_cookies"
+
+RC=.ocrc
 
 OCLOGFILE=stderr
 if test "x$DBG" = x1 ; then
@@ -28,8 +32,6 @@ fi
 BASICCOMBO="tiggeUser:tigge"
 URLSERVER="remotetest.unidata.ucar.edu"
 URLPATH="thredds/dodsC/restrict/testData.nc"
-
-COOKIES="${WD}/cookies"
 
 # See if we need to override
 if test "x$URS" != "x" ; then
@@ -65,8 +67,6 @@ else
 OUTPUT=
 fi
 
-RC=.ocrc
-
 LOCALRC=./$RC
 HOMERC=${HOME}/$RC
 HOMERC=`echo "$HOMERC" | sed -e "s|//|/|g"`
@@ -87,6 +87,7 @@ cd ${builddir}
 function createrc {
 if test "x$1" != x ; then
 RCP=$1
+
 rm -f $RCP
 echo "Creating rc file $RCP"
 if test "x${DBG}" != x ; then
@@ -112,7 +113,26 @@ fi
 }
 
 function reset {
-rm -f ./.ocrc ./.dodsrc $HOME/.ocrc $HOME/.dodsrc $SPECRC $COOKIES $NETRC
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+    rm -f ${f}
+    if test -f ${f}.save ; then
+      echo "restoring old ${f}"
+      cp ${f}.save ${f}
+    fi      
+  done      
+}
+
+function save {
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+    if test -f $f ; then
+      if test -f ${f}.save ; then
+        ignore=1
+      else
+        echo "saving $f"
+        cp ${f} ${f}.save
+      fi
+    fi      
+  done      
 }
 
 # Assemble the ocprint command
@@ -126,22 +146,20 @@ OCPRINT="$OCPRINT -N $NETRC"
 fi
 fi
 
-
-
 if test "x$GDB" = x1 ; then
 OCPRINT="gdb --args $OCPRINT -D1"
 fi
 
-
 # Initialize
+save
 reset
 
 if test "x$NOEMBED" != x1 ; then
 echo "***Testing rc file with embedded user:pwd"
 URL="https://${BASICCOMBO}@${URLSERVER}/$URLPATH"
 # Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
-${OCPRINT} -p dds ${OUTPUT} "$URL"
+echo "command: ${OCPRINT} -R NONE -p dds ${OUTPUT} $URL"
+${OCPRINT} -R NONE -p dds ${OUTPUT} "$URL"
 fi
 
 
@@ -183,8 +201,4 @@ ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
 #cleanup
-#reset
-
-#
-# URS
-#[https://uat.urs.earthdata.nasa.gov]HTTP.CREDENTIALS.USER=ndp_opendap
+reset

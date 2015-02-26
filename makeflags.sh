@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# THIS SCRIPT IS OBSOLETE SINCE WE NEVER NEED ALLFLAGS ANYMORE.
+
+# This rule is used when someone wants to rebuild occurlflags.c,
+# typically when a new version of curl adds curl_easy_setopt flags.
+# Otherwise it is never invoked, but records how to do it.
+
 T1=./tmp1
 T2=./tmp2
 rm -f occurlflags.c

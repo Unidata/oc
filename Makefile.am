@@ -188,11 +188,3 @@ alldocs: cleandocs
 
 cleandocs::
 	rm -fr docs/html/*
-
-
-# This rule is used when someone wants to rebuild occurlflags.c,
-# typically when a new version of curl adds curl_easy_setopt flags.
-# Otherwise it is never invoked, but records how to do it.
-
-makeflags::
-	bash makeflags.sh
