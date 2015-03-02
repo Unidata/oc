@@ -223,19 +223,18 @@ will have HTTP.VERBOSE set to 0.
 
 <h2 class="break"><a name="CLIENTCERTS"><u>Client-Side Certificates</u></a></h2> 
 Some systems, notably ESG (Earth System Grid), requires
-the use of client-side certificates.
+the use of client-side certificates, as well as being
+<a href="#REDIR">re-direction based</a>.
 This requires setting the following entries:
-<pre>
-    HTTP.SSL.VALIDATE
-    HTTP.COOKIEJAR
-    HTTP.SSL.CERTIFICATE
-    HTTP.SSL.KEY
-    HTTP.SSL.CAPATH
-</pre>
-As a rule,the HTTP>SSL.CERTIFICATE and HTTP.SSL.KEY
-entries should have the same value, which is the file path for the
-client side certificate. The HTTP.SSL.CAPATH entry should
-be the path to a "certificates" directory.
+<ul>
+<li>HTTP.COOKIEJAR &mdash; a file path for storing cookies across re-direction.
+<li>HTTP.NETRC &mdash; the path to the netrc file.
+<li>HTTP.SSL.CERTIFICATE &mdash; the file path for the client side certificate file.
+<li>HTTP.SSL.KEY &mdash; this should have the same value as HTTP.SSL.CERTIFICATE.
+<li>HTTP.SSL.CAPATH &mdash; the path to a "certificates" directory.
+<li>HTTP.SSL.VALIDATE &mdash; force validation of the server certificate.
+</ul>
+Note that the first two are to support re-direction based authentication.
 
 <h5 class="break"><a name="allkeys"><u>Appendix A. All RC-File Keys</u></a></h5> 
 For completeness, this is the list of all rc-file keys.
@@ -255,12 +254,14 @@ For completeness, this is the list of all rc-file keys.
 <tr><td>HTTP.SSL.CAPATH<td>CUROPT_SSLCAPATH
 <tr><td>HTTP.SSL.VERIFYPEER<td>CUROPT_SSL_VERIFYPEER
 <tr><td>HTTP.CREDENTIALS.USERPASSWORD<td>CUROPT_USERPASSWORD
+<tr><td>HTTP.NETRC<td>CURLOPT_NETRC,CURLOPT_NETRC_FILE
 </table>
 </ul>
 
 <h5 class="break"><a name="ESGDETAIL"><u>Appendix B. ESG Access in Detail</u></a></h5> 
 It is possible to access Earth Systems Grid (ESG) datasets
-from ESG servers through the OC API using the rc file.
+from ESG servers through the OC API using the techniques
+described in the section on <a href="#CLIENTCERTS">Client-Side Certificates</a>.
 <p>
 In order to access ESG datasets, however, it is necessary to
 register as a user with ESG and to setup your environment
@@ -274,11 +275,8 @@ With client-side keys, the client must also provide a
 certificate to the server so that the server can know with
 whom it is communicating.
 <p>
-It is possible to set up the oc library to use
-client-side keys, although the process is 
-somewhat complicated. The oc library
-uses the <i>curl</i> library and it is that underlying library
-that must be properly configured.
+The oc library uses the <i>curl</i> library and it is that
+underlying library that must be properly configured.
 
 <h3><u>Terminology</u></h3>
 The key elements for client-side keys requires the constructions of
@@ -297,8 +295,8 @@ need not be concerned with those.
 The first step is to obtain authorization from ESG.
 Note that this information may evolve over time, and
 may be out of date.
-This discussion is in terms of BADC ESG. You will need
-to substitute the ESG site for BADC in the following.
+This discussion is in terms of BADC and NCSA. You will need
+to substitute as necessary.
 <ol>
 <li> Register at http://badc.nerc.ac.uk/register
    to obtain access to badc and to obtain an openid,
@@ -346,23 +344,27 @@ named "truststore"
 
 <h3><u>Running the C Client</u></h3>
 
-The following keys must be set in the rc file to support
+Refer to the section on <a href="#CLIENTCERTS">Client-Side Certificates</a>.
+The keys specified there  must be set in the rc file to support
 ESG access.
 <ul>
+<li> HTTP.COOKIEJAR=~/.dods_cookies
+<li> HTTP.NETRC=~/.netrc
+<li> HTTP.SSL.CERTIFICATE=~/esgkeystore
+<li> HTTP.SSL.KEY=~/esgkeystore
+<li> HTTP.SSL.CAPATH=~/.globus
 <li> HTTP.SSL.VALIDATE=1
-<li> HTTP.COOKIEJAR=.dods_cookies
-<li> HTTP.SSL.CERTIFICATE=esgkeystore
-<li> HTTP.SSL.KEY=esgkeystore
-<li> HTTP.SSL.CAPATH=.globus
 </ul>
-For ESG, the HTTP.SSL.CERTIFICATE and HTTP.SSL.KEY
+Of course, the file paths above are suggestions only;
+you can modify as needed.
+The HTTP.SSL.CERTIFICATE and HTTP.SSL.KEY
 entries should have same value, which is the file path for the
 certificate produced by MyProxyLogon.  The HTTP.SSL.CAPATH entry
 should be the path to the "certificates" directory produced by
 MyProxyLogon.
 <p>
-As an aside, note that ESG operates by redirection. That is,
-when it receives an initial connection from a client, it
+As noted, also uses re-direction based authentication.
+So, when it receives an initial connection from a client, it
 redirects to a separate authentication server. When that
 server has authenticated the client, it redirects back to
 the original url to complete the request.
