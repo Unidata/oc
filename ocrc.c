@@ -375,7 +375,7 @@ ocrc_load(void)
     if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
 	path = ocglobalstate.rc.rcfile;
     } else if(getenv(OCRCFILEENV) != NULL) {
-        path = getenv(OCRCFILEENV);
+        path = strdup(getenv(OCRCFILEENV));
     } else {
 	char** rcname;
 	int found = 0;

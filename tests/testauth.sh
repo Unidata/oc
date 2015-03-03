@@ -1,15 +1,17 @@
 #!/bin/sh
-#set -x
 
-NOEMBED=1
-NOLOCAL=1
-NOHOME=1
-NOSPEC=1
+#NOEMBED=1
+#NOLOCAL=1
+#NOHOME=1
+#NOSPEC=1
 #NOENV=1
 
 SHOW=1
+
+# Choose at most 1
 #DBG=1
-GDB=1
+#GDB=1
+#VG=1
 
 NFL=1
 
@@ -154,7 +156,11 @@ fi
 fi
 
 if test "x$GDB" = x1 ; then
-OCPRINT="gdb --args $OCPRINT -D1"
+export LD_LIBRARY_PATH="../.libs:$LD_LIBRARY_PATH"
+OCPRINT="gdb --args ../.libs/ocprint -D1"
+fi
+if test "x$VG" = x1 ; then
+OCPRINT="valgrind --leak-check=full $OCPRINT -D1"
 fi
 
 # Initialize
