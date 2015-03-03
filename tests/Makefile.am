@@ -6,7 +6,7 @@ AM_LDFLAGS =
 check_PROGRAMS =
 TESTS =
 
-EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh testauth1.sh
+EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh
 
 TESTSUITE = $(srcdir)/OCTest
 

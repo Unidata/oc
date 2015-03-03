@@ -13,6 +13,8 @@
 #include "ocdebug.h"
 #include "oclog.h"
 
+#define OCRCFILEENV "OCRCFILE"
+
 #define RTAG ']'
 #define LTAG '['
 
@@ -364,10 +366,16 @@ ocrc_load(void)
     }
     if(ocglobalstate.rc.loaded) return OC_NOERR;
 
-    /* locate the configuration files: first if specified,
-       then '.',  then $HOME */
+    /* locate the configuration files in the following order:
+       1. specified by set_rcfile
+       2. set by OCRCFILE env variable
+       3. '.'
+       4. $HOME
+    */  
     if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
 	path = ocglobalstate.rc.rcfile;
+    } else if(getenv(OCRCFILEENV) != NULL) {
+        path = getenv(OCRCFILEENV);
     } else {
 	char** rcname;
 	int found = 0;

@@ -1,14 +1,15 @@
 #!/bin/sh
 #set -x
 
-#NOEMBED=1
-#NOLOCAL=1
-#NOHOME=1
-#NOSPEC=1
+NOEMBED=1
+NOLOCAL=1
+NOHOME=1
+NOSPEC=1
+#NOENV=1
 
 SHOW=1
 #DBG=1
-#GDB=1
+GDB=1
 
 NFL=1
 
@@ -67,15 +68,15 @@ else
 OUTPUT=
 fi
 
+if test "x$TEMP" = x ; then
+  TEMP="/tmp"
+fi
+
 LOCALRC=./$RC
 HOMERC=${HOME}/$RC
 HOMERC=`echo "$HOMERC" | sed -e "s|//|/|g"`
-
-SPECRC=$TEMP
-if test "x$TEMP" = x ; then
-  SPECRC="/tmp"
-fi
-SPECRC="$SPECRC/temprc"
+SPECRC="$TEMP/temprc"
+ENVRC="$TEMP/envrc"
 
 cd `pwd`
 builddir=`pwd`
@@ -113,8 +114,14 @@ fi
 }
 
 function reset {
-  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     rm -f ${f}
+  done      
+}
+
+function restore {
+  reset
+  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     if test -f ${f}.save ; then
       echo "restoring old ${f}"
       cp ${f}.save ${f}
@@ -123,7 +130,7 @@ function reset {
 }
 
 function save {
-  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
+  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     if test -f $f ; then
       if test -f ${f}.save ; then
         ignore=1
@@ -200,5 +207,19 @@ echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
 ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
-#cleanup
+if test "x$NOENV" != x1 ; then
+echo "*** Testing rc file using env variable"
+# Create the rc file and (optional) netrc file
 reset
+createnetrc $NETRC
+export OCRCFILE=$ENVRC
+createrc $OCRCFILE
+
+# Invoke ocprint to extract a file the URL
+echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
+${OCPRINT} -p dds -L ${OUTPUT} "$URL"
+fi
+
+#cleanup
+restore
+
