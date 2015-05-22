@@ -1,23 +1,23 @@
 #!/bin/sh
 #set -x
 
-NOEMBED=1
-NOLOCAL=1
-NOHOME=1
-NOSPEC=1
-NOENV=1
+#RCEMBED=1
+#RCLOCAL=1
+#RCHOME=1
+#RCSPEC=1
+RCENV=1
 
 SHOW=1
-#DBG=1
-GDB=1
+DBG=1
+#GDB=1
 
 NFL=1
 
 WD=`pwd`
 
 NETRCFILE=$WD/test_auth_netrc
-# This is the control variable
-NETRC=$NETRCFILE
+# This is the control variable; set when needed
+unset NETRC
 
 COOKIES="${WD}/test_auth_cookies"
 
@@ -31,8 +31,11 @@ fi
 # Major parameters
 
 BASICCOMBO="tiggeUser:tigge"
+BADCOMBO="tiggeUser:xxxxx"
 URLSERVER="remotetest.unidata.ucar.edu"
+#http://remotetest.unidata.ucar.edu/thredds/dodsC/restrict/testData.nc.html
 URLPATH="thredds/dodsC/restrict/testData.nc"
+PROTO=http
 
 # See if we need to override
 if test "x$URS" != "x" ; then
@@ -42,8 +45,7 @@ URLPATH="opendap/data/nc/fnoc1.nc"
 BASICCOMBO="$URS"
 NOEMBED=1
 NETRC=$NETRCFILE
-else
-NETRC=
+PROTO=https
 fi
 
 # Split the combo
@@ -76,7 +78,8 @@ LOCALRC=./$RC
 HOMERC=${HOME}/$RC
 HOMERC=`echo "$HOMERC" | sed -e "s|//|/|g"`
 SPECRC="$TEMP/temprc"
-ENVRC="$TEMP/envrc"
+#ENVRC="$TEMP/envrc"
+ENVRC="$WD/envrc"
 
 cd `pwd`
 builddir=`pwd`
@@ -85,11 +88,12 @@ cd $srcdir
 srcdir=`pwd`
 cd ${builddir}
 
-function createdaprc {
+function createrc {
   RCP="$1" ; shift
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
+    badpwd) BADPWD=1 ;;
     *) ;;
     esac
     shift
@@ -98,7 +102,7 @@ function createdaprc {
     rm -f $RCP
     echo "Creating rc file $RCP"
   else
-    echo "createdaprc: no rc specified"
+    echo "createrc: no rc specified"
     exit 1
   fi
   if test "x${DBG}" != x ; then
@@ -107,7 +111,11 @@ function createdaprc {
   echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
   if test "x${URS}" = x ; then
     if test "x${NOPWD}" = x ; then
-      echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
+      if test "x${BADPWD}" = x ; then
+        echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
+      else
+        echo "HTTP.CREDENTIALS.USERPASSWORD=${BADCOMBO}" >>$RCP
+      fi
     fi
   fi
   if test "x${NETRC}" != x && test "x$NFL" = x ; then
@@ -120,6 +128,7 @@ function createnetrc {
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
+    badpwd) BADPWD=1 ;;
     *) ;;
     esac
     shift
@@ -135,9 +144,13 @@ function createnetrc {
     echo "machine uat.urs.earthdata.nasa.gov login $BASICUSER password $BASICPWD" >>$NCP
     #echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
   else
-    echo -n "http://$URLSERVER/$URLPATH" >>$NCP
+    echo -n "${PROTO}://$URLSERVER/$URLPATH" >>$NCP
     if test "x$NOPWD" = x ; then
-      echo -n " login $BASICUSER password $BASICPWD" >>$NCP
+      if test "x$BADPWD" = x ; then
+        echo -n " login $BASICUSER password $BASICPWD" >>$NCP
+      else
+        echo -n " login $BASICUSER password xxxxxx" >>$NCP
+      fi
     fi
     echo "" >>$NCP
   fi
@@ -178,94 +191,97 @@ OCPRINT="$OCPRINT -D1"
 fi
 
 if test "x$NETRC" != x ; then
-if test "x$NFL" = x1 ; then
-OCPRINT="$OCPRINT -N $NETRC"
-fi
+  if test "x$NFL" = x1 ; then
+    OCPRINT="$OCPRINT -N $NETRC"
+  fi
 fi
 
 if test "x$GDB" = x1 ; then
-OCPRINT="gdb --args $OCPRINT -D1"
+  OCPRINT="gdb --args $OCPRINT -D1"
 fi
 
 # Initialize
 save
 reset
 
-if test "x$NOEMBED" != x1 ; then
-echo "***Testing rc file with embedded user:pwd"
-URL="https://${BASICCOMBO}@${URLSERVER}/$URLPATH"
-# Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -R NONE -p dds ${OUTPUT} $URL"
-${OCPRINT} -R NONE -p dds ${OUTPUT} "$URL"
+if test "x$RCEMBED" = x1 ; then
+  echo "***Testing rc file with embedded user:pwd"
+  URL="${PROTO}://${BASICCOMBO}@${URLSERVER}/$URLPATH"
+  unset NETRC
+  # Invoke ocprint to extract a file the URL
+  echo "command: ${OCPRINT} -R NONE -p dds ${OUTPUT} $URL"
+  ${OCPRINT} -R NONE -p dds ${OUTPUT} "$URL"
 fi
 
+# Rest of tests assume
+URL="${PROTO}://${URLSERVER}/$URLPATH"
+NETRC=$NETRCFILE
+if test "x$RCLOCAL" = x1 ; then
+  echo "***Testing rc file in local directory"
+  # Create the rc file and (optional) netrc fil in ./
+  reset
+  createnetrc $NETRC
+  createrc $LOCALRC
 
-URL="https://${URLSERVER}/$URLPATH"
-if test "x$NOLOCAL" != x1 ; then
-echo "***Testing rc file in local directory"
-# Create the rc file and (optional) netrc fil in ./
-reset
-createnetrc $NETRC
-createdaprc $LOCALRC
-
-# Invoke ocprint to extract a file using the URL
-echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
-${OCPRINT} -p dds ${OUTPUT} "$URL"
+  # Invoke ocprint to extract a file using the URL
+  echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
+  ${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
 
-if test "x$NOHOME" != x1 ; then
-echo "***Testing rc file in home directory"
-# Create the rc file and (optional) netrc fil in ./
-reset
-createnetrc $NETRC
-createdaprc $HOMERC
+if test "x$RCHOME" = x1 ; then
+  echo "***Testing rc file in home directory"
+  # Create the rc file and (optional) netrc fil in ./
+  reset
+  createnetrc $NETRC
+  createrc $HOMERC
 
-# Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
-${OCPRINT} -p dds -L ${OUTPUT} "$URL"
+  # Invoke ocprint to extract a file the URL
+  echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
+  ${OCPRINT} -p dds -L ${OUTPUT} "$URL"
 fi
 
-if test "x$NOSPEC" != x1 ; then
-echo "*** Testing rc file in specified directory"
-# Create the rc file and (optional) netrc file
-reset
-createnetrc $NETRC
-createdaprc $SPECRC
+if test "x$RCSPEC" == x1 ; then
+  echo "*** Testing rc file in specified directory"
+  # Create the rc file and (optional) netrc file
+  reset
+  createnetrc $NETRC
+  createrc $SPECRC
 
-# Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
-${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
+  # Invoke ocprint to extract a file the URL
+  echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
+  ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
-if test "x$NOENV" != x1 ; then
-echo "*** Testing rc file using env variable"
-# Create the rc file and (optional) netrc file
-reset
-createnetrc $NETRC
-export DAPRCFILE=$ENVRC
-createdaprc $DAPRCFILE
+if test "x$RCENV" = x1 ; then
+  echo "*** Testing rc file using env variable"
+  # Create the rc file and (optional) netrc file
+  reset
+  createnetrc $NETRC
+  echo "ENV: export DAPRCFILE=$ENVRC"
+  export DAPRCFILE=$ENVRC
+  createrc $DAPRCFILE
 
-# Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
-${OCPRINT} -p dds -L ${OUTPUT} "$URL"
+  # Invoke ocprint to extract a file the URL
+  echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
+  ${OCPRINT} -p dds -L ${OUTPUT} "$URL"
+  export DAPRCFILE=
 fi
-
-
+exit
 # Test if netcrc pwd overrides .daprc
-URL="https://${URLSERVER}/$URLPATH"
-echo "***Testing rc file in local directory"
-# Create the rc file and (optional) netrc fil in ./
-reset
-createnetrc $NETRC
-createdaprc $LOCALRC
+set -x
+URL="${PROTO}://${URLSERVER}/$URLPATH"
+NETRC=$NETRCFILE
+  echo "***Testing rc file in local directory"
+  # Create the rc file and (optional) netrc file in ./
+  reset
+  set -x
+  createnetrc $NETRC badpwd
+  createrc $LOCALRC nopwd
 
-# Invoke ocprint to extract a file using the URL
-echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
-${OCPRINT} -p dds ${OUTPUT} "$URL"
+  # Invoke ocprint to extract a file using the URL
+  echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
+  ${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
-
-
-
 
 #cleanup
 restore
