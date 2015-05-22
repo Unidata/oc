@@ -5,7 +5,7 @@ NOEMBED=1
 NOLOCAL=1
 NOHOME=1
 NOSPEC=1
-#NOENV=1
+NOENV=1
 
 SHOW=1
 #DBG=1
@@ -21,7 +21,7 @@ NETRC=$NETRCFILE
 
 COOKIES="${WD}/test_auth_cookies"
 
-RC=.ocrc
+RC=.daprc
 
 OCLOGFILE=stderr
 if test "x$DBG" = x1 ; then
@@ -85,32 +85,62 @@ cd $srcdir
 srcdir=`pwd`
 cd ${builddir}
 
-function createrc {
-if test "x$1" != x ; then
-RCP=$1
-
-rm -f $RCP
-echo "Creating rc file $RCP"
-if test "x${DBG}" != x ; then
-echo "HTTP.VERBOSE=1" >>$RCP
-fi	
-echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
-if test "x${URS}" = x ; then
-echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
-fi
-if test "x${NETRC}" != x && test "x$NFL" = x ; then
-echo "HTTP.NETRC=${NETRC}" >>$RCP
-fi
-fi
+function createdaprc {
+  RCP="$1" ; shift
+  while [[ $# > 0 ]] ; do
+    case "$1" in
+    nopwd) NOPWD=1 ;;
+    *) ;;
+    esac
+    shift
+  done
+  if test "x$RCP" != x ; then
+    rm -f $RCP
+    echo "Creating rc file $RCP"
+  else
+    echo "createdaprc: no rc specified"
+    exit 1
+  fi
+  if test "x${DBG}" != x ; then
+    echo "HTTP.VERBOSE=1" >>$RCP
+  fi	
+  echo "HTTP.COOKIEJAR=${COOKIES}" >>$RCP
+  if test "x${URS}" = x ; then
+    if test "x${NOPWD}" = x ; then
+      echo "HTTP.CREDENTIALS.USERPASSWORD=${BASICCOMBO}" >>$RCP
+    fi
+  fi
+  if test "x${NETRC}" != x && test "x$NFL" = x ; then
+    echo "HTTP.NETRC=${NETRC}" >>$RCP
+  fi
 }
 
 function createnetrc {
-if test "x$1" != x ; then
-rm -f $1
-echo "Creating netrc file $1"
-echo "machine uat.urs.earthdata.nasa.gov login $BASICUSER password $BASICPWD" >>$1
-#echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
-fi
+  NCP="$1" ; shift
+  while [[ $# > 0 ]] ; do
+    case "$1" in
+    nopwd) NOPWD=1 ;;
+    *) ;;
+    esac
+    shift
+  done
+  if test "x$NCP" != x ; then
+    rm -f $NCP
+    echo "Creating netrc file $NCP"
+  else
+    echo "createnetrc: no rc specified"
+    exit 1
+  fi
+  if test "x$URS" != x ; then
+    echo "machine uat.urs.earthdata.nasa.gov login $BASICUSER password $BASICPWD" >>$NCP
+    #echo "machine 54.86.135.31 login $BASICUSER password $BASICPWD" >>$1
+  else
+    echo -n "http://$URLSERVER/$URLPATH" >>$NCP
+    if test "x$NOPWD" = x ; then
+      echo -n " login $BASICUSER password $BASICPWD" >>$NCP
+    fi
+    echo "" >>$NCP
+  fi
 }
 
 function reset {
@@ -176,9 +206,9 @@ echo "***Testing rc file in local directory"
 # Create the rc file and (optional) netrc fil in ./
 reset
 createnetrc $NETRC
-createrc $LOCALRC
+createdaprc $LOCALRC
 
-# Invoke ocprint to extract a file the URL
+# Invoke ocprint to extract a file using the URL
 echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
 ${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
@@ -188,7 +218,7 @@ echo "***Testing rc file in home directory"
 # Create the rc file and (optional) netrc fil in ./
 reset
 createnetrc $NETRC
-createrc $HOMERC
+createdaprc $HOMERC
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
@@ -200,7 +230,7 @@ echo "*** Testing rc file in specified directory"
 # Create the rc file and (optional) netrc file
 reset
 createnetrc $NETRC
-createrc $SPECRC
+createdaprc $SPECRC
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
@@ -212,14 +242,30 @@ echo "*** Testing rc file using env variable"
 # Create the rc file and (optional) netrc file
 reset
 createnetrc $NETRC
-export OCRCFILE=$ENVRC
-createrc $OCRCFILE
+export DAPRCFILE=$ENVRC
+createdaprc $DAPRCFILE
 
 # Invoke ocprint to extract a file the URL
 echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
 ${OCPRINT} -p dds -L ${OUTPUT} "$URL"
 fi
 
+
+# Test if netcrc pwd overrides .daprc
+URL="https://${URLSERVER}/$URLPATH"
+echo "***Testing rc file in local directory"
+# Create the rc file and (optional) netrc fil in ./
+reset
+createnetrc $NETRC
+createdaprc $LOCALRC
+
+# Invoke ocprint to extract a file using the URL
+echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
+${OCPRINT} -p dds ${OUTPUT} "$URL"
+fi
+
+
+
+
 #cleanup
 restore
-
