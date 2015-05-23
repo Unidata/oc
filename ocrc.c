@@ -13,8 +13,6 @@
 #include "ocdebug.h"
 #include "oclog.h"
 
-#define OCRCFILEENV "OCRCFILE"
-
 #define RTAG ']'
 #define LTAG '['
 
@@ -29,7 +27,7 @@ static char* combinecredentials(const char* user, const char* pwd);
 static void storedump(char* msg, struct OCTriple*, int ntriples);
 
 /* Define default rc files and aliases, also defines search order*/
-static char* rcfilenames[] = {".ocrc",".dodsrc",NULL};
+static char* rcfilenames[] = {".daprc",".dodsrc",NULL};
 
 /* The Username and password are in the URL if the URL is of the form:
  * http://<name>:<passwd>@<host>/....
@@ -272,7 +270,7 @@ ocrc_compile(const char* path)
     char line0[MAXRCLINESIZE+1];
     FILE *in_file = NULL;
     int linecount = 0;
-    struct OCTriplestore* ocrc = &ocglobalstate.rc.ocrc;
+    struct OCTriplestore* ocrc = &ocglobalstate.rc.daprc;
 
     ocrc->ntriples = 0; /* reset; nothing to free */
 
@@ -349,7 +347,7 @@ ocrc_compile(const char* path)
         ocrc->ntriples++;
     }
     fclose(in_file);
-    sorttriplestore(&ocglobalstate.rc.ocrc);
+    sorttriplestore(&ocglobalstate.rc.daprc);
     return 1;
 }
 
@@ -374,8 +372,6 @@ ocrc_load(void)
     */  
     if(ocglobalstate.rc.rcfile != NULL) { /* always use this */
 	path = ocglobalstate.rc.rcfile;
-    } else if(getenv(OCRCFILEENV) != NULL) {
-        path = strdup(getenv(OCRCFILEENV));
     } else {
 	char** rcname;
 	int found = 0;
@@ -567,7 +563,7 @@ static struct OCTriple*
 ocrc_locate(char* key, char* hostport)
 {
     int i,found;
-    struct OCTriplestore* ocrc = &ocglobalstate.rc.ocrc;
+    struct OCTriplestore* ocrc = &ocglobalstate.rc.daprc;
     struct OCTriple* triple;
 
     if(ocglobalstate.rc.ignore)
@@ -609,7 +605,7 @@ static void
 storedump(char* msg, struct OCTriple* triples, int ntriples)
 {
     int i;
-    struct OCTriplestore* ocrc = &ocglobalstate.rc.ocrc;
+    struct OCTriplestore* ocrc = &ocglobalstate.rc.daprc;
 
     if(msg != NULL) fprintf(stderr,"%s\n",msg);
     if(ocrc == NULL) {

@@ -4,7 +4,6 @@
 #NOLOCAL=1
 #NOHOME=1
 #NOSPEC=1
-#NOENV=1
 
 SHOW=1
 
@@ -23,7 +22,7 @@ NETRC=$NETRCFILE
 
 COOKIES="${WD}/test_auth_cookies"
 
-RC=.ocrc
+RC=.daprc
 
 OCLOGFILE=stderr
 if test "x$DBG" = x1 ; then
@@ -78,7 +77,6 @@ LOCALRC=./$RC
 HOMERC=${HOME}/$RC
 HOMERC=`echo "$HOMERC" | sed -e "s|//|/|g"`
 SPECRC="$TEMP/temprc"
-ENVRC="$TEMP/envrc"
 
 cd `pwd`
 builddir=`pwd`
@@ -116,14 +114,14 @@ fi
 }
 
 function reset {
-  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
     rm -f ${f}
   done      
 }
 
 function restore {
   reset
-  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
     if test -f ${f}.save ; then
       echo "restoring old ${f}"
       cp ${f}.save ${f}
@@ -132,7 +130,7 @@ function restore {
 }
 
 function save {
-  for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
+  for f in ./$RC $HOME/$RC $SPECRC $COOKIES $NETRC ; do
     if test -f $f ; then
       if test -f ${f}.save ; then
         ignore=1
@@ -213,18 +211,6 @@ echo "command: ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} $URL"
 ${OCPRINT} -p dds -L -R $SPECRC ${OUTPUT} "$URL"
 fi
 
-if test "x$NOENV" != x1 ; then
-echo "*** Testing rc file using env variable"
-# Create the rc file and (optional) netrc file
-reset
-createnetrc $NETRC
-export OCRCFILE=$ENVRC
-createrc $OCRCFILE
-
-# Invoke ocprint to extract a file the URL
-echo "command: ${OCPRINT} -p dds -L ${OUTPUT} $URL"
-${OCPRINT} -p dds -L ${OUTPUT} "$URL"
-fi
 
 #cleanup
 restore

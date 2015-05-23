@@ -57,7 +57,7 @@ fi
 
 FLAGS="--prefix ${PREFIX}"
 FLAGS="${FLAGS} --enable-remote-tests"
-#FLAGS="${FLAGS} --enable-auth-tests"
+FLAGS="${FLAGS} --enable-auth-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #FLAGS="${FLAGS} --enable-xgetopt"
