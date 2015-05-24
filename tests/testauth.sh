@@ -1,14 +1,15 @@
 #!/bin/sh
 #set -x
 
-#RCEMBED=1
-#RCLOCAL=1
-#RCHOME=1
-#RCSPEC=1
+RCEMBED=1
+RCLOCAL=1
+RCHOME=1
+RCSPEC=1
 RCENV=1
+RCPREC=1
 
 SHOW=1
-DBG=1
+#DBG=1
 #GDB=1
 
 NFL=1
@@ -90,6 +91,8 @@ cd ${builddir}
 
 function createrc {
   RCP="$1" ; shift
+  unset NOPWD
+  unset BADPWD
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
@@ -125,6 +128,8 @@ function createrc {
 
 function createnetrc {
   NCP="$1" ; shift
+  unset NOPWD
+  unset BADPWD
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
@@ -160,6 +165,7 @@ function reset {
   for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     rm -f ${f}
   done      
+  unset DAPRCFILE
 }
 
 function restore {
@@ -266,22 +272,23 @@ if test "x$RCENV" = x1 ; then
   ${OCPRINT} -p dds -L ${OUTPUT} "$URL"
   export DAPRCFILE=
 fi
-exit
-# Test if netcrc pwd overrides .daprc
-set -x
+
+# Test that .daprc overrides netcrc for password
 URL="${PROTO}://${URLSERVER}/$URLPATH"
 NETRC=$NETRCFILE
-  echo "***Testing rc file in local directory"
+if test "x$RCPREC" = x1 ; then
+  echo "***Testing rc vs netrc file precedence"
   # Create the rc file and (optional) netrc file in ./
   reset
-  set -x
   createnetrc $NETRC badpwd
-  createrc $LOCALRC nopwd
+  createrc $LOCALRC
 
   # Invoke ocprint to extract a file using the URL
   echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
   ${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
 
-#cleanup
+reset
 restore
+exit
+
