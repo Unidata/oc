@@ -3,7 +3,12 @@
 #NB=1
 DBG=1
 
-export PATH="/machine/dmh/bin:${PATH}"
+MGW=1
+
+
+if test "x$MGW" = x1 ; then
+export PATH="c:/mingw/bin:${PATH}"
+fi
 
 # Use only if default is not correct
 #M32=1

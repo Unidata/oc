@@ -12,6 +12,10 @@
 #endif
 #include <errno.h>
 
+#ifdef _MSC_VER
+typedef int pid_t;
+#endif
+
 #include "ocinternal.h"
 #include "ocdebug.h"
 #include "occlientparams.h"
