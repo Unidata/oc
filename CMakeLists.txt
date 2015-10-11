@@ -945,7 +945,106 @@ set (CPACK_COMPONENT_HEADERS_DESCRIPTION
 set (CPACK_COMPONENT_DEPENDENCIES_DESCRIPTION
 	"Dependencies for this build of netCDF")
 set (CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION
-	"The netCDF user documentation.")
+    "The oc user documentation.")
+
+# Create oc-config
+FILE(MAKE_DIRECTORY ${oc_BINARY_DIR}/tmp)
+configure_file("${OC_SOURCE_DIR}/oc-config.in.cmake"
+  "${OC_BINARY_DIR}/tmp/oc-config" @ONLY)
+FILE(COPY "${OC_BINARY_DIR}/tmp/oc-config"
+  DESTINATION ${OC_BINARY_DIR}/
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#EXECUTE_PROCESS(COMMAND "chmod 755 ${OC_BINARY_DIR}/oc-config")
+
+# Enable Makedist files.
+ADD_MAKEDIST()
+ENABLE_MAKEDIST(
+    COPYING
+    COPYRIGHT
+    RELEASE_NOTES
+    README
+    INSTALL
+    INSTALL.cmake
+    dap.y
+    oc.spec
+    ocprint.1
+    cmake
+    CMakeLists.txt
+    COMPILE.cmake.txt
+    config.h.in.cmake
+    cmake_uninstall.cmake.in
+    oc-config-version.cmake.in
+    oc-config.cmake.in
+    FixBundle.cmake.in
+    oc-config.in.cmake
+    configure
+    configure.ac
+    install-sh
+    config.h.in
+    config.sub)
+    
+
+
+##################################################
+##################################################
+
+SET(liboc_SOURCES oc.c daplex.c dapparse.c daptab.c ocbytes.c occlientparams.c occompile.c occurlfunctions.c ocdata.c ocdebug.c ocdump.c ochttp.c ocinternal.c oclist.c oclog.c ocnode.c ocrc.c ocread.c ocuri.c ocutil.c occurlflags.c xxdr.c)
+
+add_library(oc ${LIB_TYPE} ${liboc_SOURCES}) 
+IF(MOD_OC_NAME)
+  SET_TARGET_PROPERTIES(oc PROPERTIES LIBRARY_OUTPUT_NAME ${OC_LIB_NAME})
+  SET_TARGET_PROPERTIES(oc PROPERTIES ARCHIVE_OUTPUT_NAME ${OC_LIB_NAME})
+  SET_TARGET_PROPERTIES(oc PROPERTIES RUNTIME_OUTPUT_NAME ${OC_LIB_NAME})
+ENDIF()
+
+FILE(GLOB CUR_EXTRA_DIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.c )
+SET(CUR_EXTRA_DIST ${CUR_EXTRA_DIST} dap.y)
+SET(CUR_EXTRA_DIST ${CUR_EXTRA_DIST} CMakeLists.txt Makefile.am)
+ADD_EXTRA_DIST("${CUR_EXTRA_DIST}")
+
+IF(MOD_OC_NAME)
+    SET_TARGET_PROPERTIES(oc PROPERTIES LIBRARY_OUTPUT_NAME ${OC_LIB_NAME})
+    SET_TARGET_PROPERTIES(oc PROPERTIES ARCHIVE_OUTPUT_NAME ${OC_LIB_NAME})
+    SET_TARGET_PROPERTIES(oc PROPERTIES RUNTIME_OUTPUT_NAME ${OC_LIB_NAME})
+ENDIF()
+
+SET_TARGET_PROPERTIES(oc PROPERTIES 
+	VERSION ${oc_VERSION}
+	SOVERSION ${oc_SO_VERSION})
+
+#####
+# Build doxygen documentation, if need be.
+#####
+IF(BUILD_DOCS)
+    FIND_PACKAGE(Doxygen)
+    IF(DOXYGEN_FOUND)
+        FILE(GLOB COPY_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.html ${CMAKE_CURRENT_SOURCE_DIR}/images ${CMAKE_CURRENT_SOURCE_DIR}/*.doc ${CMAKE_CURRENT_SOURCE_DIR}/*.xml ${CMAKE_CURRENT_SOURCE_DIR}/*.m4 ${CMAKE_CURRENT_SOURCE_DIR}/*.texi)
+        FILE(COPY ${COPY_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+        # Copy the image files used by markdown documentation 
+        # manually.
+        FILE(GLOB IMG_FILES ${CMAKE_CURRENT_BINARY_DIR}/images/*.jpg)
+        CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+        ADD_CUSTOM_TARGET(doc ALL
+            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API Documentation with Doxygen" VERBATIM
+        )
+        FILE(COPY ${IMG_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html/)
+    ENDIF()
+ENDIF()
+
+SET(ocprint_SOURCES ocprint.c)
+
+IF(USE_X_GETOPT)
+	SET(ocprint_SOURCES ${ocprint_SOURCES} XGetopt.c)
+ENDIF()
+
+ADD_EXECUTABLE(ocprint ${ocprint_SOURCES} ${liboc_SOURCES})
+
+TARGET_LINK_LIBRARIES(ocprint ${TLL_LIBS})
+TARGET_LINK_LIBRARIES(oc ${TLL_LIBS})
+
 print_conf_summary()
 
 
@@ -967,7 +1066,3 @@ ENABLE_MAKEDIST(README COPYRIGHT RELEASE_NOTES INSTALL INSTALL.cmake test_prog.c
 
 # CPack inclusion must come last.
 INCLUDE(CPack)
-
-
-
-

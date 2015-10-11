@@ -1,11 +1,11 @@
-/* Copyright 2009, UCAR/Unidata and OPeNDAP, Inc.
-   See the COPYRIGHT file for more information. */
+/* Copyright 2014, UCAR/Unidata and OPeNDAP, Inc.
+   See the COPYRIGHT dap for more information. */
 
 /*
 OC External Interface
 Created: 4/4/2009
-Last Revised: 6/7/2012
-Version: 2.0
+Last Revised: 12/23/2014
+Version: 2.1
 */
 
 #ifndef OC_H
@@ -13,6 +13,9 @@ Version: 2.0
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 /*!\file oc.h
 */
@@ -62,6 +65,7 @@ Cause oc_fetch to store the retrieved data on disk.
 */
 
 #define OCONDISK 1
+
 /**************************************************/
 /* OCtype */
 
@@ -238,7 +242,7 @@ extern OCerror oc_close(OClink);
 /* Tree Management */
 
 extern OCerror oc_fetch(OClink,
-			const char* constraints,
+			const char* constraint,
 			OCdxd,
 			OCflags,
 			OCmetanode*);
@@ -458,8 +462,8 @@ extern OCerror oc_data_readn(OClink, OCdatanode, size_t*, size_t, size_t, void*)
 */
 extern OCerror oc_data_position(OClink, OCdatanode data, size_t* indices);
 
-/* Return the template metadata node for an data */
-extern OCerror oc_data_metanode(OClink, OCdatanode data, OCmetanode*);
+/* Return the pattern dds node for an data */
+extern OCerror oc_data_ddsnode(OClink, OCdatanode data, OCddsnode*);
 
 /* Return the octype of the data (convenience) */
 extern OCerror oc_data_octype(OClink, OCdatanode data, OCtype*);
@@ -554,23 +558,32 @@ extern OCerror oc_merge_das(OClink, OCmetanode dasroot, OCmetanode ddsroot);
  */
 extern int oc_httpcode(OClink);
 
-/* When a server error is detected, then it is possible
-   to get the server error info using this procedure.
-   Note that not all fields will be filled, depending on
-   the error response and if it is dap2 or dap4.
+/*
+(Re-)initialize the oc library as if nothing had been called.
+This is primarily for debugging of rc files.
 */
-extern OCerror oc_svcerrordata(OClink link, char** codep,
-                               char** msgp, char** context, char** otherinfo,
-			       long* httpcodep);
+extern OCerror oc_initialize(void);
+
+/**************************************************/
+/* Curl options */
+/* This is here because trial and error shows that
+   libcurl shows thru too much. So bow to the inevitable.
+*/
+
+/*Cause the curl library to be verbose and save error messages*/
+extern OCerror oc_trace_curl(OClink link);
+
+/* Allow specification of the rc file */
+extern OCerror oc_set_rcfile(const char* filepath);
+
+/* Allow specification of the netrc file */
+extern OCerror oc_set_netrc(OClink*, const char* filepath);
+
+/* Set arbitrary curl option */
+extern OCerror oc_set_curlopt(OClink link, const char* option, void* value);
 
 /**************************************************/
 /* Experimental/Undocumented */
-
-/*
-Cause the curl library
-to be verbose
-*/
-extern OCerror oc_trace_curl(OClink link);
 
 /* Given an arbitrary OCnode, return the connection of which it is a part */
 extern OCerror oc_get_connection(OCobject ocnode, OCobject* linkp);
@@ -581,8 +594,8 @@ extern OCerror oc_update_lastmodified_data(OClink);
 /* Get last known modification time; -1 => data unknown */
 extern long oc_get_lastmodified_data(OClink);
 
-/* Allow the setting of the user agent */
-extern OCerror oc_set_useragent(OClink, const char* agent);
+/* Test if a given url responds to a DAP protocol request */
+extern OCerror oc_ping(const char* url);
 
 /* Return the size of the in-memory or on-disk
    data chunk returned by the server for a given tree.
@@ -593,14 +606,6 @@ extern OCerror oc_set_useragent(OClink, const char* agent);
 #ifndef _WIN32
 extern OCerror oc_raw_xdrsize(OClink,OCmetanode,off_t*);
 #endif
-
-/* Ping a given url to determine the protocol: 2 versus 4 versus not-dap.
-   Use oc_protocol_version to get the protocol
-*/
-extern OCerror oc_ping(const char* url);
-
-/* Get the protocol associated with this connection: 2, 4, or 0 (=> unknown) */
-extern OCerror oc_protocol_version(OClink,int* versionp);
 
 #ifdef __cplusplus
 }

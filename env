@@ -5,7 +5,7 @@ OCLOGFILE=""; PARMS="" ; CON=""; ARGS=""
 if test -e f:/svn ; then
 P=/cygdrive/f/svn
 else
-P=/home/dmh/svn
+P=/home/dmh/git
 fi
 
 #T="in1.nc"

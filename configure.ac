@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT(oc, 2.0, support@opendap.org)
+AC_INIT(oc, 2.1, support@opendap.org)
 AC_CONFIG_SRCDIR([oclog.c])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR(conf)
@@ -88,7 +88,7 @@ AC_FUNC_ALLOCA
 ;;
 esac
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([memset strcasecmp strchr strrchr strdup strerror strtol access unlink mkstemp getpid])
+AC_CHECK_FUNCS([memset memmove strcasecmp strchr strrchr strdup strerror strtol access unlink mkstemp getpid strndup strncpy])
 
 ##################################################
 # Checks for header files.
@@ -149,6 +149,16 @@ AC_ARG_ENABLE([xgetopt],
 test "x$enable_xgetopt" = xyes || enable_xgetopt=no
 AC_MSG_RESULT($enable_xgetopt)
 AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
+
+##################################################
+# Control authorization testing
+AC_MSG_CHECKING([whether authorization tests should be enabled])
+AC_ARG_ENABLE([auth-tests],
+              [AS_HELP_STRING([--enable-auth-tests],
+                                 [enable authorization tests])])
+test "x$enable_auth_tests" = xyes || enable_auth_tests=no
+AC_MSG_RESULT($enable_auth_tests)
+AM_CONDITIONAL(ENABLE_AUTH_TESTS, [test "x$enable_auth_tests" = "xyes"])
 
 ##################################################
 dnl autoheader macros; tack some text at the top and bottom of config_dap.h.in

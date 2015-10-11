@@ -47,7 +47,7 @@ ocinternal.h ocinternal.c \
 oclist.h oclist.c \
 oclog.h oclog.c \
 ocnode.h ocnode.c \
-ocrc.h ocrc.c \
+ocrc.c \
 ocread.h ocread.c \
 ocuri.h ocuri.c \
 ocutil.h ocutil.c \
@@ -55,9 +55,11 @@ dap2parselex.h dap2lex.c dap2parse.c dap2tab.h dap2tab.c \
 dap2compile.h dap2compile.c \
 dap4parselex.h dap4lex.c dap4parse.c dap4tab.h dap4tab.c \
 dap4_perfect.c yax.h yax.c \
+occurlflags.c \
 xxdr.h xxdr.c
 
-liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@
+# The -no-undefined is required to actually generate a .dll(.a) file
+liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@ -no-undefined
 
 pkginclude_HEADERS = oc.h
 
@@ -66,6 +68,9 @@ EXTRA_DIST += dap2.y dap4.y dap4.gperf
 EXTRA_DIST += XGetopt.c
 EXTRA_DIST += oc.spec
 EXTRA_DIST += CMakeLists.txt
+EXTRA_DIST += occurlflags.c.in
+EXTRA_DIST += makeflags.sh
+EXTRA_DIST += makeparser.sh
 
 EXTRA_DIST += docs
 
@@ -102,24 +107,6 @@ parser2::
 	rm -f dap2.tab.c dap2.tab.h	
 	bison --debug -d -p dap2 dap2.y
 	mv dap2.tab.c dap2tab.c; mv dap2.tab.h dap2tab.h
-
-# Generate dap4tab.c and dap4tab.h from dap4.y
-# Assumes bison version 3.0 or later
-parser4::
-	rm -f dap4tab.c dap4tab.h	
-	bison --debug -d -p dap4 dap4.y
-	sed -e 's/dap4.tab.c/dap4tab.c/'< dap4.tab.c >dap4tab.c
-	sed -e 's/dap4.tab.h/dap4tab.h/'< dap4.tab.h >dap4tab.h
-	rm -f dap4.tab.c dap4.tab.h	
-
-##################################################
-# These rule are used if someone wants to rebuild the perfect hash function.
-# Otherwise never invoked, but records how to do it.
-# Only invoke if gperf program is available
-# Remove the line numbers for easier debug with gdb
-perfect::
-	rm -f dap4_perfect.c 
-	gperf dap4.gperf | sed -e '/^[#]line/d' >dap4_perfect.c
 
 ###########################################################################
 
@@ -190,16 +177,11 @@ collect-coverage-data:
 ALLDOCSED = -e 's/oc.c[ ][ ]*oc.h/*.c *.h/'
 ALLDOCSED += -e 's/OUTPUT_DIRECTORY[ ][ ]*=[ ][ ]*docs/OUTPUT_DIRECTORY = alldocs/'
 
-ocdocs: cleandocs otherdocs
+ocdocs: cleandocs
 	doxygen ${srcdir}/doxy.conf
 
-alldocs: cleandocs otherdocs
+alldocs: cleandocs
 	sed $(ALLDOCSED) < doxy.conf | doxygen -
 
 cleandocs::
-	rm -f docs/html/*
-	rm -f docs/*.html
-
-otherdocs::
-	cp ./octutorial.html ./docs
-
+	rm -fr docs/html/*

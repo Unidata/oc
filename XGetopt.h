@@ -1,3 +1,4 @@
+/**
 // XGetopt.h  Version 1.2
 //
 // Author:  Hans Dietrich
@@ -11,7 +12,7 @@
 // damage or loss of business that this software may cause.
 //
 ///////////////////////////////////////////////////////////////////////////////
-
+*/
 
 #ifndef XGETOPT_H
 #define XGETOPT_H
@@ -37,4 +38,5 @@ extern TCHAR *optarg;
 
 int getopt(int argc, TCHAR *argv[], TCHAR *optstring);
 
-#endif //XGETOPT_H
+#endif /*XGETOPT_H*/
+

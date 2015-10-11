@@ -1,0 +1,21 @@
+T=t_auth1
+
+#CMD=valgrind --leak-check=full
+CMD=gdb
+
+LIBS=-L/usr/local/lib -lhdf5_hl -lhdf5 -ldf -ljpeg -ldl -lm -lz -lcurl
+
+CFLAGS=-g -O0 -I..
+LDFLAGS=../.libs/liboc.a ${LIBS} 
+LD_LIBRARY_PATH=/usr/local/lib
+LD_RUN_PATH=${LD_LIBRARY_PATH}
+
+all::
+	echo "LIBS=${LIBS}"
+	echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+	export LD_RUN_PATH; export CFLAGS; export LDFLAGS; \
+	gcc -c ${CFLAGS} ${T}.c ;\
+	gcc -o t ${T}.o ${LDFLAGS}
+	${CMD} ./t
+
+

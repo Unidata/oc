@@ -8,7 +8,7 @@
 
 #m4_define([base_url], [http://test.opendap.org:8080/dods/dts])
 #m4_define([base_url], [http://motherlode.ucar.edu:8080/dts])
-m4_define([base_url], [http://thredds-test.ucar.edu/dts])
+m4_define([base_url], [http://remotetest.unidata.ucar.edu/dts])
 
 # 
 # ------------------------------
@@ -23,11 +23,11 @@ m4_define([_AT_DAS_TEST],
 AT_SETUP([DAS $1])
 AT_KEYWORDS([das])
 # Double the tests to exercise both the plain output (using oc_inq_text)
-# and the 'generated' output using the -g option to ocprint. 
+# and the 'generated' output using the -G option to ocprint. 
 AT_CHECK([$abs_top_builddir/ocprint -T -p das $1], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore],[],[])
 #
-AT_CHECK([$abs_top_builddir/ocprint -T -g -p das $1], [], [stdout], [ignore])
+AT_CHECK([$abs_top_builddir/ocprint -T -G -p das $1], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore],[],[])
 AT_CLEANUP])
 
@@ -38,7 +38,7 @@ AT_KEYWORDS([dds])
 #AT_CHECK([$abs_top_builddir/ocprint -T -p dds $1], [], [stdout], [ignore])
 #AT_CHECK([diff -w -b $2 stdout], [], [ignore])
 #
-AT_CHECK([$abs_top_builddir/ocprint -T -g -p dds $1], [], [stdout], [ignore])
+AT_CHECK([$abs_top_builddir/ocprint -T -G -p dds $1], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore])
 AT_CLEANUP])
 
@@ -46,7 +46,7 @@ m4_define([_AT_DODS_TEST],
 [AT_BANNER([Test $1 $2])
 AT_SETUP([DODS $1])
 AT_KEYWORDS([dods])
-# The -g option has no affect on the 'data' request/output.
+# The -G option has no affect on the 'data' request/output.
 AT_CHECK([$abs_top_builddir/ocprint -T -p datadds $1], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore])
 AT_CLEANUP])
@@ -57,7 +57,7 @@ _AT_DAS_TEST([file://$abs_top_srcdir/tests/testdata/$1], [$abs_srcdir/baselines/
 ])
 
 m4_define([AT_DDS_RESPONSE_TEST],
-[AT_BANNER([ocprint DDS response for $1.])
+[AT_BANNER([$abs_top_srcdir/ocprint DDS response for $1.])
 _AT_DDS_TEST([file://$abs_top_srcdir/tests/testdata/$1], [$abs_srcdir/baselines/$1.dds])
 ])
 
@@ -85,7 +85,7 @@ m4_define([_AT_CONSTRAINT_TEST],
 [AT_BANNER([ConstraintTest $1.$4])
 AT_SETUP([CONSTRAINT $1.$4])
 AT_KEYWORDS([constraint])
-AT_CHECK([$abs_top_builddir/ocprint -T -C '$3' -g -p dds -p datadds $1], [], [stdout], [ignore])
+AT_CHECK([$abs_top_builddir/ocprint -T -G -p dds -p datadds "$1?$3"], [], [stdout], [ignore])
 AT_CHECK([diff -w -b $2 stdout], [], [ignore])
 AT_CLEANUP])
 

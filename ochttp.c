@@ -11,7 +11,6 @@
 #include "ocdebug.h"
 #include "occurlfunctions.h"
 #include "ochttp.h"
-#include "ocrc.h"
 
 static size_t WriteFileCallback(void*, size_t, size_t, void*);
 static size_t WriteMemoryCallback(void*, size_t, size_t, void*);
@@ -28,7 +27,7 @@ ocfetchhttpcode(CURL* curl)
     CURLcode cstat = CURLE_OK;
     /* Extract the http code */
 #ifdef HAVE_CURLINFO_RESPONSE_CODE
-     cstat = curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&httpcode);
+    cstat = CURLERR(curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&httpcode));
 #else
     cstat = curl_easy_getinfo(curl,CURLINFO_HTTP_CODE,&httpcode);
 #endif
@@ -47,7 +46,7 @@ ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
 	char tbuf[1024];
 
 	/* Set the URL */
-	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_URL, (void*)url));
 	if (cstat != CURLE_OK)
 		goto fail;
 
@@ -57,24 +56,25 @@ ocfetchurl_file(CURL* curl, const char* url, FILE* stream,
 	    goto fail;
 
 	/* send all data to this function  */
-	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback));
 	if (cstat != CURLE_OK)
 		goto fail;
 
 	/* we pass our file to the callback function */
-	cstat = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&fetchdata);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&fetchdata));
 	if (cstat != CURLE_OK)
 		goto fail;
 
         /* One last thing; always try to get the last modified time */
-        cstat = curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1);
+        cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1));
 	if (cstat != CURLE_OK)
 		goto fail;
 
 
 	fetchdata.stream = stream;
 	fetchdata.size = 0;
-	cstat = curl_easy_perform(curl);
+	cstat = CURLERR(curl_easy_perform(curl));
+
 	if (cstat != CURLE_OK)
 	    goto fail;
 
@@ -106,29 +106,44 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime, struct OCc
         long httpcode = 0;
 
 	/* Set the URL */
-	cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
+	cstat = CURLERR(CURLERR(curl_easy_setopt(curl, CURLOPT_URL, (void*)url)));
 	if (cstat != CURLE_OK)
 	    goto fail;
 	
-	/* Set user and password */
-	cstat = ocset_user_password(creds,curl);
-	if (cstat != CURLE_OK)
-	    goto fail;
+#if 0
+	if(creds != NULL && creds->password != NULL  && creds->username != NULL) {
+	    /* Set user and password */
+#if defined (HAVE_CURLOPT_USERNAME) && defined (HAVE_CURLOPT_PASSWORD)
+	    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_USERNAME, creds->username));
+	    if (cstat != CURLE_OK)
+		goto fail;
+	    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_PASSWORD, creds->password));
+	    if (cstat != CURLE_OK)
+		goto fail;
+#else		
+		snprintf(tbuf,1023,"%s:%s",creds->username,creds->password);	
+		cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_USERPWD, tbuf));
+		if (cstat != CURLE_OK)
+			goto fail;
+#endif
+	}
+#endif
 
 	/* send all data to this function  */
-	cstat = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback));
 	if (cstat != CURLE_OK)
 		goto fail;
 
 	/* we pass our file to the callback function */
-	cstat = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buf);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buf));
 	if (cstat != CURLE_OK)
 		goto fail;
 
         /* One last thing; always try to get the last modified time */
-	cstat = curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1);
+	cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1));
 
-	cstat = curl_easy_perform(curl);
+	cstat = CURLERR(curl_easy_perform(curl));
+
 	if(cstat == CURLE_PARTIAL_FILE) {
 	    /* Log it but otherwise ignore */
 	    oclog(OCLOGWARN, "curl error: %s; ignored",
@@ -141,7 +156,7 @@ ocfetchurl(CURL* curl, const char* url, OCbytes* buf, long* filetime, struct OCc
 
         /* Get the last modified time */
 	if(filetime != NULL)
-            cstat = curl_easy_getinfo(curl,CURLINFO_FILETIME,filetime);
+            cstat = CURLERR(curl_easy_getinfo(curl,CURLINFO_FILETIME,filetime));
         if(cstat != CURLE_OK) goto fail;
 
 	/* Null terminate the buffer*/
@@ -263,7 +278,7 @@ occurlopen(CURL** curlp)
 	if (curl == NULL)
 		stat = OC_ECURL;
 	else {
-		cstat = curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
+		cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1));
 		if (cstat != CURLE_OK)
 			stat = OC_ECURL;
 	}
@@ -286,22 +301,22 @@ ocfetchlastmodified(CURL* curl, char* url, long* filetime)
     CURLcode cstat = CURLE_OK;
 
     /* Set the URL */
-    cstat = curl_easy_setopt(curl, CURLOPT_URL, (void*)url);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_URL, (void*)url));
     if (cstat != CURLE_OK)
         goto fail;
 
     /* Ask for head */
-    cstat = curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30); /* 30sec timeout*/
-    cstat = curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 2);
-    cstat = curl_easy_setopt(curl, CURLOPT_HEADER, 1);
-    cstat = curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
-    cstat = curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
-    cstat = curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30)); /* 30sec timeout*/
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 2));
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_HEADER, 1));
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_NOBODY, 1));
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1));
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_FILETIME, (long)1));
 
-    cstat = curl_easy_perform(curl);
+    cstat = CURLERR(curl_easy_perform(curl));
     if(cstat != CURLE_OK) goto fail;
     if(filetime != NULL)
-        cstat = curl_easy_getinfo(curl,CURLINFO_FILETIME,filetime);
+        cstat = CURLERR(curl_easy_getinfo(curl,CURLINFO_FILETIME,filetime));
     if(cstat != CURLE_OK) goto fail;
 
     return OCTHROW(stat);
@@ -324,20 +339,20 @@ ocping(const char* url)
     if(stat != OC_NOERR) return stat;    
 
     /* Use redirects */
-    cstat = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L));
     if (cstat != CURLE_OK)
         goto done;
-    cstat = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L));
     if (cstat != CURLE_OK)
         goto done;
 
     /* use a very short timeout: 10 seconds */
-    cstat = curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)10);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)10));
     if (cstat != CURLE_OK)
         goto done;
 
     /* fail on HTTP 400 code errors */
-    cstat = curl_easy_setopt(curl, CURLOPT_FAILONERROR, (long)1);
+    cstat = CURLERR(curl_easy_setopt(curl, CURLOPT_FAILONERROR, (long)1));
     if (cstat != CURLE_OK)
         goto done;
 
@@ -347,7 +362,7 @@ ocping(const char* url)
     if(stat == OC_NOERR) {
 	/* Don't trust curl to return an error when request gets 404 */
 	long http_code = 0;
-	cstat = curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE, &http_code);
+	cstat = CURLERR(curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE, &http_code));
         if (cstat != CURLE_OK)
             goto done;
 	if(http_code >= 400) {

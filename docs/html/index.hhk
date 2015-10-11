@@ -39,6 +39,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093a7a27d5d7ae19fc14a4a094823aba44fe"><param name="Name" value="OC_Char"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093a743fa7631ac5bbda29abf38112ae1277"><param name="Name" value="OC_Dataset"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093ad8a4db0a87835558bc398e05ee0ab10f"><param name="Name" value="OC_Dimension"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da46e07fb14765f83fc3f34b0080590e90"><param name="Name" value="OC_EAUTH"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da01f200646080379a67dc2bebcedffcdb"><param name="Name" value="OC_EBADID"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da8a6959e50ae398f7ff89cade7855ddc8"><param name="Name" value="OC_EBADTYPE"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551dace85f923e0d526ee9615670c6034f7c8"><param name="Name" value="OC_EBADURL"></OBJECT>
@@ -121,10 +122,12 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#gafe9fcfea3f71040c8ab6d9b42a2acc04"><param name="Name" value="oc_errstring"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga44f19dc741192cb913d197b6f81875fb"><param name="Name" value="oc_get_connection"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga0b7964de1e4284c43a4bad6b148c63e3"><param name="Name" value="oc_get_lastmodified_data"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc_httpcode"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#gaafad9e319636e9a5a73a3efc49a90c9b"><param name="Name" value="oc_ping"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#gabae2a99c3fa0bc73e77e08477f8fcc29"><param name="Name" value="oc_raw_xdrsize"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#gae446dd38b7569efea2d8510ca4aa290b"><param name="Name" value="oc_set_useragent"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="oc_svcerrordata"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc_trace_curl"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711b5721b02a02eaead18797731a8643"><param name="Name" value="oc_update_lastmodified_data"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Interconnection.html"><param name="Name" value="Node Interconnection Management"></OBJECT>
@@ -212,6 +215,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gaa65e935c574a960e7d7fa83d9f3629a8"><param name="Name" value="oc_fetch"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga44f19dc741192cb913d197b6f81875fb"><param name="Name" value="oc_get_connection"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga0b7964de1e4284c43a4bad6b148c63e3"><param name="Name" value="oc_get_lastmodified_data"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc_httpcode"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gabc634c746500c0c953830eb3c19e69df"><param name="Name" value="oc_merge_das"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gac1e5fa56d7406fd0b8732eb77fb61379"><param name="Name" value="oc_open"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gaafad9e319636e9a5a73a3efc49a90c9b"><param name="Name" value="oc_ping"></OBJECT>
@@ -221,6 +225,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ade19e3e213fa37f86ad0d363d283bf5a"><param name="Name" value="oc_set_curl_callback"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gae446dd38b7569efea2d8510ca4aa290b"><param name="Name" value="oc_set_useragent"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="oc_svcerrordata"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc_trace_curl"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga8bb222815109c9e3c211138ea0eaf288"><param name="Name" value="oc_tree_text"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#ga2c939207433166e078a6a2b5175fd7d9"><param name="Name" value="oc_typeprint"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#gacd355eca56fcffe413ca3d8b3f9a36dc"><param name="Name" value="oc_typesize"></OBJECT>
@@ -288,6 +293,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#gaa65e935c574a960e7d7fa83d9f3629a8"><param name="Name" value="oc_fetch"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga44f19dc741192cb913d197b6f81875fb"><param name="Name" value="oc_get_connection"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga0b7964de1e4284c43a4bad6b148c63e3"><param name="Name" value="oc_get_lastmodified_data"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc_httpcode"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#aa82d1f748f513026f1eaeb91735b5696"><param name="Name" value="oc_log"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ad97e99ed9e223fbfd124e76d2ebfc1ea"><param name="Name" value="oc_logclose"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#a7b7fa158b62e8fe6fffe9d2338df31dd"><param name="Name" value="oc_loginit"></OBJECT>
@@ -304,6 +310,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#gae446dd38b7569efea2d8510ca4aa290b"><param name="Name" value="oc_set_useragent"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ab36ebde9a51cabd85c2064b803b94185"><param name="Name" value="oc_setlogging"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="oc_svcerrordata"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc_trace_curl"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga8bb222815109c9e3c211138ea0eaf288"><param name="Name" value="oc_tree_text"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#ga2c939207433166e078a6a2b5175fd7d9"><param name="Name" value="oc_typeprint"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8h.html#gacd355eca56fcffe413ca3d8b3f9a36dc"><param name="Name" value="oc_typesize"></OBJECT>
@@ -616,6 +623,7 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Node.html#gaf7cc5bbaaadba83c0ae56b8c77c6a982"><param name="Name" value="oc.h"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="oc_8c.html#af7220a21a631b6c71597a5a26cee4f82"><param name="Name" value="oc_dumpnode"></OBJECT>
+  <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da46e07fb14765f83fc3f34b0080590e90"><param name="Name" value="OC_EAUTH"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da01f200646080379a67dc2bebcedffcdb"><param name="Name" value="OC_EBADID"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551da8a6959e50ae398f7ff89cade7855ddc8"><param name="Name" value="OC_EBADTYPE"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#gga840cbdaf229ea8f3d1e393f795ff551dace85f923e0d526ee9615670c6034f7c8"><param name="Name" value="OC_EBADURL"></OBJECT>
@@ -673,6 +681,12 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093a56f227838d81e272c16b6370b461739e"><param name="Name" value="OC_Grid"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093a816ec186b246ab8d118292ae24b0de14"><param name="Name" value="OC_Group"></OBJECT>
+  <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc_httpcode"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="Miscellaneous"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga1571c7d4f4d4496e4592952ebf634b71"><param name="Name" value="oc.h"></OBJECT>
+  </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093ade832cfa595b98176e4977cfe2cb5017"><param name="Name" value="OC_Int16"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093ae3dbdf600020fad0cf643f1f9f89b5a4"><param name="Name" value="OC_Int32"></OBJECT>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Definitions.html#ggabfc69dfadc0984b8a3700fc08541a093ac26eb01c90a4787ed6a92995063e6ff7"><param name="Name" value="OC_Int64"></OBJECT>
@@ -745,6 +759,12 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="Miscellaneous"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="oc.c"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga558dcdd136361799f40fffb9d3c8b7bb"><param name="Name" value="oc.h"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc_trace_curl"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="Miscellaneous"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Miscellaneous.html#ga711db37ff7921fcf040c36caec82ac1e"><param name="Name" value="oc.h"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="group__Tree.html#ga8bb222815109c9e3c211138ea0eaf288"><param name="Name" value="oc_tree_text"></OBJECT>
   <UL>

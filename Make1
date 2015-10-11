@@ -1,0 +1,281 @@
+#MEM=-m
+#DBG=-d
+
+OPTS=-p all ${MEM} ${DBG}
+
+CYGWIN=0
+
+ifdef CYGWIN
+TESTURL=file:///home/dennis/ucar/oc/testdata
+CURLLIB=-L/usr/local/lib -lcurl
+CURLINCL=-I/usr/local/include
+ZLIB=-lz
+else
+TESTURL=file:///upc/share/dmh/nc/oc/testdata
+CURLLIB=-L/usr/local/lib -lcurl
+CURLINCL=-I/usr/local/include
+ZLIB=-lz
+VALGRIND=valgrind --leak-check=full
+#VALGRIND1=${VALGRIND} --show-reachable=yes
+endif
+
+# CURL may need other libraries depending on its install
+#OTHERLIBS=-lm -lssl -lcrypto 
+OTHERLIBS=
+
+LIBS=${ZLIB} ${CURLLIB} ${OTHERLIBS}
+INCL=-I. ${CURLINCL}
+
+# Might want to specify a particular C compiler with flags
+CC=gcc
+#CFLAGS=-Wall -DHAVE_CONFIG_H
+CFLAGS=-Wall
+
+GFLAGS=-g3 -O0
+##################################################
+# Generated libraries
+
+# This is intended to be the complete oc code
+OCLIB=./.libs/liboc.a
+
+##################################################
+
+OCSRC=\
+ocxdr_stdio.c \
+occompile.c \
+occontent.c \
+ocdata.c \
+oc.c \
+ocnode.c \
+read.c \
+http.c \
+dapparselex.c \
+ocuri.c \
+ocutil.c \
+ocdebug.c \
+ocdump.c \
+oclog.c \
+ocdrno.c \
+rc.c \
+curlfunctions.c \
+oclist.c \
+ocbytes.c
+
+OCHDRS=\
+occontent.h \
+ocdata.h \
+oc.h \
+ocinternal.h \
+ocnode.h \
+ocdatatypes.h \
+ocuri.h \
+constraints.h \
+read.h \
+http.h \
+dapparselex.h \
+ocutil.h \
+ocdebug.h \
+ocdump.h \
+oclog.h \
+ocdrno.h \
+rc.h \
+oclist.h \
+ocbytes.h
+
+GRAMFILES=dap.y
+GENSRC=dap.tab.c
+GENHDRS=dap.tab.h
+
+SRC=${OCSRC} ${GENSRC}
+HDRS=${OCHDRS} ${GENHDRS}
+
+MAINSRC=octest.c
+
+OBJ=${SRC:%.c=%.o}
+
+ALLSRC=${SRC} ${HDRS} dap.y
+
+EXE=octest
+
+##################################################
+
+all:: ${OCLIB} ${EXE}
+
+##################################################
+
+${EXE}: ${OCLIB} ${MAINSRC}
+	${CC} ${INCL} ${GFLAGS} -c ${MAINSRC}
+	${CC} -o ${EXE} ${MAINSRC:%.c=%.o} ${OCLIB} ${LIBS}
+
+##################################################
+
+${OCLIB}: ${OBJ}
+	ar r ${OCLIB} ${OBJ}
+
+${OBJ}: ${SRC} ${HDRS}
+	${CC} ${CFLAGS} ${GFLAGS} -c ${INCL} ${SRC}
+
+dap.tab.c dap.tab.h:
+	bison -d -v -p dap dap.y
+
+##################################################
+clean::
+	rm -f *.o *.lo *.exe ${EXE} ${DRNOLIB} ${OCLIB}
+	rm -fr *.tab.c *.tab.h *.output 
+	rm -f *.stackdump *.gcno
+	rm -f config.h dapnc.h occonfig.h
+	rm -fr ./results
+
+##################################################
+UTILDIR=~/nc/utils
+
+util:: ocbytes.h oclist.h ochashmap.h
+
+ocbytes.h ocbytes.c: ${UTILDIR}/bytes_template.h ${UTILDIR}/bytes_template.c
+	rm -f ocbytes.h ocbytes.c
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/bytes_template.h >./ocbytes.h
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/bytes_template.c >./ocbytes.c
+
+oclist.h oclist.c: ${UTILDIR}/list_template.h ${UTILDIR}/list_template.c
+	rm -f oclist.h oclist.c
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/list_template.h >./oclist.h
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/list_template.c >./oclist.c
+
+ochashmap.h ochashmap.c: ${UTILDIR}/hashmap_template.h ${UTILDIR}/hashmap_template.c
+	rm -f ochashmap.h ochashmap.c
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/hashmap_template.h >./ochashmap.h
+	sed -e 's/<<>>/OC/g' -e 's/<>/oc/g' <${UTILDIR}/hashmap_template.c >./ochashmap.c
+
+
+##################################################
+dist::
+	rm -fr dist oc.tar
+	mkdir dist
+	mkdir dist/oc
+	cp ${OCSRC} ${OCHDRS} ${GRAMFILES} dist/oc
+	cp -r xdr dist/oc
+	cp -r testdata dist/oc
+	cp imain.c octest.c dist/oc
+	cp Make0 COPYRIGHT dist/oc
+	tar -cf oc.tar -C dist oc
+
+##################################################
+ALLTESTS=synth1 synth2 synth3 synth4 synth5 synth6 \
+b31a b31 D1 Drifters \
+EOSDB ingrid \
+nestedDAS NestedSeq2 NestedSeq OverideExample \
+pbug0001b SimpleDrdsExample test.01 test.02 \
+test.03 test.04 test.05 test.06a \
+test.06 test.07a test.07 test1 \
+test.21 test.22 test.23 test2 \
+test.31 test.32 test3 test4 \
+test.50 test.53 test.55 test.56 \
+test.57 test.66 test.67 test.68 \
+test.69 test.an1 test.dfp1 test.dfr1 \
+test.dfr2 test.dfr3 test.gr1 test.gr2 \
+test.gr3 test.gr4 test.gr5 test.PointFile \
+test.sds1 test.sds2 test.sds3 test.sds4 \
+test.sds5 test.sds6 test.sds7 test.SwathFile \
+test.vs1 test.vs2 test.vs3 test.vs4 \
+test.vs5 whoi \
+1990-S1700101.HDF.WVC_Lat 1998-6-avhrr.dat
+
+tests::
+	rm -fr results
+	mkdir results
+	for t in ${ALLTESTS} ; do \
+	echo "----------" ; \
+	echo "${TESTURL}/$$t" ; \
+	echo "----------" ; \
+	c="${EXE} ${OPTS} ${TESTURL}/$$t" ; \
+	echo "cmd=$$c" ; \
+	$${c} > results/$${t}.dmp ; \
+	done
+
+diffs::
+	for t in ${ALLTESTS} ; do \
+	  if ! diff -w results/$${t}.dmp expected/$${t}.dmp >/dev/null ; then \
+	    echo $$t ; \
+	  fi ; \
+	done
+
+##################################################
+imain: imain.c i.c i.h
+	${CC} ${INCL} ${GFLAGS} -c imain.c i.c
+	${CC} -o imain imain.o i.o ${OCLIB} ${LIBS}
+
+itests::
+	rm -fr results
+	mkdir results
+	for t in ${ALLTESTS} ; do \
+	echo "----------" ; \
+	echo "${TESTURL}/$$t" ; \
+	echo "----------" ; \
+	c="imain ${TESTURL}/$$t" ; \
+	echo "cmd=$$c" ; \
+	$${c} > results/$${t}.dmp ; \
+	done
+
+x::
+	gcc -g t.c ./.libs/liboc.a -lcurl
+	a.out "file:///home/dmh/nc/netcdf-3/ncdap_test/testdata3/synth1"
+
+##################################################
+.PHONEY: parser
+
+# Generate dap4tab.c and dap4tab.h from dap.y
+parser::
+	rm -f dap4.tab.c dap4.tab.h	
+	bison --debug -d -p dap4 dap4.y
+	mv dap4.tab.c dap4tab.c; mv dap4.tab.h dap4tab.h
+	gcc -c dap4tab.c dap4actions.c
+	rm dap4actions.o dap4tab.o
+
+##################################################
+# Test an individual test
+#URL=${TESTURL}/synth2
+#URL="file:///home/dmh/nc/oc/dataset-duacs-nrt-over30d-global-merged-madt-h.dods"
+t::
+	./${EXE} ${OPTS} ${URL}
+
+g::
+	gdb --args ./${EXE} ${OPTS} ${URL}
+
+##################################################
+T=test
+
+v::
+	cc -g -c ${T}.c ${INCL}
+	cc -g -o v ${T}.o ${OCLIB} ${LIBS} ${RPATH}
+
+##################################################
+# Test curl
+
+T=simple
+
+cv::
+	cc -g -c ${T}.c ${CURLINCL}
+	cc -g -o cv ${T}.o ${LIBS}
+	./cv
+
+
+UP=ticket:ticket1
+#AUTH=--user ${UP}
+URL1="http://utmea.enea.it:8080/thredds/dodsC/UNIDATA_passwd/head_out.nc.dds"
+URL2="http://${UP}@utmea.enea.it:8080/thredds/dodsC/UNIDATA_passwd/head_out.nc.dds"
+
+a::
+	curl --verbose ${AUTH} ${URL2}
+	wget -d ${URL2} -O -
+
+
+UUP=tiggeUser:tigge
+AUTH=--user ${UUP}
+UURL1="http://thredds-test.ucar.edu/thredds/dodsC/restrict/testData.nc.dds"
+UURL2="http://${UUP}@thredds-test.ucar.edu/thredds/dodsC/restrict/testData.nc.dds"
+
+b::
+	curl --verbose ${AUTH} ${UURL1}
+	wget -d ${UURL2} -O -
+
+

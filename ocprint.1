@@ -6,15 +6,16 @@ ocprint \- Dump the DAS, DDS, and/or DATADDS for a given OPeNDAP source
 ocprint
 .nh
 \%[-A]
-\%[-C \fIconstraint-string\fP]
 \%[-D \fIdebug-argument\fP]
-\%[-g]
-\%[-h]
+\%[-G]
 \%[-L]
+\%[-N \fInetrcfile\fP]
+\%[-R \fIrcfile\fP]
+\%[-S]
+\%[-h]
+\%[-o \fIoutputfile\fP]
 \%[-p \fIall|das|dds|data|datadds\fP]
-\%[-U \fIuser-parameters\fP]
-\%[-v]
-\%[[-f] \fIOPeNDAP-URL\fP]
+\%[-u|-f] \fIOPeNDAP-URL\fP
 .hy
 .ft
 .SH DESCRIPTION
@@ -29,40 +30,79 @@ The DATADDS will only be accessed if explicitly requested using the \fI-p datadd
 .SH OPTIONS
 .IP "\fB-A\fP"
 Print attributes along with the DDS if \fI-g\fP is specified.
-.IP "\fB-C \fRconstraint\fP"
-Specify the constraint to be used when the DATADDS is read.
 .IP "\fB-D \fRdebug-arg\fP"
 Set a variety of debug options; this flag may be repeated multiple times.
-See \fIocprint.c\fP for a detailed description.
-.IP "\fB-g\fP"
+The current set of values is as follows.
+.RS
+.IP "\fB-Dn\fP"
+Set the debug level to \fIn\fP.
+.IP "\fB-DC\fP"
+Set curl library debugging.
+.IP "\fB-DD\fP"
+Dump the datadds tree.
+.IP "\fB-DN\fP"
+Dump the dds tree.
+.IP "\fB-DXn\fP"
+Equivalent to -DD and settin the dump level to n.
+.IP "\fB-DV\fP"
+Set verbose output.
+.RE
+This option may be used multiple times.
+.IP "\fB-G\fP"
 Force \fI-p\fP flag to generate the DAS and/or DDS
 from the internal parse tree instead of just
-dumping the text sent by the server.
-.IP "\fB-h\fP"
-Output usage information, including command line options.
+dumping the text sent by the server. Defaults to on.
 .IP "\fB-L\fP"
 Turn on logging output.
+.IP "\fB-N\fP"
+Specify the path to use to find the netrc file.
+This should be a path to the netrc file, not the containing directory.
+.IP "\fB-R\fP"
+Specify the path to use to find the rc file.
+This should be a path to the rc file, not the containing directory.
+If the argument is "" (the empty string) or the string "NONE",
+then no rc file will be used.
+If not specified at all, then the search order is
+\fI./.ocrc\fP \fI~/.ocrc\fP,
+\fI./.dodsrc\fP \fI~/.dodsrc\fP.
+.IP "\fB-S\fP"
+Specify that the server certificate is not checked
+when using https protocol.
+This is mostly intended to be used when the server
+is using a self-signed certificate.
+.IP "\fB-h\fP"
+Output usage information, including a list of command line options.
 .IP "\fB-p \fRall|das|dds|data|datadds\fP"
 Cause the DAS, the DDS, or the DATADDS to be printed.
 The argument \fIdata\fP is a synonym for \fIdatadds\fP.
 The  \fIall\fP case causes all three to be printed.
 This option may be used multiple times.
-.IP "\fB-U \fRuser-parameters\fP"
-Prefix the given parameters to the front of the OPeNDAP URL
-before accessing it. The general form is param=value.
-.IP "\fB-v\fP"
-Output verbose information about processing.
-.IP "\fB-f \fROPeNDAP-URL\fP"
-Specify the url source from which to read. The -f is optional.
+.IP "\fB[-u|-f] OPeNDAP-URL\fP"
+Specify the url source from which to read. The -u or -f is optional.
+.SH URL Format
+The url has two parts.
+.IP "1."
+The body of the url, such as
+\fIhttps://remotetest.unidata.ucar.edu/dts/test.69.dds\fP.
+.IP "2."
+The optional constraint, such as
+\fI?f[0:2:16][120]\fP.
+This follows the body.
+See the DAP2 specification for details on the general constraint format.
 .SH EXAMPLES
 .LP
 Extract everything from a specific URL (note: URL is fake).
 .RS
-.HP
+.nf
 ocprint -p all http://test.opendap.org/test1
+.RE
+.LP
+Extract a subset of the elements from a specific variable.
+.RS
+.nf
+ocprint -p all https://remotetest.unidata.ucar.edu/dts/test.69.dds?f[0:2:16][120]
 .RE
 
 .SH BUGS
 .LP
-Probably many; but currently none known.
-
+Probably many; but currently fixed as detected.

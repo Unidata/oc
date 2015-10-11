@@ -1,6 +1,15 @@
 #!/bin/bash
 #X="-x"
 #NB=1
+DBG=1
+
+MGW=1
+
+
+if test "x$MGW" = x1 ; then
+export PATH="c:/mingw/bin:${PATH}"
+fi
+
 # Use only if default is not correct
 #M32=1
 #M64=1
@@ -9,9 +18,13 @@ if test $# != 0 ; then
 cmds=$@
 fi
 
-CFLAGS=""
-CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
-#CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter ${CFLAGS}"
+if test "x$MAKE" = x ; then
+MAKE=make
+fi
+
+CFLAGS="-g -O0"
+#CFLAGS="-Wall -Wno-unused-variable -Wno-unused-parameter -Wconversion ${CFLAGS}"
+CFLAGS="-Wall -Wunused-variable ${CFLAGS}"
 #CFLAGS="-Wconversion"
 
 stddir="/usr/local"
@@ -47,11 +60,12 @@ else
   exit 1
 fi
 
-
 FLAGS="--prefix ${PREFIX}"
 FLAGS="${FLAGS} --disable-shared"
 #FLAGS="${FLAGS} --enable-shared"
-#FLAGS="${FLAGS} --enable-remote-tests"
+FLAGS="${FLAGS} --enable-remote-tests"
+FLAGS="${FLAGS} --enable-auth-tests"
+
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #FLAGS="${FLAGS} --enable-xgetopt"
@@ -59,7 +73,12 @@ FLAGS="${FLAGS} --disable-shared"
 #FLAGS="$FLAGS --with-curl-config=$CURLCONFIG"
 #fi
 
-LIBS="$LIBS /share/ed/local/spike/lib/libcurl.a"
+if test "x$DBG" == x ; then
+FLAGS="${FLAGS} --enable-shared"
+else
+FLAGS="${FLAGS} --disable-shared"
+FLAGS="${FLAGS} --enable-static"
+fi
 
 export PATH
 export CC

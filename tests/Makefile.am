@@ -1,7 +1,14 @@
+# Put together AM_CPPFLAGS and AM_LDFLAGS.
 
-AUTOM4TE = autom4te
+AUTOM4TE=autom4te
+AM_CPPFLAGS = -I$(abs_top_srcdir)
+AM_LDFLAGS = 
 
-EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt
+check_PROGRAMS =
+TESTS =
+
+EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh
+
 TESTSUITE = $(srcdir)/OCTest
 
 check-local: atconfig atlocal $(TESTSUITE)
@@ -38,8 +45,24 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
 	} >'$(srcdir)/package.m4'
 
+testurl_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+testurl_SOURCES = testurl.c
+check_PROGRAMS += testurl
+TESTS += testurl
 
 # Add some extra specialized tests
-#TESTS=testauth.sh
-#TESTS_ENVIRONMENT=TOPSRCDIR=${abs_top_srcdir}
+if ENABLE_AUTH_TESTS
+TESTS_ENVIRONMENT=TOPSRCDIR=${abs_top_srcdir}
+TESTS += testauth.sh
+
+#t_auth_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+#t_auth_SOURCES = t_auth.c
+#check_PROGRAMS += t_auth
+#TESTS += t_auth
+
+#t_auth1_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
+#t_auth1_SOURCES = t_auth1.c
+#check_PROGRAMS += t_auth1
+#TESTS += t_auth1
+endif
 
