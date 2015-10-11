@@ -148,7 +148,8 @@ parseproxy(OCstate* state, char* v)
 {
     char *host_pos = NULL;
     char *port_pos = NULL;
-
+    if(v == NULL)
+      return OC_NOERR; /* nothing there */
     if(strlen(v) == 0) return OC_NOERR; /* nothing there*/
     if (occredentials_in_url(v)) {
         char *result_url = NULL;
@@ -171,8 +172,11 @@ parseproxy(OCstate* state, char* v)
         *port_sep = '\0';
         host_len = strlen(host_pos);
         state->proxy.host = malloc(sizeof(char) * host_len + 1);
-        if (state->proxy.host == NULL)
-            return OC_ENOMEM;
+        if (state->proxy.host == NULL) {
+          if(port_pos) free(port_pos);
+          if(host_pos) free(host_pos);
+          return OC_ENOMEM;
+        }
 
         strncpy(state->proxy.host, host_pos, host_len);
         state->proxy.host[host_len] = '\0';
@@ -181,8 +185,10 @@ parseproxy(OCstate* state, char* v)
     } else {
         size_t host_len = strlen(host_pos);
         state->proxy.host = malloc(sizeof(char) * host_len + 1);
-        if (state->proxy.host == NULL)
-            return OC_ENOMEM;
+        if (state->proxy.host == NULL) {
+          if(host_pos) free(host_pos);
+          return OC_ENOMEM;
+        }
 
         strncpy(state->proxy.host, host_pos, host_len);
         state->proxy.host[host_len] = '\0';
@@ -262,7 +268,7 @@ sorttriplestore(void)
 	nsorted++;
       if(ocdebug > 2)
             ocdodsrcdump("pass:",sorted,nsorted);
-    }    
+    }
 
     memcpy((void*)ocdodsrc->triples,(void*)sorted,sizeof(struct OCTriple)*nsorted);
     free(sorted);
@@ -304,7 +310,7 @@ ocdodsrc_read(char* basename, char* path)
 	if(linecount >= MAXRCLINES) {
 	    oclog(OCLOGERR, ".dodsrc has too many lines");
 	    return 0;
-	}	    	
+	}
 	line = line0;
 	/* check for comment */
 	c = line[0];
@@ -313,7 +319,7 @@ ocdodsrc_read(char* basename, char* path)
 	if(strlen(line) >= MAXRCLINESIZE) {
 	    oclog(OCLOGERR, "%s line too long: %s",basename,line0);
 	    return 0;
-	}	    	
+	}
         /* setup */
 	ocdodsrc->triples[ocdodsrc->ntriples].url[0] = '\0';
 	ocdodsrc->triples[ocdodsrc->ntriples].key[0] = '\0';
@@ -324,11 +330,11 @@ ocdodsrc_read(char* basename, char* path)
 	    if(rtag == NULL) {
 		oclog(OCLOGERR, "Malformed [url] in %s entry: %s",basename,line);
 		continue;
-	    }	    
+	    }
 	    line = rtag + 1;
 	    *rtag = '\0';
 	    /* save the url */
-	    strncpy(ocdodsrc->triples[ocdodsrc->ntriples].url,url,MAXRCLINESIZE);
+	    strncpy(ocdodsrc->triples[ocdodsrc->ntriples].url,url,MAXRCLINESIZE-1);
 	    rctrim(ocdodsrc->triples[ocdodsrc->ntriples].url);
 	}
 	/* split off key and value */
@@ -340,11 +346,11 @@ ocdodsrc_read(char* basename, char* path)
 	    *value = '\0';
 	    value++;
 	}
-	strncpy(ocdodsrc->triples[ocdodsrc->ntriples].key,key,MAXRCLINESIZE);
+	strncpy(ocdodsrc->triples[ocdodsrc->ntriples].key,key,MAXRCLINESIZE-1);
 	if(*value == '\0')
 	    strcpy(ocdodsrc->triples[ocdodsrc->ntriples].value,"1");/*dfalt*/
 	else
-	    strncpy(ocdodsrc->triples[ocdodsrc->ntriples].value,value,MAXRCLINESIZE);
+	    strncpy(ocdodsrc->triples[ocdodsrc->ntriples].value,value,MAXRCLINESIZE-1);
 	rctrim(	ocdodsrc->triples[ocdodsrc->ntriples].key);
 	rctrim(	ocdodsrc->triples[ocdodsrc->ntriples].value);
 	ocdodsrc->ntriples++;
@@ -358,7 +364,7 @@ int
 ocdodsrc_process(OCstate* state)
 {
     int stat = 0;
-    char* value;
+    char* value = NULL;
     char* url = ocuribuild(state->uri,NULL,NULL,OCURIENCODE);
     struct OCTriplestore* ocdodsrc = ocglobalstate.ocdodsrc;
 
@@ -443,7 +449,7 @@ ocdodsrc_process(OCstate* state)
     }
 
     if((value = curllookup("SSL.VERIFYPEER",url)) != NULL) {
-	char* s = strdup(value);
+        char* s = strndup(value,strlen(value));
 	int tf = 0;
 	if(s == NULL || strcmp(s,"0")==0 || strcasecmp(s,"false")==0)
 	    tf = 0;
@@ -453,7 +459,8 @@ ocdodsrc_process(OCstate* state)
 	    tf = 1; /* default if not null */
         state->ssl.verifypeer = tf;
         if(ocdebug > 0)
-            oclog(OCLOGNOTE,"SSL.VERIFYPEER: %d", state->ssl.verifypeer);
+	  oclog(OCLOGNOTE,"SSL.VERIFYPEER: %d", state->ssl.verifypeer);
+	if(s) free(s);
     }
 
     if((value = curllookup("CREDENTIALS.USER",url)) != NULL) {
@@ -484,13 +491,13 @@ ocdodsrc_process(OCstate* state)
         state->creds.password = strdup(sep+1);
     }
 
-    /* else ignore */    
+    /* else ignore */
 
 done:
     if(url != NULL) free(url);
     return stat;
 }
-    
+
 char*
 ocdodsrc_lookup(char* key, char* url)
 {
@@ -516,7 +523,7 @@ ocdodsrc_lookup(char* key, char* url)
 	if(found) {
 	    fprintf(stderr,"lookup %s: [%s]%s = %s\n",url,triple->url,triple->key,triple->value);
 	}
-    }    
+    }
     return (found ? triple->value : NULL);
 }
 

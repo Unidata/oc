@@ -249,7 +249,9 @@ ocdata_read(OCstate* state, OCdata* data, size_t start, size_t count,
     assert(memsize > 0);
 
     template = data->template;
-    assert(template->octype == OC_Atomic);
+    octype = template->octype;
+    assert(octype == OC_Atomic);
+    basetype = template->basetype;
     isscalar = (template->array.rank == 0 ? 1 : 0);
 
     /* validate memory space*/
