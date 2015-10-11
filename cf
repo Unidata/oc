@@ -3,11 +3,10 @@
 #NB=1
 DBG=1
 
-MGW=1
+#FIXLIBTOOL=1
 
-
-if test "x$MGW" = x1 ; then
-export PATH="c:/mingw/bin:${PATH}"
+if test "x$FIXLIBTOOL" = x1 ;then
+libtoolize
 fi
 
 # Use only if default is not correct

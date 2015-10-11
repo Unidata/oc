@@ -3,15 +3,21 @@
 
 AC_PREREQ(2.62)
 AC_INIT(oc, 2.1, support@opendap.org)
-AC_CONFIG_SRCDIR([oclog.c])
-AC_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR(conf)
-
-AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([conf])
+AM_INIT_AUTOMAKE([foreign dist-zip subdir-objects])
 AC_CONFIG_TESTDIR(tests, [.])
+
+# Set up libtool.
+AC_MSG_NOTICE([setting up libtool])
+#LT_PREREQ([2.2])
+#LT_INIT(win32-dll)
+LT_INIT
+
 AC_CANONICAL_HOST
 AC_SUBST(host)
+
+AC_CONFIG_HEADERS([config.h])
 
 dnl library versionning: Update these when the interface changes. Generally,
 dnl assume that the interface tracks the major and minor release numbers.
@@ -27,7 +33,6 @@ AC_SUBST(LIBOC_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 AC_PROG_YACC
