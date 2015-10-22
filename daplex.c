@@ -132,9 +132,9 @@ daplex(YYSTYPE* lvalp, DAPparsestate* state)
 	    int more = 1;
 	    /* We have a string token; will be reported as WORD_STRING */
 	    while(more && (c=*(++p))) {
-#ifdef DAP2ENCODE
 	        if(c == '"')
 		    more = 0;
+#ifdef DAP2ENCODE
 		else if(c == '\\') {
 		    /* Remove spec ambiguity by convering \c to c
                        for any character c */
@@ -142,8 +142,7 @@ daplex(YYSTYPE* lvalp, DAPparsestate* state)
 		    if(c == '\0') more = 0;
 		}
 #else /*Non-standard*/
-		switch (c) {
-		case '"': more=0; break;
+		else switch (c) {
 		case '\\':
 		    c=*(++p);
 		    switch (c) {
