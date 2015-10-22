@@ -26,8 +26,7 @@ check-local: atconfig atlocal $(TESTSUITE)
 clean-local:
 	test ! -f '$(TESTSUITE)' || $(SHELL) '$(TESTSUITE)' --clean
 
-distclean-local:
-	-rm atconfig
+MAINTAINERCLEANFILES = atconfig
 
 AUTOTEST = $(AUTOM4TE) --language=autotest
 $(TESTSUITE): $(srcdir)/OCTest.at $(srcdir)/package.m4
