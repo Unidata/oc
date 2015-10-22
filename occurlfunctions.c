@@ -213,6 +213,7 @@ ocset_flags_perlink(OCstate* state)
 {
     OCerror stat = OC_NOERR;
 
+    /* Following are always set */
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_ENCODING);
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_NETRC);
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_VERBOSE);
@@ -222,16 +223,12 @@ ocset_flags_perlink(OCstate* state)
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_USERPWD);
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_PROXY);
     if(stat == OC_NOERR) stat = ocset_curlflag(state,CURLOPT_USE_SSL);
-    if(stat != OC_NOERR)
-      return stat;
-
-    /* Following are always set */
-    ocset_curlflag(state, CURLOPT_FOLLOWLOCATION);
-    ocset_curlflag(state, CURLOPT_MAXREDIRS);
-    ocset_curlflag(state, CURLOPT_ERRORBUFFER);
+    if(stat == OC_NOERR) stat = ocset_curlflag(state, CURLOPT_FOLLOWLOCATION);
+    if(stat == OC_NOERR) stat = ocset_curlflag(state, CURLOPT_MAXREDIRS);
+    if(stat == OC_NOERR) stat = ocset_curlflag(state, CURLOPT_ERRORBUFFER);
 
     /* Set the CURL. options */
-    stat = oc_set_curl_options(state);
+    if(stat == OC_NOERR) stat = oc_set_curl_options(state);
 
     return stat;
 }

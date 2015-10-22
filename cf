@@ -3,7 +3,11 @@
 #NB=1
 DBG=1
 
-export PATH="/machine/dmh/bin:${PATH}"
+#FIXLIBTOOL=1
+
+if test "x$FIXLIBTOOL" = x1 ;then
+libtoolize
+fi
 
 # Use only if default is not correct
 #M32=1
@@ -57,7 +61,7 @@ fi
 
 FLAGS="--prefix ${PREFIX}"
 FLAGS="${FLAGS} --enable-remote-tests"
-#FLAGS="${FLAGS} --enable-auth-tests"
+FLAGS="${FLAGS} --enable-auth-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
 #FLAGS="${FLAGS} --enable-xgetopt"

@@ -1,15 +1,19 @@
 #!/bin/sh
 #set -x
 
-#RCEMBED=1
-#RCLOCAL=1
-#RCHOME=1
-#RCSPEC=1
+RCEMBED=1
+RCLOCAL=1
+RCHOME=1
+RCSPEC=1
 RCENV=1
+RCPREC=1
 
 SHOW=1
-DBG=1
+#DBG=1
+
+# Choose one
 #GDB=1
+#VG=1
 
 NFL=1
 
@@ -43,7 +47,7 @@ if test "x$URS" != "x" ; then
 URLSERVER="54.86.135.31"
 URLPATH="opendap/data/nc/fnoc1.nc"
 BASICCOMBO="$URS"
-NOEMBED=1
+RCEMBED=0
 NETRC=$NETRCFILE
 PROTO=https
 fi
@@ -52,27 +56,36 @@ fi
 BASICUSER=`echo $BASICCOMBO | cut -d: -f1`
 BASICPWD=`echo $BASICCOMBO | cut -d: -f2`
 
+xf() { case $- in *[x]*) set +x; XP=1;; *) XP=0;; esac }
+xo() { case $XP in 1) set -x;; *) set +x;; esac }
+
+xf
 OCPRINT=
-for o in ../ocprint.exe ./ocprint.exe ../ocprint ./ocprint ; do
-  if test -f $o ; then
-  OCPRINT=$o
-  break;
-  fi
+for d in "$WD/.." "$WD"; do
+  for o in $d/.libs/ocprint.exe $d/.libs/ocprint $d/ocprint.exe $d/ocprint ; do
+    if test -f $o ; then
+      OCPRINT=$o
+      break;
+    fi
+  done
+  if test "x$OCPRINT" != x; then break; fi
 done
+
 if test "x$OCPRINT" = x ; then
-echo "no ocprint"
-exit 1
+  echo "no ocprint"
+  exit 1
 fi
 
 if test "x$SHOW" = x ; then
-OUTPUT="-o /dev/null"
+  OUTPUT="-o /dev/null"
 else
-OUTPUT=
+  OUTPUT=
 fi
 
 if test "x$TEMP" = x ; then
   TEMP="/tmp"
 fi
+TEMP=`echo "$TEMP" | sed -e "s|/$||"`
 
 LOCALRC=./$RC
 HOMERC=${HOME}/$RC
@@ -88,8 +101,10 @@ cd $srcdir
 srcdir=`pwd`
 cd ${builddir}
 
-function createrc {
+createrc() {
   RCP="$1" ; shift
+  unset NOPWD
+  unset BADPWD
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
@@ -123,8 +138,10 @@ function createrc {
   fi
 }
 
-function createnetrc {
+createnetrc() {
   NCP="$1" ; shift
+  unset NOPWD
+  unset BADPWD
   while [[ $# > 0 ]] ; do
     case "$1" in
     nopwd) NOPWD=1 ;;
@@ -156,13 +173,14 @@ function createnetrc {
   fi
 }
 
-function reset {
+reset() {
   for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     rm -f ${f}
   done      
+  unset DAPRCFILE
 }
 
-function restore {
+restore() {
   reset
   for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     if test -f ${f}.save ; then
@@ -172,7 +190,7 @@ function restore {
   done      
 }
 
-function save {
+save() {
   for f in ./$RC $HOME/$RC $SPECRC $ENVRC $COOKIES $NETRC ; do
     if test -f $f ; then
       if test -f ${f}.save ; then
@@ -197,12 +215,17 @@ if test "x$NETRC" != x ; then
 fi
 
 if test "x$GDB" = x1 ; then
-  OCPRINT="gdb --args $OCPRINT -D1"
+  OCPRINT="gdb --args $OCPRINT"
+fi
+if test "x$VG" = x1 ; then
+  OCPRINT="valgrind --leak-check=full $OCPRINT"
 fi
 
 # Initialize
+xf
 save
 reset
+xo
 
 if test "x$RCEMBED" = x1 ; then
   echo "***Testing rc file with embedded user:pwd"
@@ -219,7 +242,7 @@ NETRC=$NETRCFILE
 if test "x$RCLOCAL" = x1 ; then
   echo "***Testing rc file in local directory"
   # Create the rc file and (optional) netrc fil in ./
-  reset
+  xf; reset; xo
   createnetrc $NETRC
   createrc $LOCALRC
 
@@ -231,7 +254,7 @@ fi
 if test "x$RCHOME" = x1 ; then
   echo "***Testing rc file in home directory"
   # Create the rc file and (optional) netrc fil in ./
-  reset
+  xf; reset; xo
   createnetrc $NETRC
   createrc $HOMERC
 
@@ -243,7 +266,7 @@ fi
 if test "x$RCSPEC" == x1 ; then
   echo "*** Testing rc file in specified directory"
   # Create the rc file and (optional) netrc file
-  reset
+  xf; reset; xo
   createnetrc $NETRC
   createrc $SPECRC
 
@@ -255,7 +278,7 @@ fi
 if test "x$RCENV" = x1 ; then
   echo "*** Testing rc file using env variable"
   # Create the rc file and (optional) netrc file
-  reset
+  xf; reset; xo
   createnetrc $NETRC
   echo "ENV: export DAPRCFILE=$ENVRC"
   export DAPRCFILE=$ENVRC
@@ -266,22 +289,26 @@ if test "x$RCENV" = x1 ; then
   ${OCPRINT} -p dds -L ${OUTPUT} "$URL"
   export DAPRCFILE=
 fi
-exit
-# Test if netcrc pwd overrides .daprc
-set -x
+
+# Test that .daprc overrides netcrc for password
 URL="${PROTO}://${URLSERVER}/$URLPATH"
 NETRC=$NETRCFILE
-  echo "***Testing rc file in local directory"
+if test "x$RCPREC" = x1 ; then
+  echo "***Testing rc vs netrc file precedence"
   # Create the rc file and (optional) netrc file in ./
-  reset
-  set -x
+  xf; reset; xo
   createnetrc $NETRC badpwd
-  createrc $LOCALRC nopwd
+  createrc $LOCALRC
 
   # Invoke ocprint to extract a file using the URL
   echo "command: ${OCPRINT} -p dds ${OUTPUT} $URL"
   ${OCPRINT} -p dds ${OUTPUT} "$URL"
 fi
 
-#cleanup
+xf
+reset
 restore
+xo
+
+exit
+

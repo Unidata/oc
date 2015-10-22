@@ -1,6 +1,7 @@
 # Put together AM_CPPFLAGS and AM_LDFLAGS.
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AUTOM4TE=autom4te
+AM_CPPFLAGS = -I$(abs_top_srcdir)
 AM_LDFLAGS = 
 
 check_PROGRAMS =
@@ -32,7 +33,6 @@ AUTOTEST = $(AUTOM4TE) --language=autotest
 $(TESTSUITE): $(srcdir)/OCTest.at $(srcdir)/package.m4
 	$(AUTOTEST) -I '$(srcdir)' -o $@.tmp $@.at
 	mv $@.tmp $@
-
 
 # The `:;' works around a Bash 3.2 bug when the output is not writeable.
 $(srcdir)/package.m4: $(top_srcdir)/configure.ac

@@ -43,7 +43,7 @@ cd ${builddir}
 
 URL="https://${URLSERVER}/$URLPATH"
 
-function createrc {
+createrc() {
 RCP=$1
 rm -f $RCP
 if test "x${DBG}" != x ; then
