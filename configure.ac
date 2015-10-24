@@ -127,6 +127,7 @@ AC_CHECK_SIZEOF(void*)
 # Added an --enable-developer option. Without this, define NDEBUG; with it
 # suppress optimiziation, add lots of symbols, run the asserts and compile
 # with -Wall
+AC_MSG_CHECKING([whether we are doing development vs production])
 AC_ARG_ENABLE([developer],
               [AS_HELP_STRING([--enable-developer],
                                  [enable developer mode])])
