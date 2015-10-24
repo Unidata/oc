@@ -2,11 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT(oc, 2.1, support@opendap.org)
+AC_INIT(oc, 4.0.0, support@opendap.org)
 AC_CONFIG_AUX_DIR(conf)
 AC_CONFIG_MACRO_DIR([conf])
 AM_INIT_AUTOMAKE([foreign dist-zip subdir-objects])
-AC_CONFIG_TESTDIR(tests, [.])
 
 # Set up libtool.
 AC_MSG_NOTICE([setting up libtool])
@@ -21,14 +20,17 @@ AC_CONFIG_HEADERS([config.h])
 
 dnl library versionning: Update these when the interface changes. Generally,
 dnl assume that the interface tracks the major and minor release numbers.
-LIB_MAJOR=2
+LIB_MAJOR=4
 LIB_MINOR=0
 LIB_PATCH=0
 AC_SUBST(LIB_MAJOR)
 AC_SUBST(LIB_MINOR)
 AC_SUBST(LIB_PATCH)
 
-LIBOC_VERSION="$LIB_MAJOR:$LIB_MINOR:$LIB_PATCH"
+LIB_NOTES=""
+#LIB_NOTES=":RC1"
+
+LIBOC_VERSION="$LIB_MAJOR:$LIB_MINOR:$LIB_PATCH:${LIB_NOTES}"
 AC_SUBST(LIBOC_VERSION)
 
 # Checks for programs.
@@ -124,6 +126,37 @@ AC_CHECK_SIZEOF(off_t)
 AC_CHECK_SIZEOF(void*)
 
 ##################################################
+# Control various subdirs.
+
+AC_ARG_ENABLE([dap2],
+              [AS_HELP_STRING([--enable-dap2],
+                                 [enable dap2 support])])
+test "x$enable_dap2" = "xyes" || enable_dap2=no
+AC_MSG_RESULT($enable_dap2)
+AM_CONDITIONAL(ENABLE_DAP2, [test "x$enable_dap2" = "xyes"])
+
+AC_ARG_ENABLE([dap4],
+              [AS_HELP_STRING([--enable-dap4],
+                                 [enable dap4 support])])
+test "x$enable_dap4" = "xyes" || enable_dap4=no
+AC_MSG_RESULT($enable_dap4)
+AM_CONDITIONAL(ENABLE_DAP4, [test "x$enable_dap4" = "xyes"])
+
+AC_ARG_ENABLE([tools],
+              [AS_HELP_STRING([--enable-tools],
+                                 [enable tools support])])
+test "x$enable_tools" = "xyes" || enable_tools=no
+AC_MSG_RESULT($enable_tools)
+AM_CONDITIONAL(ENABLE_TOOLS, [test "x$enable_tools" = "xyes"])
+
+AC_ARG_ENABLE([tests],
+              [AS_HELP_STRING([--enable-tests],
+                                 [enable tests support])])
+test "x$enable_tests" = "xyes" || enable_tests=no
+AC_MSG_RESULT($enable_tests)
+AM_CONDITIONAL(ENABLE_TESTS, [test "x$enable_tests" = "xyes"])
+
+##################################################
 # Added an --enable-developer option. Without this, define NDEBUG; with it
 # suppress optimiziation, add lots of symbols, run the asserts and compile
 # with -Wall
@@ -143,15 +176,6 @@ AC_ARG_ENABLE([remote-tests],
 test "x$enable_remote_tests" = xyes || enable_remote_tests=no
 AC_MSG_RESULT($enable_remote_tests)
 AM_CONDITIONAL(ENABLE_REMOTE_TESTS, [test "x$enable_remote_tests" = "xyes"])
-
-# Enable/disable distribute windows directory (off by default)
-AC_MSG_CHECKING([include win32 in the distribution (default no)])
-AC_ARG_ENABLE([win32-dist],
-              [AS_HELP_STRING([--enable-win32-dist],
-                                 [include win32 in distribution])])
-test "x$enable_win32_dist" = xyes || enable_win32_dist=no
-AC_MSG_RESULT($enable_win32_dist)
-AM_CONDITIONAL(INCLUDE_WIN32_DIST, [test "x$enable_win32_dist" = "xyes"])
 
 # Control use of xgetopt
 AC_MSG_CHECKING([whether XGetopt should be used])
@@ -173,21 +197,6 @@ AC_MSG_RESULT($enable_auth_tests)
 AM_CONDITIONAL(ENABLE_AUTH_TESTS, [test "x$enable_auth_tests" = "xyes"])
 
 ##################################################
-dnl autoheader macros; tack some text at the top and bottom of config_dap.h.in
-
-#AH_TOP([#ifndef _config_h
-##define _config_h])
-
-#AH_BOTTOM([/* Shorthand for gcc's unused attribute feature */
-##if defined(__GNUG__) || defined(__GNUC__)
-##define not_used __attribute__ ((unused))
-##define unused __attribute__ ((unused))
-##else
-##define not_used 
-##define unused 
-##endif /* __GNUG__ || __GNUC__ */
-##endif /* _config_h */])
-
 AH_BOTTOM(
 [/* Define strcasecmp, snprintf on Win32 systems. */
 #ifdef _WIN32
@@ -197,7 +206,14 @@ AH_BOTTOM(
 
 ##################################################
 # Process the Makefile.am (and other) files
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+		common/Makefile
+		liboc/Makefile
+		dap2/Makefile
+		dap4/Makefile
+		tools/Makefile
+                ])
+AC_CONFIG_TESTDIR(tests, [.])
 AC_CONFIG_FILES([tests/Makefile tests/atlocal])
 AC_CONFIG_FILES([oc-config], [chmod +x oc-config])
 AC_OUTPUT

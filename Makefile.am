@@ -25,49 +25,30 @@ endif
 
 TEST_COV_FLAGS = -ftest-coverage -fprofile-arcs
 
-SUBDIRS = . tests
+if ENABLE_DAP2
+DAP2=dap2
+endif
 
-bin_PROGRAMS = 
+if ENABLE_DAP4
+DAP4=dap4
+endif
 
-lib_LTLIBRARIES = liboc.la
+if ENABLE_TOOLS
+TOOLS=tools
+endif
+
+if ENABLE_TESTS
+TESTS=tests
+endif
+
+SUBDIRS = common ${DAP2| ${DAP4} ${TOOLS} ${TESTS} buildlib
 
 bin_SCRIPTS = oc-config
-
-liboc_la_SOURCES = config.h oc.h ocx.h oc.c \
-dapparselex.h daplex.c dapparse.c daptab.h daptab.c \
-ocbytes.h ocbytes.c \
-occlientparams.h occlientparams.c \
-occompile.h occompile.c \
-occonstraints.h \
-occurlfunctions.h occurlfunctions.c \
-ocdata.h ocdata.c \
-ocdatatypes.h \
-ocdebug.h ocdebug.c \
-ocdump.h ocdump.c \
-ochttp.h ochttp.c \
-ocinternal.h ocinternal.c \
-oclist.h oclist.c \
-oclog.h oclog.c \
-ocnode.h ocnode.c \
-ocrc.c \
-ocread.h ocread.c \
-ocuri.h ocuri.c \
-ocutil.h ocutil.c \
-occurlflags.c \
-xxdr.h xxdr.c
 
 # The -no-undefined is required to actually generate a .dll(.a) file
 liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@ -no-undefined
 
 pkginclude_HEADERS = oc.h
-
-#noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \
-		occlientparams.h occonstraints.h occontent.h \
-		occurlfunctions.h ocdata.h ocdatatypes.h ocdebug.h \
-		ocdrno.h ocdump.h ochttp.h ocinternal.h \
-		oclist.h oclog.h ocnode.h ocrc.h \
-		ocread.h ocuri.h ocutil.h xxdr.h \
-		config.h
 
 EXTRA_DIST = COPYING COPYRIGHT RELEASE_NOTES INSTALL README.md
 EXTRA_DIST += dap.y
@@ -81,35 +62,8 @@ EXTRA_DIST += makeparser.sh
 
 EXTRA_DIST += docs
 
-if INCLUDE_WIN32_DIST
-EXTRA_DIST += win32
-endif
-
 MAINTAINERCLEANFILES = Makefile.in
 #CLEANFILES = *.log *.output *.stackdump *.exe imain getoc *.gcno *.gcda gmon.out
-
-###########################################################################
-# ocprint prints out the result of a request (used also for testing)
-
-bin_PROGRAMS += ocprint
-ocprint_SOURCES = ocprint.c
-if ENABLE_XGETOPT
-ocprint_SOURCES += XGetopt.c XGetopt.h
-endif
-
-ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
-
-###########################################################################
-# These rule are used if someone wants to rebuild the grammar files.
-# Otherwise never invoked, but records how to do it.
-# BTW: note that renaming is essential because otherwise
-# autoconf will forcibly delete files of the name *.tab.*
-
-.PHONEY: parser
-
-# Generate daptab.c and daptab.h from dap.y
-parser::
-	bash makeparser.sh
 
 ###########################################################################
 
