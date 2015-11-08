@@ -1,16 +1,18 @@
-<!-- Obsolete ? -->
 <!-- Copyright 2009, UCAR/Unidata and OPeNDAP, Inc. -->
 <!-- See the COPYRIGHT file for more information. -->
 <html>
 <body>
-<center>
 <h2>OC Internals Documentation</h2>
-<h3>Draft: 01/12/2009<br>
-Last Revised: 03/14/2012<br>
-OC Version 1.1</h3>
-</center>
+<div class="subtitle">
+<h1>Author: Dennis Heimbigner</h1>
+<h1>Address: http://www.unidata.ucar.edu/staff/dmh/</h1>
+<h1>Draft: 1/12/2009</h1>
+<h1>Last Revised: 03/15/2012</h1>
+</div>
 
-<h2 class="break"><u>Table of Contents</u></h2>
+<h1><u>OBSOLETE</u></h1> 
+
+<h1 class="toc"><u>Table of Contents</u></h1> 
 <ul>
 <li><a href="#Introduction">Introduction</a>
 <li><a href="#Parsers">Parsers</a>
@@ -43,13 +45,13 @@ OC Version 1.1</h3>
 <li><a href="#Copyright">Copyright</a>
 </ul>
 
-<h3><a name="Introduction"><u>Introduction</u></a></h3>
+<h2><a name="Introduction"><u>Introduction</u></a></h2>
 This document is an ongoing effort to
 describe the internal operation of oc.
 
-<h3><a name="Parsers"><u>Parsers</u></a></h3>
+<h2><a name="Parsers"><u>Parsers</u></a></h2>
 
-<h4><a name="DDS/DAS Parser"><u>DDS/DAS Parser: dap.y</u></a></h4>
+<h3><a name="DDS/DAS Parser">DS/DAS Parser: dap.y</a></h3>
 The dap.y parser parses DDSs, DATADDSs, and DASs.
 The supported syntax is essentially the same
 as the Ocapi parser, but the actions are different.
@@ -114,7 +116,7 @@ that should be inserted into the sequence.
 <p>
 This pattern, in various forms, is ubiquitous in the parsers.
 
-<h4><a name="Constraint Parser"><u>Constraint Parser: ce.y</u></a></h4>
+<h3><a name="Constraint Parser">Constraint Parser: ce.y</a></h3>
 The ce.y parser parses DAP url projections
 (see <a href="#OCURI">OCURI</a>).
 There is code to also parse selections,
@@ -125,7 +127,7 @@ that the selection string is passed unmodified to the server.
 Currently, there is no need for this parser, so it is included
 in the source tree, but is not used.
 
-<h3><a name="OC Node Tree"><u>OC Node Tree</u></a></h3>
+<h2><a name="OC Node Tree"><u>OC Node Tree</u></a></h2>
 As with Ocapi, the dap parser produces a node tree
 defining the DDS (or DAS) structure.
 The node structure (struct OCnode) is defined in <i>ocnode.h</i>
@@ -208,7 +210,7 @@ The auxilliary structs are as follows.
     <td>List of values associated with the attribute
 </table>
 
-<h4><a name="OCSKIP">struct OCSKIP</a></h3>
+<h3><a name="OCSKIP">struct OCSKIP</a></h3>
 The OCSKIP structure requires some detailed explanation
 because it is important in optimizing access to data.
 The idea is that for many DATADDS OCnode objects,
@@ -251,7 +253,7 @@ The skip values are pre-computed recursively in the procedure
 <i>occomputeskipdata</i> in <i>ocnode.c</i> and should be consulted
 to see how the computation is carried out.
 
-<h3><a name="OCstate Management">OCstate Management</a></h3>
+<h2><a name="OCstate Management">OCstate Management</a></h2>
 The overarching concept in the API is that of a <i>OCstate</i>,
 which is an opaque identifier representing a DAP
 state; it is used to maintain persistent state about the state
@@ -265,7 +267,7 @@ operation or object.
 The state is used for a variety of purposes and is as a rule
 the first argument of any of the API procedures.
 
-<h4><a name="OCstate Structure"><u>OCstate Structure</u></a></h4>
+<h3><a name="OCstate Structure"><u>OCstate Structure</u></a></h3>
 The OCstate structure contains the following fields.
 <table>
 <tr><td>unsigned int magic<td>&nbsp;&ndash;&nbsp;<td>A magic number to identify this structure.
@@ -389,7 +391,7 @@ the curl documentation should be consulted.
     <td>The pass word for logging into the proxy
 </table>
 
-<h3><a name="OCstate Trees"><u>OCstate Trees</u></a></h3>
+<h2><a name="OCstate Trees"><u>OCstate Trees</u></a></h2>
 Every time that a DAP DDS, DAS, or DATADDS is fetched from a server,
 it is parsed and a tree of OCnode instances is constructed.
 The roots of these trees are kept in the OCstate and may be created
@@ -427,7 +429,7 @@ are defined and used.
 </table>
 
 <!--
-<h4><a name="OCstate Procedural API"><u>OCstate Procedural API</u></a></h4>
+<h3><a name="OCstate Procedural API">OCstate Procedural API</a></h3>
 The basic state API is as follows.
 <p>
 <table border=1 cellpadding=5>
@@ -492,7 +494,7 @@ then the root will not exist and NULL will be returned.
 </table>
 -->
 
-<h3><a name="API"><u>API</u></h4>
+<h2><a name="API"><u>API</u></h2>
 The API is best understood
 by reading the user's manual
 and following the code for
@@ -551,7 +553,7 @@ to the appropriate internal type.  This is accomplished using the
 <i>OCDEREF</i> macro, which casts the argument to the proper type
 and stores it in a specified local variable of internal type.
 
-<h3><a name="OCDATA API"><u>OC Data Access API</u></a></h3>
+<h2><a name="OCDATA API"><u>OC Data Access API</u></a></h2>
 Accessing the actual data associated with a DATADDS fetch
 is perhaps the most complex and confusing part of the oc API.
 This is, unfortunately, a direct reflection of the complexity
@@ -793,7 +795,7 @@ moving to the Sequence object, hence the mode becomes OC_Sequence.
 If the field type is OC_Primitive, then we have reached the point
 where actual data extraction is possible, so the mode becomes
 OCPRIMITIVEMODE.
-<h4><a name="Caching and Skipping"><u>Caching and Skipping</u></a></h4>
+<h3><a name="Caching and Skipping"><u>Caching and Skipping</u></a></h3>
 The <i>OCCACHE</i> structure is
 used to track information that enables
 the <i>ocskipinstance</i> procedure to
@@ -838,7 +840,7 @@ because the search can start with the cached information rather
 than having to begin at position zero.
 
 <!--
-<h3><a name="OC Data Compilation"><u>OC Data Compilation</u></a></h3>
+<h2><a name="OC Data Compilation"><u>OC Data Compilation</u></a></h2>
 The original Ocapi operated by converting the xdr packet
 to an in-memory structure attached to the node tree of the DDS
 (although it did not handle the full DDS).
@@ -860,14 +862,14 @@ to an in-memory structure. The OCcontent API operations
 (ocfieldcontent, etc.) will use the memory version if it is available.
 -->
 
-<h3><a name="Error Handling"><u>Error Handling</u></a></h3>
+<h2><a name="Error Handling"><u>Error Handling</u></a></h2>
 Error handling in <i>oc</i>  is somewhat different than in Ocapi,
 and follows mostly the netCDF model.  That is, procedures
 return simple numeric error codes to indicate success
 (OC_NOERR) or failure (OC_EXXX). The current error codes are defined
 in oc.h, but it needs reorganization and extension.
 
-<h4><a name="Logging"><u>Logging</u></a></h4>
+<h3><a name="Logging"><u>Logging</u></a></h3>
 One good thing about Ocapi was that it provided a mechanism for
 returning detailed error information strings.
 In order to keep something like that, <i>oc</i> has a log mechanism
@@ -888,7 +890,7 @@ described in <i>ocuserman.html</i>
 <li>void oc_logtext(int tag, const char* text)
 </ul>
 
-<h3><a name="OCURI"><u>OCURI</u></a></h3>
+<h2><a name="OCURI"><u>OCURI</u></a></h2>
 Surprisingly, it appears that libcurl does not export
 any kind of URL parsing capability. Therefore, the ocuri
 type was created to support this. It is defined in <i>ocuri.[ch]</i>.
@@ -1009,7 +1011,7 @@ determines what other parts are included as follows
 </ul>
 </table>
 
-<h3><a name="Miscellaneous"><u>Miscellaneous</u></a></h3>
+<h2><a name="Miscellaneous"><u>Miscellaneous</u></a></h2>
 The two datatypes OClist and OCbytes are used through out the
 code.  They correspond closely in semantics to the Java Arraylist
 and Stringbuffer types, respectively.  They are used to help
@@ -1030,7 +1032,7 @@ One is "ocbytescontents()", which returns a direct pointer to the buffer,
 and the other is "ocbytesdup()", which returns a malloc'd string containing
 the contents and null terminated.
 
-<h3><a name="Multi-Dimensional Array"><u>Multi-Dimensional Array Handling</u></a></h3>
+<h2><a name="Multi-Dimensional Array"><u>Multi-Dimensional Array Handling</u></a></h2>
 Within a data packet, the DAP protocol "linearizes" multi-dimensional
 arrays into a single dimension. The rule for converting a multi-dimensional
 array to a single dimensions is as follows.
@@ -1058,7 +1060,7 @@ dimmap(int rank, size_t* indices, size_t* sizes)
 In this code, the indices variable corresponds to the x,y, and z.
 The sizes variable corresponds to the 2,5, and 3.
 
-<h3><a name="Change Log"><u>Change Log</u></a></h3>
+<h2><a name="Change Log"><u>Change Log</u></a></h2>
 <ul>
 <li>01/21/2011 - Revised to discuss the new data walking algorithms;
                  clean up, and fix inconsistencies with the code.
@@ -1071,7 +1073,7 @@ interface to supercede all others.
 <li>01/12/2009 - First draft.
 </ul>
 
-<h3><a name="Copyright"><u>Copyright</u></a></h3>
+<h2><a name="Copyright"><u>Copyright</u></a></h2>
 Copyright 2009, UCAR/Unidata and OPeNDAP, Inc.
 </body
 </html>
