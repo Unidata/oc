@@ -197,7 +197,7 @@ main(int argc, char **argv)
 
     opterr = 1;
 
-    while ((c = getopt(argc, argv, "AC:D:GLN:R:STU:X:ho:u:f:p:")) != EOF) {
+    while ((c = getopt(argc, argv, "AC:D:GLN:R:STU:X:gho:u:f:p:")) != EOF) {
         switch (c) {
 	case 'A': ocopt.showattributes = 1; break;
 	case 'C': ocopt.constraint = nulldup(optarg); break;

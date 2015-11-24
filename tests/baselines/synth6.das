@@ -4,9 +4,6 @@ Attributes {
           Int32 a1 32;
 	}
     }
-    GLOBAL {
-	Int32 globalattr 177;
-    }
     CoreMetadata {
         OrbitNumber {
             Int32 Value 375;

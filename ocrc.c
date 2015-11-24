@@ -301,7 +301,7 @@ ocrc_compile(const char* path)
 	if(strlen(line) == 0) continue;
         if(strlen(line) >= MAXRCLINESIZE) {
             oclog(OCLOGERR, "%s line too long: %s",path,line0);
-            return 0;
+            continue; /* ignore it */
         }
         /* setup */
         ocrc->triples[ocrc->ntriples].host[0] = '\0';
@@ -408,10 +408,10 @@ done:
     return stat;
 }
 
-int
+OCerror
 ocrc_process(OCstate* state)
 {
-    int stat = 0;
+    OCerror stat = OC_NOERR;
     char* value = NULL;
     OCURI* uri = state->uri;
     char* url_userpwd = NULL;
