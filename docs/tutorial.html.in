@@ -3,45 +3,6 @@
 <html> 
 <head>
 <!--css-->
-<style> 
-.break { page-break-before: always; } 
-body { counter-reset: H2; font-size: 12pt; } 
-h1.title {
-  font-size: 18pt;
-  text-decoration: underline;
-}
-div.subtitle {
-}
-.subtitle h1 {
-  font-size: 14pt;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-h1.toc {
-  font-size: 16pt;
-  text-decoration: underline;
-}
-h1.appendix {
-  font-size: 14pt;
-}
-
-h2:before { 
-  content: counter(H2) " "; 
-  counter-increment: H2; 
-} 
-h2 { counter-reset: H3; text-decoration: underline; } 
-h3:before { 
-  content: counter(H2) "." counter(H3) " "; 
-  counter-increment:H3; 
-} 
-h3 { counter-reset: H4; } 
-h4:before { 
-  content: counter(H2) "." counter(H3) "." counter(H4) " "; 
-  counter-increment:H4; 
-} 
-
-</style> 
 </head>
 <body> 
 <h1 class="title">OC Tutorial</h1> 
@@ -50,7 +11,7 @@ h4:before {
 <h1>Address: http://www.unidata.ucar.edu/staff/dmh/</h1>
 <h1>Draft: 06/01/2012</h1>
 <h1>Last Revised: 10/24/2015</h1>
-<h1>OC Version 2.0.0</h1> 
+<h1>OC Version VVVV</h1> 
 </div>
  
 <h1 class="toc"><u>Table of Contents</h1> 
