@@ -110,6 +110,17 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h libintl.h malloc.h memory.h netinet/in.h stddef.h stdlib.h string.h strings.h unistd.h stdarg.h])
 
 ##################################################
+# Crude hack to work around an issue
+# in Cygwin.
+###
+SLEEPCMD=""
+PLTFORMOUT="$(uname | cut -d '_' -f 1)"
+if test "$PLTFORMOUT" = "CYGWIN"; then
+   SLEEPCMD="sleep 5"
+   AC_MSG_NOTICE([Pausing between sizeof() checks to mitigate a Cygwin issue.])
+fi
+
+##################################################
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_STDBOOL
@@ -119,9 +130,13 @@ AC_TYPE_OFF_T
 AC_CHECK_TYPES([ssize_t, ptrdiff_t, uchar])
 AC_C_CHAR_UNSIGNED
 AC_C_BIGENDIAN
+$SLEEPCMD
 AC_CHECK_SIZEOF(long)
+$SLEEPCMD
 AC_CHECK_SIZEOF(size_t)
+$SLEEPCMD
 AC_CHECK_SIZEOF(off_t)
+$SLEEPCMD
 AC_CHECK_SIZEOF(void*)
 
 ##################################################
@@ -156,13 +171,13 @@ AC_MSG_RESULT($enable_win32_dist)
 AM_CONDITIONAL(INCLUDE_WIN32_DIST, [test "x$enable_win32_dist" = "xyes"])
 
 # Control use of getopt alternative
-#AC_MSG_CHECKING([whether XGetopt should be used])
-#AC_ARG_ENABLE([xgetopt],
-#              [AS_HELP_STRING([--enable-xgetopt],
-#                                 [enable use of XGetopt])])
-#test "x$enable_xgetopt" = xyes || enable_xgetopt=no
-#AC_MSG_RESULT($enable_xgetopt)
-#AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
+AC_MSG_CHECKING([whether apache getopt should be used])
+AC_ARG_ENABLE([apache-getopt],
+              [AS_HELP_STRING([--enable-apache-getopt],
+                                 [enable use of apache-getopt])])
+test "x$enable_apache_getopt" = xyes || enable_apache_getopt=no
+AC_MSG_RESULT($enable_apache_getopt)
+AM_CONDITIONAL(ENABLE_APACHE_GETOPT, [test "x$enable_apache_getopt" = "xyes"])
 
 ##################################################
 # Control authorization testing

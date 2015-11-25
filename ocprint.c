@@ -26,6 +26,10 @@
 #include "oclog.h"
 #include "ocbytes.h"
 
+#ifdef ENABLE_APACHE_GETOPT
+#include "apache-getopt.h"
+#endif
+
 #ifdef WIN32
 /*#include <windows.h>*/
 #define snprintf _snprintf
@@ -111,12 +115,6 @@ static struct OCOPT {
 
 static char blanks[2048];
 #define BLANKSPERDENT 2
-
-#ifdef ENABLE_XGETOPT
-extern int optind;
-extern int opterr;
-extern char* optarg;
-#endif
 
 /* Forward*/
 static void usage(char*);

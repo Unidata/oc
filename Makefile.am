@@ -76,6 +76,7 @@ EXTRA_DIST += CMakeLists.txt
 EXTRA_DIST += occurlflags.c.in
 EXTRA_DIST += makeflags.sh
 EXTRA_DIST += makeparser.sh
+EXTRA_DIST += apache-getopt.c apache-getopt.h
 
 EXTRA_DIST += docs
 
@@ -91,6 +92,10 @@ MAINTAINERCLEANFILES = Makefile.in
 
 bin_PROGRAMS += ocprint
 ocprint_SOURCES = ocprint.c
+
+if ENABLE_APACHE_GETOPT
+ocprint_SOURCES += apache-getopt.c apache-getopt.h
+endif
 
 ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 

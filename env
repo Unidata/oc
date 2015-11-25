@@ -46,7 +46,7 @@ if test "x$PROG" = x ; then
 fi
 
 U="$PARMS$F"
-alias q0="$PROG $ARGS '$U'"
+alias q0="$PROG '$U' $ARGS"
 alias qq="gdb --args $PROG $ARGS '$U'"
 alias qv="valgrind --leak-check=full $PROG -g -p datadds $CON '$U'"
 alias qt="rm -f ./junk; $PROG $ARGS '$U' | tee junk"

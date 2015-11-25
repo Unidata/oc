@@ -65,6 +65,12 @@ FLAGS="${FLAGS} --enable-remote-tests"
 FLAGS="${FLAGS} --enable-auth-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
+#FLAGS="${FLAGS} --enable-apache-getopt"
+
+if test x$PRODUCTION = x ; then
+FLAGS="${FLAGS} --enable-developer"
+fi
+
 #if test x$CURLCONFIG != x ; then
 #FLAGS="$FLAGS --with-curl-config=$CURLCONFIG"
 #fi
