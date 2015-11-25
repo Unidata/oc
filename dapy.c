@@ -78,12 +78,12 @@
 
 #include "config.h"
 #include "dapparselex.h"
-#include "daptab.h"
+#include "dapy.h"
 int dapdebug = 0;
 
 
 /* Line 268 of yacc.c  */
-#line 87 "dap.tab.c"
+#line 87 "dapy.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -152,7 +152,7 @@ typedef int YYSTYPE;
 
 
 /* Line 343 of yacc.c  */
-#line 156 "dap.tab.c"
+#line 156 "dapy.c"
 
 #ifdef short
 # undef short
@@ -2299,7 +2299,7 @@ yyreduce:
 
 
 /* Line 1806 of yacc.c  */
-#line 2303 "dap.tab.c"
+#line 2303 "dapy.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

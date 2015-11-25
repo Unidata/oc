@@ -6,7 +6,7 @@
 # BTW: note that renaming is essential because otherwise
 # autoconf will forcibly delete files of the name *.tab.*
 
-rm -f dap.tab.c dap.tab.h daptab.c daptab.h
+rm -f dap.tab.c dap.tab.h dapy.c dapy.h
 bison --debug -d -p dap dap.y
-sed -e s/dap.tab.c/daptab.c/g -e s/dap.tab.h/daptab.h/g <dap.tab.c >daptab.c
-sed -e s/dap.tab.c/daptab.c/g -e s/dap.tab.h/daptab.h/g <dap.tab.h >daptab.h
+sed -e s/dap.tab.c/dapy.c/g -e s/dap.tab.h/dapy.h/g <dap.tab.c >dapy.c
+sed -e s/dap.tab.c/dapy.c/g -e s/dap.tab.h/dapy.h/g <dap.tab.h >dapy.h

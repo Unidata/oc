@@ -9,6 +9,9 @@ TESTS =
 
 EXTRA_DIST = OCTest.at $(TESTSUITE) atlocal.in $(srcdir)/package.m4 baselines testdata CMakeLists.txt testauth.sh
 
+# Why does MAINTAINERCLEANFILES not work?
+DISTCLEANFILES = ${srcdir}/atconfig ${builddir}/atconfig
+
 TESTSUITE = $(srcdir)/OCTest
 
 check-local: atconfig atlocal $(TESTSUITE)
@@ -25,8 +28,6 @@ check-local: atconfig atlocal $(TESTSUITE)
 # about atconfig being left in the build directory. jhrg
 clean-local:
 	test ! -f '$(TESTSUITE)' || $(SHELL) '$(TESTSUITE)' --clean
-
-MAINTAINERCLEANFILES = atconfig
 
 AUTOTEST = $(AUTOM4TE) --language=autotest
 $(TESTSUITE): $(srcdir)/OCTest.at $(srcdir)/package.m4

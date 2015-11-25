@@ -27,8 +27,10 @@ AC_SUBST(LIB_MAJOR)
 AC_SUBST(LIB_MINOR)
 AC_SUBST(LIB_PATCH)
 
-LIBOC_VERSION="$LIB_MAJOR.$LIB_MINOR.$LIB_PATCH"
+LIBOC_VERSION="$LIB_MAJOR:$LIB_MINOR:$LIB_PATCH"
+OC_VERSION="$LIB_MAJOR.$LIB_MINOR.$LIB_PATCH"
 AC_SUBST(LIBOC_VERSION)
+AC_SUBST(OC_VERSION)
 
 # Checks for programs.
 AC_PROG_CC
@@ -153,14 +155,14 @@ test "x$enable_win32_dist" = xyes || enable_win32_dist=no
 AC_MSG_RESULT($enable_win32_dist)
 AM_CONDITIONAL(INCLUDE_WIN32_DIST, [test "x$enable_win32_dist" = "xyes"])
 
-# Control use of xgetopt
-AC_MSG_CHECKING([whether XGetopt should be used])
-AC_ARG_ENABLE([xgetopt],
-              [AS_HELP_STRING([--enable-xgetopt],
-                                 [enable use of XGetopt])])
-test "x$enable_xgetopt" = xyes || enable_xgetopt=no
-AC_MSG_RESULT($enable_xgetopt)
-AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
+# Control use of getopt alternative
+#AC_MSG_CHECKING([whether XGetopt should be used])
+#AC_ARG_ENABLE([xgetopt],
+#              [AS_HELP_STRING([--enable-xgetopt],
+#                                 [enable use of XGetopt])])
+#test "x$enable_xgetopt" = xyes || enable_xgetopt=no
+#AC_MSG_RESULT($enable_xgetopt)
+#AM_CONDITIONAL(ENABLE_XGETOPT, [test "x$enable_xgetopt" = "xyes"])
 
 ##################################################
 # Control authorization testing

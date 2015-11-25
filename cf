@@ -65,7 +65,6 @@ FLAGS="${FLAGS} --enable-remote-tests"
 FLAGS="${FLAGS} --enable-auth-tests"
 #FLAGS="${FLAGS} --enable-idl-code"
 #FLAGS="${FLAGS} --disable-disk_storage"
-#FLAGS="${FLAGS} --enable-xgetopt"
 #if test x$CURLCONFIG != x ; then
 #FLAGS="$FLAGS --with-curl-config=$CURLCONFIG"
 #fi
@@ -86,7 +85,7 @@ export LD_LIBRARY_PATH
 
 DISTCHECK_CONFIGURE_FLAGS="$FLAGS"; export DISTCHECK_CONFIGURE_FLAGS
 
-if test -z "$PRODUCTION" ; then
+if test "x$PRODUCTION" = x1; then
 ${MAKE} -i maintainer-clean >/dev/null 2>&1
 fi
 if test -z "$NB" ; then

@@ -34,7 +34,7 @@ lib_LTLIBRARIES = liboc.la
 bin_SCRIPTS = oc-config
 
 liboc_la_SOURCES = config.h oc.h ocx.h oc.c \
-dapparselex.h daplex.c dapparse.c daptab.h daptab.c \
+dapparselex.h daplex.c dapparse.c dapy.h dapy.c \
 ocbytes.h ocbytes.c \
 occlientparams.h occlientparams.c \
 occompile.h occompile.c \
@@ -61,7 +61,7 @@ liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@ -no-undefined
 
 pkginclude_HEADERS = oc.h
 
-#noinst_HEADERS = ceparselex.h dapparselex.h daptab.h ocbytes.h \
+#noinst_HEADERS = ceparselex.h dapparselex.h dapy.h ocbytes.h \
 		occlientparams.h occonstraints.h occontent.h \
 		occurlfunctions.h ocdata.h ocdatatypes.h ocdebug.h \
 		ocdrno.h ocdump.h ochttp.h ocinternal.h \
@@ -91,9 +91,6 @@ MAINTAINERCLEANFILES = Makefile.in
 
 bin_PROGRAMS += ocprint
 ocprint_SOURCES = ocprint.c
-if ENABLE_XGETOPT
-ocprint_SOURCES += XGetopt.c XGetopt.h
-endif
 
 ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 
@@ -105,7 +102,7 @@ ocprint_LDADD=$(top_builddir)/liboc.la ${CURL_LIBS}
 
 .PHONEY: parser
 
-# Generate daptab.c and daptab.h from dap.y
+# Generate dapy.c and dapy.h from dap.y
 parser::
 	bash makeparser.sh
 
