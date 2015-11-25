@@ -111,6 +111,17 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h libintl.h malloc.h memory.h netinet/in.h stddef.h stdlib.h string.h strings.h unistd.h stdarg.h])
 
 ##################################################
+# Crude hack to work around an issue
+# in Cygwin.
+###
+SLEEPCMD=""
+PLTFORMOUT="$(uname | cut -d '_' -f 1)"
+if test "$PLTFORMOUT" = "CYGWIN"; then
+   SLEEPCMD="sleep 5"
+   AC_MSG_NOTICE([Pausing between sizeof() checks to mitigate a Cygwin issue.])
+fi
+
+##################################################
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_STDBOOL
@@ -120,9 +131,13 @@ AC_TYPE_OFF_T
 AC_CHECK_TYPES([ssize_t, ptrdiff_t, uchar])
 AC_C_CHAR_UNSIGNED
 AC_C_BIGENDIAN
+$SLEEPCMD
 AC_CHECK_SIZEOF(long)
+$SLEEPCMD
 AC_CHECK_SIZEOF(size_t)
+$SLEEPCMD
 AC_CHECK_SIZEOF(off_t)
+$SLEEPCMD
 AC_CHECK_SIZEOF(void*)
 
 ##################################################
