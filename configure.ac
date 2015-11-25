@@ -6,7 +6,6 @@ AC_INIT(oc, 2.1, support@opendap.org)
 AC_CONFIG_AUX_DIR(conf)
 AC_CONFIG_MACRO_DIR([conf])
 AM_INIT_AUTOMAKE([foreign dist-zip subdir-objects])
-AC_CONFIG_TESTDIR(tests, [.])
 
 # Set up libtool.
 AC_MSG_NOTICE([setting up libtool])
@@ -28,7 +27,7 @@ AC_SUBST(LIB_MAJOR)
 AC_SUBST(LIB_MINOR)
 AC_SUBST(LIB_PATCH)
 
-LIBOC_VERSION="$LIB_MAJOR:$LIB_MINOR:$LIB_PATCH"
+LIBOC_VERSION="$LIB_MAJOR.$LIB_MINOR.$LIB_PATCH"
 AC_SUBST(LIBOC_VERSION)
 
 # Checks for programs.
@@ -198,7 +197,8 @@ AH_BOTTOM(
 
 ##################################################
 # Process the Makefile.am (and other) files
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile docs/Makefile])
+AC_CONFIG_TESTDIR(tests, [.])
 AC_CONFIG_FILES([tests/Makefile tests/atlocal])
 AC_CONFIG_FILES([oc-config], [chmod +x oc-config])
 AC_OUTPUT

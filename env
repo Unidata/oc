@@ -14,7 +14,10 @@ OCPWD=tigge
 rm -f ./.netrc
 echo "machine remotetest.unidata.ucar.edu login ${OCUSER} password ${OCPWD}" >./.netrc
 
-F="file://${WD}/tests/testdata/Drifters"
+F="file://$P/oc/tests/testdata/synth6"
+
+#F="https://eosdap.hdfgroup.org:8080/opendap/data/NASAFILES/hdf4/1B01_CSI.971221.375.ADLD.6.HDF"
+
 #F="http://remotetest.unidata.ucar.edu/thredds/dodsC/restrict/testData.nc"
 
 #ARGS="-L -T -g -p datadds"
@@ -22,7 +25,8 @@ F="file://${WD}/tests/testdata/Drifters"
 #ARGS="-DD -T -g -p das"
 #ARGS="-T -g -p dds"
 #ARGS="-DD -T -g -p datadds"
-ARGS="-DC -D1 -T -g -A -p dds"
+#ARGS="-DC -D1 -T -g -A -p dds"
+ARGS="-g -A -p dds"
 
 if test "x$CON" != x ; then
 ARGS="-C '$CON' $ARGS"
