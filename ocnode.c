@@ -11,7 +11,7 @@ static const unsigned int MAX_UINT = 0xffffffff;
 static OCerror mergedas1(OCnode* dds, OCnode* das);
 static OCerror mergedods1(OCnode* dds, OCnode* das);
 static OCerror mergeother1(OCnode* root, OCnode* das);
-static char* pathtostring(OClist* path, char* separator, int usecdfname);
+static char* pathtostring(OClist* path, char* separator);
 static void computefullname(OCnode* node);
 
 /* Process ocnodes to fix various semantic issues*/
@@ -65,7 +65,7 @@ computefullname(OCnode* node)
 	return;
     path = oclistnew();
     occollectpathtonode(node,path);
-    tmp = pathtostring(path,PATHSEPARATOR,1);
+    tmp = pathtostring(path,PATHSEPARATOR);
     if(tmp == NULL) {
         fullname = nulldup(node->name);
     } else {
@@ -75,14 +75,16 @@ computefullname(OCnode* node)
     oclistfree(path);
 }
 
-/* Convert path to a string; leave off the dataset name*/
+/* Convert path to a string */
 static char*
-pathtostring(OClist* path, char* separator, int usecdfname)
+pathtostring(OClist* path, char* separator)
 {
     int slen,i,len;
     char* pathname;
-    if(path == NULL || (len = oclistlength(path))==0) return NULL;
-    for(slen=0,i=0;i<len;i++) {
+    if(path == NULL) return NULL;
+    len = oclistlength(path);
+    if(len == 0) return NULL;
+    for(i=0,slen=0;i<len;i++) {
 	OCnode* node = (OCnode*)oclistget(path,(size_t)i);
 	if(node->container == NULL || node->name == NULL) continue;
 	slen += strlen(node->name);
@@ -413,10 +415,9 @@ mergeother1(OCnode* root, OCnode* das)
     OCASSERT(root != NULL);
     if(root->attributes == NULL) root->attributes = oclistnew();
 
-    OCASSERT(das->octype == OC_Attribute);
     if(das->octype == OC_Attribute) {
         /* compute the full name of this attribute */
-        computefullname(das);    
+        computefullname(das);
         /* create attribute */
         att = makeattribute(das->fullname,das->etype,das->att.values);	
         oclistpush(root->attributes,(void*)att);
